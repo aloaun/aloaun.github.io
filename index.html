@@ -4339,15 +4339,75 @@ async function loadFromCloud(){
   }
 }
 
+// ── Sync temps réel via SSE ───────────────────────────────
+// Firebase Realtime Database supporte les événements SSE
+// pour recevoir les changements instantanément
+let _sseSource = null;
+function startRealtimeSync(){
+  try{
+    // Utiliser l'API SSE de Firebase Realtime Database
+    _sseSource = new EventSource(FB_URL.replace('.json','.json?accept=text/event-stream'));
+    _sseSource.addEventListener('put', function(e){
+      try{
+        const msg = JSON.parse(e.data);
+        const d = msg.data;
+        if(!d) return;
+        function inj(key,lsKey,varName,check){
+          if(d[key]&&check(d[key])){window[varName]=d[key];localStorage.setItem(lsKey,JSON.stringify(d[key]));}
+        }
+        inj('clients',   'al_c',          'CLIENTS',            v=>Array.isArray(v)&&v.length>0);
+        inj('products',  'al_p',          'PRODUCTS',           v=>Array.isArray(v)&&v.length>0);
+        inj('orders',    'al_o',          'ORDERS',             v=>Array.isArray(v)&&v.length>0);
+        inj('admin',     'al_admin',      'ADMIN',              v=>v&&v.username);
+        inj('admins',    'al_admins',     'ADMINS',             v=>Array.isArray(v));
+        inj('cats',      'al_cats',       'PRODUCT_CATEGORIES', v=>Array.isArray(v)&&v.length>0);
+        inj('company',   'al_company',    'COMPANY',            v=>v&&v.name);
+        inj('suppliers', 'al_sup',        'SUPPLIERS',          v=>Array.isArray(v));
+        inj('credits',   'al_credits',    'CREDITS',            v=>typeof v==='object');
+        inj('complaints','al_complaints', 'COMPLAINTS',         v=>Array.isArray(v));
+        inj('contact',   'al_contact',    'CONTACT_MSGS',       v=>Array.isArray(v));
+        // Rafraîchir l'interface selon le rôle
+        if(window.SESSION){
+          if(window.SESSION.role==='admin'){
+            if(window._currentSec==='dash' && window.renderDashboard) window.renderDashboard();
+            else if(window._currentSec==='clients' && window.renderClients) window.renderClients();
+            else if(window._currentSec==='orders' && window.renderOrders) window.renderOrders();
+            else if(window._currentSec==='prods' && window.renderProds) window.renderProds();
+            else if(window._currentSec==='credits' && window.renderCredits) window.renderCredits();
+            else if(window._currentSec==='complaints' && window.renderComplaints) window.renderComplaints();
+            else if(window._currentSec==='suppliers' && window.renderSuppliers) window.renderSuppliers();
+          } else if(window.SESSION.role==='client'){
+            if(window.clRenderProds) window.clRenderProds();
+          }
+        }
+        fbShow('synced','✅ Synchronisé');
+      }catch(err){ console.warn('SSE parse:',err.message); }
+    });
+    _sseSource.onerror = function(){
+      console.warn('SSE déconnecté — reconnexion...');
+      fbShow('error','⚠️ Reconnexion...');
+      // Reconnecter après 3 secondes
+      setTimeout(()=>{
+        if(_sseSource){ _sseSource.close(); _sseSource=null; }
+        startRealtimeSync();
+      }, 3000);
+    };
+    console.log('🔥 Sync temps réel activée');
+  }catch(e){
+    console.warn('SSE non supporté, fallback polling');
+    setInterval(loadFromCloud, 5000);
+  }
+}
+
 // ── Démarrage ─────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded',async()=>{
   await loadFromCloud();
-  setInterval(loadFromCloud,30000);
+  startRealtimeSync();
 });
 
 window._fbSave=saveToCloud;
 window._fbLoad=loadFromCloud;
-console.log('🔥 Realtime Database connectée');
+console.log('🔥 Realtime Database — sync temps réel');
 </script>
 </body>
 </html>
