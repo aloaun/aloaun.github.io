@@ -1364,11 +1364,31 @@ function doForgot(){
     _fpFoundAccount=found;_fpIsAdmin=false;
     var contact=isEmail?found.email:found.phone;
     var masked=isEmail?contact.replace(/(.{2}).+(@.+)/,function(m,a,b){return a+'***'+b;}):contact.substring(0,4)+'****'+contact.slice(-2);
+    // Envoyer le code via WhatsApp ou Email
+    if(isEmail){
+      var mailSubject=encodeURIComponent('Code de verification Alitos');
+      var mailBody=encodeURIComponent('Bonjour '+found.name+',\n\nVotre code de verification est : '+_fpOTP+'\n\nCe code est valable 10 minutes.\n\nSi vous n\'avez pas demande cette reinitialisation, ignorez ce message.\n\nAlitos');
+      window.open('mailto:'+found.email+'?subject='+mailSubject+'&body='+mailBody);
+    } else {
+      var waPhone=found.phone.replace(/[^0-9]/g,'');
+      if(waPhone.startsWith('0'))waPhone='212'+waPhone.substring(1);
+      var waMsg=encodeURIComponent('Alitos - Code de verification : '+_fpOTP+' (valable 10 min)');
+      window.open('https://wa.me/'+waPhone+'?text='+waMsg);
+    }
     res.innerHTML='<div style="color:var(--grn);font-weight:600;margin-bottom:6px">✅ Compte identifié</div>'+
-      '<div style="font-size:12px;color:var(--tx2)">'+(isEmail?'📧 Code envoyé à : ':'📱 SMS envoyé au : ')+'<strong>'+masked+'</strong></div>'+
-      '<div style="margin-top:8px;background:rgba(201,168,76,0.08);border:1px solid var(--bo);border-radius:8px;padding:8px;text-align:center">'+
-      '<div style="font-size:10px;color:var(--tx3);margin-bottom:3px">CODE DE VÉRIFICATION (simulation)</div>'+
-      '<div style="font-size:20px;font-weight:700;color:var(--gold);letter-spacing:5px">'+_fpOTP+'</div></div>';
+      '<div style="font-size:12px;color:var(--tx2)">'+(isEmail?'📧 Email ouvert vers : ':'📱 WhatsApp ouvert vers : ')+'<strong>'+masked+'</strong></div>'+
+      '<div style="margin-top:8px;background:rgba(82,201,122,0.08);border:1px solid rgba(82,201,122,0.2);border-radius:8px;padding:10px;font-size:12px;color:var(--tx2)">Envoyez le message qui s\'est ouvert, puis saisissez le code reçu ci-dessous.</div>';
+    res.style.display='block';
+    if(ow)ow.style.display='block';
+    document.getElementById('fp-otp-inp').value='';
+  } else if(isEmail&&ADMIN.email&&ADMIN.email.toLowerCase()===inpL){
+    _fpIsAdmin=true;
+    var adminMailSubject=encodeURIComponent('Code de verification Alitos Admin');
+    var adminMailBody=encodeURIComponent('Code de verification administrateur : '+_fpOTP+'\n\nValable 10 minutes.');
+    window.open('mailto:'+ADMIN.email+'?subject='+adminMailSubject+'&body='+adminMailBody);
+    res.innerHTML='<div style="color:var(--gold);font-weight:600;margin-bottom:6px">🔑 Administrateur identifié</div>'+
+      '<div style="font-size:12px;color:var(--tx2)">📧 Email ouvert vers : <strong>'+ADMIN.email.replace(/(.{2}).+(@.+)/,function(m,a,b){return a+'***'+b;})+'</strong></div>'+
+      '<div style="margin-top:8px;background:rgba(201,168,76,0.08);border:1px solid var(--bo);border-radius:8px;padding:10px;font-size:12px;color:var(--tx2)">Envoyez le message qui s\'est ouvert, puis saisissez le code reçu ci-dessous.</div>';
     res.style.display='block';
     if(ow)ow.style.display='block';
     document.getElementById('fp-otp-inp').value='';
@@ -2904,17 +2924,26 @@ function payMethodLabel(o){
 // ═══════════ SEND INVOICE ═══════════
 function sendInvoiceByEmail(){
   var id=document.getElementById('inv-sel').value;
-  if(!id){toast('Sélectionnez d\'abord une commande',true);return;}
+  if(!id){toast('Selectionnez une commande',true);return;}
   var o=ORDERS.find(function(x){return x.id===id;});
   var c=getC(o.clientId);
-  var email=c.email||'';var phone=c.phone||'';
-  var msg='📧 En production réelle :\n';
-  if(email)msg+='• Email envoyé à: '+email+'\n';
-  if(phone)msg+='• SMS envoyé au: '+phone+'\n';
-  if(!email&&!phone)msg+='Aucun email ni téléphone enregistré pour ce client.';
-  msg+='\n(Intégrez un service SMTP ou SMS API comme Twilio / Amazon SES)';
-  alert(msg);
-  toast('📧 Simulation envoi facture — '+(email||phone||'Contact manquant'));
+  var email=c.email||'';
+  var phone=c.phone||'';
+  if(!email&&!phone){toast('Ce client n\'a pas d\'email ni telephone enregistre',true);return;}
+  var items=o.items.map(function(it){var p=getP(it.productId);return p.name+' x'+it.quantity+' = '+fm(it.price*it.quantity);}).join(', ');
+  if(email){
+    var subject=encodeURIComponent('Facture '+o.id+' - '+(COMPANY.name||'Alitos'));
+    var body=encodeURIComponent('Bonjour '+c.name+',\n\nVotre facture N: '+o.id+'\nMontant: '+fm(o.total)+'\nDate: '+o.date+'\nArticles: '+items+'\n\nCordialement,\n'+(COMPANY.name||'Alitos'));
+    window.open('mailto:'+email+'?subject='+subject+'&body='+body);
+    toast('Email ouvert pour '+email);
+  }
+  if(phone){
+    var waPhone=phone.replace(/[^0-9]/g,'');
+    if(waPhone.startsWith('0'))waPhone='212'+waPhone.substring(1);
+    var smsText=encodeURIComponent('Facture '+o.id+' | '+(COMPANY.name||'Alitos')+' | '+fm(o.total)+' | '+o.date);
+    window.open('https://wa.me/'+waPhone+'?text='+smsText);
+    toast('WhatsApp ouvert pour '+phone);
+  }
 }
 
 // ═══════════ UPDATE goSec FOR NEW SECTIONS ═══════════
@@ -3602,7 +3631,13 @@ renderClComplaints = function(){
 function deleteMyComplaint(id){
   if(!confirm('Supprimer cette réclamation ?')) return;
   var idx = COMPLAINTS.findIndex(function(x){return x.id === id;});
-  if(idx > -1){ COMPLAINTS.splice(idx, 1); save(); renderClComplaints(); toast('Réclamation supprimée ✓'); }
+  if(idx > -1){
+    COMPLAINTS.splice(idx, 1);
+    save();
+    if(window.saveToCloud) window.saveToCloud();
+    renderClComplaints();
+    toast('Réclamation supprimée ✓');
+  }
 }
 
 // ─── 10. FILTRES RÉCLAMATIONS ADMIN — par client, date, statut ─
@@ -3665,7 +3700,13 @@ renderComplaints = function(){
 function adminDelComplaint(id){
   if(!confirm('Supprimer cette réclamation ?')) return;
   var idx = COMPLAINTS.findIndex(function(x){return x.id===id;});
-  if(idx > -1){ COMPLAINTS.splice(idx,1); save(); renderComplaints(); toast('Réclamation supprimée ✓'); }
+  if(idx > -1){
+    COMPLAINTS.splice(idx,1);
+    save();
+    if(window.saveToCloud) window.saveToCloud();
+    renderComplaints();
+    toast('Réclamation supprimée ✓');
+  }
 }
 function resetCmpFilters(){
   ['cmpf-client','cmpf-status','cmpf-from','cmpf-to'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
