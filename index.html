@@ -366,10 +366,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
       <div id="login-hint" style="text-align:center;font-size:11px;color:var(--tx3);margin-bottom:14px;padding:6px;background:rgba(201,168,76,0.05);border-radius:8px;border:1px solid var(--bo)">
         Connectez-vous avec votre compte <strong id="login-hint-role" style="color:var(--gold)">client</strong>
       </div>
-      <div id="login-demo-hint" style="text-align:center;font-size:11px;color:var(--tx3);margin-bottom:10px;padding:8px;background:rgba(74,158,232,0.05);border-radius:8px;border:1px solid rgba(74,158,232,0.15);line-height:1.7">
-        <span id="demo-client-info">👤 <b style="color:var(--tx)">client1</b> / <b style="color:var(--tx)">pass123</b></span>
-        <span id="demo-admin-info" style="display:none">⚙️ <b style="color:var(--tx)">admin</b> / <b style="color:var(--tx)">alitos2024</b></span>
-      </div>
+
       <div class="fg"><label>Identifiant</label><input type="text" id="lu" placeholder="Votre identifiant" autocomplete="username"></div>
       <div class="fg" style="position:relative">
         <label>Mot de passe</label>
@@ -1163,8 +1160,15 @@ tr:hover td{background:rgba(255,255,255,0.018)}
 
 <script>
 // ═══════════ DATA ═══════════
-var ADMIN={username:'admin',password:'alitos2024',email:'admin@alitos.ma'};
-try{var _a=localStorage.getItem('al_admin');if(_a)ADMIN=JSON.parse(_a);}catch(e){}
+var ADMIN={username:'',password:'',email:''}; // Chargé depuis localStorage ou Firebase uniquement
+try{
+  var _a=localStorage.getItem('al_admin');
+  if(_a){
+    var _ap=JSON.parse(_a);
+    if(_ap&&_ap.username&&_ap.password){ADMIN=_ap;}
+    else{localStorage.removeItem('al_admin');}
+  }
+}catch(e){localStorage.removeItem('al_admin');}
 
 // Admins supplémentaires
 var ADMINS=[];
@@ -1270,10 +1274,6 @@ function swTab(t){
   document.getElementById('lerr').style.display='none';
   var hint=document.getElementById('login-hint-role');
   if(hint)hint.textContent=(t==='a'?'administrateur':'client');
-  var dc=document.getElementById('demo-client-info');
-  var da=document.getElementById('demo-admin-info');
-  if(dc)dc.style.display=(t==='c'?'':'none');
-  if(da)da.style.display=(t==='a'?'':'none');
   var lu=document.getElementById('lu');if(lu)lu.placeholder=(t==='a'?'Identifiant admin':'Votre identifiant');
 }
 function doLogin(){
@@ -1284,42 +1284,71 @@ function doLogin(){
   var isAdminTab=document.getElementById('tab-a').classList.contains('on');
   if(!u||!p){err.textContent='Remplissez tous les champs';err.style.display='block';return;}
   if(LOCKED_USERS[u]){showLockedErr(err,u);return;}
-  if(isAdminTab){
-    var aFound=null;
-    // Vérifier admin principal (identifiants stockés OU par défaut)
-    var defAdmin={username:'admin',password:'alitos2024'};
-    if(u===ADMIN.username&&p===ADMIN.password){aFound={name:ADMIN.name||'Administrateur'};}
-    // Fallback: toujours accepter les identifiants par défaut si ADMIN a été écrasé
-    if(!aFound&&u===defAdmin.username&&p===defAdmin.password){aFound={name:'Administrateur'};}
-    if(!aFound){for(var ai=0;ai<ADMINS.length;ai++){if(ADMINS[ai].username===u&&ADMINS[ai].password===p){aFound=ADMINS[ai];break;}}}
-    if(aFound){
+
+  // Bouton désactivé pendant la vérification
+  var btn=document.querySelector('.btn-main');
+  if(btn){btn.disabled=true;btn.textContent='Vérification...';}
+
+  // Récupérer les identifiants les plus récents depuis Firebase puis vérifier
+  fetch(FB_URL).then(function(r){return r.ok?r.json():Promise.reject('hors-ligne');})
+  .catch(function(){ return '__offline__'; })
+  .then(function(fbData){
+    if(btn){btn.disabled=false;btn.textContent='Se connecter →';}
+
+    // Si Firebase inaccessible : utiliser uniquement les données locales (localStorage)
+    // Aucun fallback d'usine — si pas de données locales, connexion refusée
+    var offline = (fbData==='__offline__');
+
+    if(!offline){
+      // Firebase répond : mettre à jour les identifiants en mémoire
+      if(fbData&&fbData.admin&&fbData.admin.username&&fbData.admin.password) ADMIN=fbData.admin;
+      if(fbData&&fbData.clients&&Array.isArray(fbData.clients)&&fbData.clients.length>0) CLIENTS=fbData.clients;
+      if(fbData&&fbData.admins&&Array.isArray(fbData.admins)) ADMINS=fbData.admins;
+    } else {
+      // Hors-ligne : on utilise ADMIN/CLIENTS déjà en mémoire (chargés depuis localStorage au démarrage)
+      // Si ADMIN n'a pas de username valide → refuser la connexion pour sécurité
+      if(!ADMIN||!ADMIN.username||!ADMIN.password){
+        err.innerHTML='⚠️ Connexion impossible : vérifiez votre réseau.';
+        err.style.display='block';
+        if(btn){btn.disabled=false;btn.textContent='Se connecter →';}
+        return;
+      }
+    }
+
+    if(isAdminTab){
+      var aFound=null;
+      if(u===ADMIN.username&&p===ADMIN.password){aFound={name:ADMIN.name||'Administrateur'};}
+      if(!aFound){for(var ai=0;ai<ADMINS.length;ai++){if(ADMINS[ai].username===u&&ADMINS[ai].password===p){aFound=ADMINS[ai];break;}}}
+      if(aFound){
+        delete LOGIN_ATTEMPTS[u];
+        SESSION={role:'admin',adminName:aFound.name||'Administrateur'};
+        document.getElementById('pg-login').style.display='none';
+        document.getElementById('pg-admin').style.display='block';
+        document.getElementById('adate').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+        updateAdminSidebar();initAdminFilters();renderDashboard();return;
+      }
+      LOGIN_ATTEMPTS[u]=(LOGIN_ATTEMPTS[u]||0)+1;
+      var left=3-LOGIN_ATTEMPTS[u];
+      if(left<=0){LOCKED_USERS[u]=true;showLockedErr(err,u);}
+      else{err.innerHTML='Identifiants admin incorrects. <strong style="color:var(--ora)">'+left+' tentative(s) restante(s)</strong>';}
+      err.style.display='block';document.getElementById('lp').value='';return;
+    }
+
+    var found=null;
+    for(var i=0;i<CLIENTS.length;i++){if(CLIENTS[i].username===u&&CLIENTS[i].password===p){found=CLIENTS[i];break;}}
+    if(found){
       delete LOGIN_ATTEMPTS[u];
-      SESSION={role:'admin',adminName:aFound.name||'Administrateur'};
+      SESSION={role:'client',id:found.id,name:found.name,city:found.city,region:found.region,phone:found.phone,photo:clientAvatar(found),address:found.address||'',lat:found.lat||null,lng:found.lng||null,email:found.email||''};
       document.getElementById('pg-login').style.display='none';
-      document.getElementById('pg-admin').style.display='block';
-      document.getElementById('adate').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
-      updateAdminSidebar();initAdminFilters();renderDashboard();return;
+      document.getElementById('pg-client').style.display='block';
+      initClient();return;
     }
     LOGIN_ATTEMPTS[u]=(LOGIN_ATTEMPTS[u]||0)+1;
-    var left=3-LOGIN_ATTEMPTS[u];
-    if(left<=0){LOCKED_USERS[u]=true;showLockedErr(err,u);}
-    else{err.innerHTML='Identifiants admin incorrects. <strong style="color:var(--ora)">'+left+' tentative(s) restante(s)</strong><br><span style="font-size:11px;color:var(--tx3)">Essayez : admin / alitos2024</span>';}
-    err.style.display='block';document.getElementById('lp').value='';return;
-  }
-  var found=null;
-  for(var i=0;i<CLIENTS.length;i++){if(CLIENTS[i].username===u&&CLIENTS[i].password===p){found=CLIENTS[i];break;}}
-  if(found){
-    delete LOGIN_ATTEMPTS[u];
-    SESSION={role:'client',id:found.id,name:found.name,city:found.city,region:found.region,phone:found.phone,photo:clientAvatar(found),address:found.address||'',lat:found.lat||null,lng:found.lng||null,email:found.email||''};
-    document.getElementById('pg-login').style.display='none';
-    document.getElementById('pg-client').style.display='block';
-    initClient();return;
-  }
-  LOGIN_ATTEMPTS[u]=(LOGIN_ATTEMPTS[u]||0)+1;
-  var rem=3-LOGIN_ATTEMPTS[u];
-  if(rem<=0){LOCKED_USERS[u]=true;showLockedErr(err,u);}
-  else{err.innerHTML='Identifiant ou mot de passe incorrect. <strong style="color:var(--ora)">'+rem+' tentative(s)</strong>'+(rem===1?'<br><a style="color:var(--gold);cursor:pointer;font-size:11px" onclick="openForgot()">Mot de passe oubli&eacute;&nbsp;?</a>':'');}
-  err.style.display='block';document.getElementById('lp').value='';
+    var rem=3-LOGIN_ATTEMPTS[u];
+    if(rem<=0){LOCKED_USERS[u]=true;showLockedErr(err,u);}
+    else{err.innerHTML='Identifiant ou mot de passe incorrect. <strong style="color:var(--ora)">'+rem+' tentative(s)</strong>'+(rem===1?'<br><a style="color:var(--gold);cursor:pointer;font-size:11px" onclick="openForgot()">Mot de passe oubli&eacute;&nbsp;?</a>':'');}
+    err.style.display='block';document.getElementById('lp').value='';
+  });
 }
 function showLockedErr(err,u){
   err.innerHTML='Compte bloqué (3 tentatives). ';
@@ -4356,8 +4385,8 @@ async function saveToCloud(){
       clients:    JSON.parse(localStorage.getItem('al_c')||'[]'),
       products:   JSON.parse(localStorage.getItem('al_p')||'[]'),
       orders:     JSON.parse(localStorage.getItem('al_o')||'[]'),
-      admin:      JSON.parse(localStorage.getItem('al_admin')||'{}'),
-      admins:     JSON.parse(localStorage.getItem('al_admins')||'[]'),
+      admin:      ADMIN, // Toujours depuis la mémoire (source de vérité)
+      admins:     ADMINS,
       cats:       JSON.parse(localStorage.getItem('al_cats')||'[]'),
       company:    JSON.parse(localStorage.getItem('al_company')||'{}'),
       suppliers:  JSON.parse(localStorage.getItem('al_sup')||'[]'),
@@ -4399,7 +4428,8 @@ async function loadFromCloud(){
     inj('clients',   'al_c',          'CLIENTS',            v=>Array.isArray(v)&&v.length>0);
     inj('products',  'al_p',          'PRODUCTS',           v=>Array.isArray(v)&&v.length>0);
     inj('orders',    'al_o',          'ORDERS',             v=>Array.isArray(v)&&v.length>0);
-    inj('admin',     'al_admin',      'ADMIN',              v=>v&&v.username);
+    // NE PAS écraser ADMIN depuis Firebase — garder les identifiants locaux
+    // inj('admin', ...) supprimé pour éviter l'écrasement des identifiants
     inj('admins',    'al_admins',     'ADMINS',             v=>Array.isArray(v));
     inj('cats',      'al_cats',       'PRODUCT_CATEGORIES', v=>Array.isArray(v)&&v.length>0);
     inj('company',   'al_company',    'COMPANY',            v=>v&&v.name);
@@ -4430,7 +4460,7 @@ function injectData(d){
   inj('clients',   'al_c',          'CLIENTS',            v=>Array.isArray(v)&&v.length>0);
   inj('products',  'al_p',          'PRODUCTS',           v=>Array.isArray(v)&&v.length>0);
   inj('orders',    'al_o',          'ORDERS',             v=>Array.isArray(v)&&v.length>0);
-  inj('admin',     'al_admin',      'ADMIN',              v=>v&&v.username);
+  // NE PAS écraser ADMIN depuis Firebase SSE
   inj('admins',    'al_admins',     'ADMINS',             v=>Array.isArray(v));
   inj('cats',      'al_cats',       'PRODUCT_CATEGORIES', v=>Array.isArray(v)&&v.length>0);
   inj('company',   'al_company',    'COMPANY',            v=>v&&v.name);
