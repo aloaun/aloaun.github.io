@@ -4249,11 +4249,21 @@ doAddStock = function(){
   <span id="fb-txt">Firebase</span>
 </div>
 
-<script>
-// ── Firebase REST API (aucune restriction de domaine) ──────
-const FB_PROJECT = 'alitos-daf7e';
-const FB_API_KEY = 'AIzaSyB0Lt1EL8nLL5nd3AfMsQVzPaSoFfB41NI';
-const FB_URL = 'https://firestore.googleapis.com/v1/projects/'+FB_PROJECT+'/databases/(default)/documents/alitos/'+FB_PROJECT+'/data/main?key='+FB_API_KEY;
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyB0Lt1EL8nLL5nd3AfMsQVzPaSoFfB41NI",
+  authDomain: "alitos-daf7e.firebaseapp.com",
+  projectId: "alitos-daf7e",
+  storageBucket: "alitos-daf7e.firebasestorage.app",
+  messagingSenderId: "299611951777",
+  appId: "1:299611951777:web:5b8391ce682c41b746d6e0"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+function mainDoc(){ return doc(db,'alitos','main'); }
 
 // ── Indicateur visuel ─────────────────────────────────────
 const fbEl  = document.getElementById('fb-status');
@@ -4272,39 +4282,7 @@ function fbShow(state, msg){
   }
 }
 
-// ── Convertir données JS → format Firestore REST ─────────
-function toFS(val){
-  if(val===null||val===undefined) return {nullValue:null};
-  if(typeof val==='boolean') return {booleanValue:val};
-  if(typeof val==='number') return {doubleValue:val};
-  if(typeof val==='string') return {stringValue:val};
-  if(Array.isArray(val)) return {arrayValue:{values:val.map(toFS)}};
-  if(typeof val==='object'){
-    const fields={};
-    Object.keys(val).forEach(k=>{fields[k]=toFS(val[k]);});
-    return {mapValue:{fields}};
-  }
-  return {stringValue:String(val)};
-}
-
-// Convertir format Firestore REST → données JS
-function fromFS(v){
-  if(!v) return null;
-  if('stringValue' in v) return v.stringValue;
-  if('booleanValue' in v) return v.booleanValue;
-  if('doubleValue' in v) return v.doubleValue;
-  if('integerValue' in v) return parseInt(v.integerValue);
-  if('nullValue' in v) return null;
-  if('arrayValue' in v) return (v.arrayValue.values||[]).map(fromFS);
-  if('mapValue' in v){
-    const obj={};
-    Object.keys(v.mapValue.fields||{}).forEach(k=>{obj[k]=fromFS(v.mapValue.fields[k]);});
-    return obj;
-  }
-  return null;
-}
-
-// ── Sauvegarder via REST ──────────────────────────────────
+// ── Sauvegarder vers Firestore ───────────────────────────
 async function saveToCloud(){
   fbShow('syncing','☁️ Sauvegarde...');
   try{
@@ -4322,10 +4300,7 @@ async function saveToCloud(){
       contact:    JSON.parse(localStorage.getItem('al_contact')||'[]'),
       updatedAt:  new Date().toISOString()
     };
-    const fields={};
-    Object.keys(data).forEach(k=>{fields[k]=toFS(data[k]);});
-    const res=await fetch(FB_URL,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({fields})});
-    if(!res.ok) throw new Error('HTTP '+res.status);
+    await setDoc(mainDoc(), data);
     fbShow('synced','✅ Synchronisé');
   }catch(e){
     fbShow('error','⚠️ Hors-ligne');
@@ -4342,29 +4317,23 @@ window.save=function(){
   _debTimer=setTimeout(saveToCloud,900);
 };
 
-// ── Charger via REST ──────────────────────────────────────
+// ── Charger depuis Firestore ──────────────────────────────
 async function loadFromCloud(){
   fbShow('syncing','☁️ Chargement...');
   try{
-    const res=await fetch(FB_URL);
-    if(res.status===404){
-      fbShow('synced','☁️ Initialisation...');
-      await saveToCloud(); return;
-    }
-    if(!res.ok) throw new Error('HTTP '+res.status);
-    const json=await res.json();
-    const fields=json.fields||{};
+    const snap=await getDoc(mainDoc());
+    if(!snap.exists()){ fbShow('synced','☁️ Initialisation...'); await saveToCloud(); return; }
+    const d=snap.data();
     function inj(key,lsKey,varName,check){
-      const val=fromFS(fields[key]);
-      if(val&&check(val)){window[varName]=val;localStorage.setItem(lsKey,JSON.stringify(val));}
+      if(d[key]&&check(d[key])){window[varName]=d[key];localStorage.setItem(lsKey,JSON.stringify(d[key]));}
     }
-    inj('clients',   'al_c',          'CLIENTS',            v=>v.length>0);
-    inj('products',  'al_p',          'PRODUCTS',           v=>v.length>0);
-    inj('orders',    'al_o',          'ORDERS',             v=>v.length>0);
-    inj('admin',     'al_admin',      'ADMIN',              v=>v.username);
+    inj('clients',   'al_c',          'CLIENTS',            v=>Array.isArray(v)&&v.length>0);
+    inj('products',  'al_p',          'PRODUCTS',           v=>Array.isArray(v)&&v.length>0);
+    inj('orders',    'al_o',          'ORDERS',             v=>Array.isArray(v)&&v.length>0);
+    inj('admin',     'al_admin',      'ADMIN',              v=>v&&v.username);
     inj('admins',    'al_admins',     'ADMINS',             v=>Array.isArray(v));
-    inj('cats',      'al_cats',       'PRODUCT_CATEGORIES', v=>v.length>0);
-    inj('company',   'al_company',    'COMPANY',            v=>v.name);
+    inj('cats',      'al_cats',       'PRODUCT_CATEGORIES', v=>Array.isArray(v)&&v.length>0);
+    inj('company',   'al_company',    'COMPANY',            v=>v&&v.name);
     inj('suppliers', 'al_sup',        'SUPPLIERS',          v=>Array.isArray(v));
     inj('credits',   'al_credits',    'CREDITS',            v=>typeof v==='object');
     inj('complaints','al_complaints', 'COMPLAINTS',         v=>Array.isArray(v));
@@ -4380,16 +4349,31 @@ async function loadFromCloud(){
   }
 }
 
+// ── Sync temps réel ───────────────────────────────────────
+function startSync(){
+  onSnapshot(mainDoc(), snap=>{
+    if(!snap.exists()) return;
+    const d=snap.data();
+    if(d.products&&d.products.length) window.PRODUCTS=d.products;
+    if(d.clients&&d.clients.length) window.CLIENTS=d.clients;
+    if(d.orders&&d.orders.length) window.ORDERS=d.orders;
+    if(d.suppliers) window.SUPPLIERS=d.suppliers;
+    if(d.credits) window.CREDITS=d.credits;
+    if(d.complaints) window.COMPLAINTS=d.complaints;
+    if(d.company&&d.company.name) window.COMPANY=d.company;
+    if(window.SESSION&&window.SESSION.role==='client'&&window.clRenderProds) window.clRenderProds();
+  }, err=>console.warn('Sync:',err.message));
+}
+
 // ── Démarrage ─────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded',async()=>{
   await loadFromCloud();
-  // Sync périodique toutes les 30 secondes
-  setInterval(loadFromCloud, 30000);
+  startSync();
 });
 
 window._fbSave=saveToCloud;
 window._fbLoad=loadFromCloud;
-console.log('🔥 Firebase REST connecté — alitos-daf7e');
+console.log('🔥 Firestore connecté — alitos-daf7e');
 </script>
 </body>
 </html>
