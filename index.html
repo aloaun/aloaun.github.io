@@ -16,7 +16,7 @@ async function sendResendEmail(to_email, to_name, otp_code){
     var res = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to_email, to_name, otp_code })
+      body: JSON.stringify({ to_email: to_email, to_name: to_name, otp_code: otp_code })
     });
     var data = await res.json();
     if(!res.ok) throw new Error(data.error || 'Erreur envoi');
@@ -2849,7 +2849,10 @@ function resolveComplaint(status){
   if(i>-1){
     COMPLAINTS[i].status=status;
     COMPLAINTS[i].reply=document.getElementById('complaint-reply').value;
-    save();closeAllMd();renderComplaints();toast('Réclamation mise à jour ✓');
+    try{ localStorage.setItem('al_complaints', JSON.stringify(COMPLAINTS)); }catch(e){}
+    if(window._origSave) window._origSave();
+    if(window.saveToCloud) window.saveToCloud();
+    closeAllMd();renderComplaints();toast('Réclamation mise à jour ✓');
   }
 }
 
@@ -2926,7 +2929,10 @@ function submitComplaint(){
   if(!msg){toast('Décrivez votre problème',true);return;}
   var ordId=document.getElementById('cmp-order').value;
   COMPLAINTS.push({id:'CMP'+(1000+COMPLAINTS.length),clientId:SESSION.id,type:type,message:msg,orderId:ordId,date:new Date().toISOString().split('T')[0],status:'pending',reply:''});
-  save();closeAllMd();renderClComplaints();toast('✅ Réclamation envoyée !');
+  try{ localStorage.setItem('al_complaints', JSON.stringify(COMPLAINTS)); }catch(e){}
+  if(window._origSave) window._origSave();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();renderClComplaints();toast('✅ Réclamation envoyée !');
 }
 function renderClComplaints(){
   var mine=COMPLAINTS.filter(function(x){return x.clientId===SESSION.id;});
@@ -3688,7 +3694,8 @@ function deleteMyComplaint(id){
   var idx = COMPLAINTS.findIndex(function(x){return x.id === id;});
   if(idx > -1){
     COMPLAINTS.splice(idx, 1);
-    save();
+    try{ localStorage.setItem('al_complaints', JSON.stringify(COMPLAINTS)); }catch(e){}
+    if(window._origSave) window._origSave();
     if(window.saveToCloud) window.saveToCloud();
     renderClComplaints();
     toast('Réclamation supprimée ✓');
@@ -3757,7 +3764,8 @@ function adminDelComplaint(id){
   var idx = COMPLAINTS.findIndex(function(x){return x.id===id;});
   if(idx > -1){
     COMPLAINTS.splice(idx,1);
-    save();
+    try{ localStorage.setItem('al_complaints', JSON.stringify(COMPLAINTS)); }catch(e){}
+    if(window._origSave) window._origSave();
     if(window.saveToCloud) window.saveToCloud();
     renderComplaints();
     toast('Réclamation supprimée ✓');
