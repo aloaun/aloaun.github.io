@@ -391,7 +391,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
         Connectez-vous avec votre compte <strong id="login-hint-role" style="color:var(--gold)">client</strong>
       </div>
 
-      <div class="fg"><label>Identifiant</label><input type="text" id="lu" placeholder="Votre identifiant" autocomplete="username"></div>
+      <div class="fg"><label>Identifiant ou Email</label><input type="text" id="lu" placeholder="Identifiant ou email" autocomplete="username"></div>
       <div class="fg" style="position:relative">
         <label>Mot de passe</label>
         <input type="password" id="lp" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()" autocomplete="current-password" style="padding-right:44px">
@@ -908,7 +908,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <h2>🔑 Récupération d'accès</h2>
   <p style="font-size:12px;color:var(--tx3);margin-bottom:14px;background:rgba(232,131,74,0.08);border:1px solid rgba(232,131,74,0.2);border-radius:8px;padding:8px 10px">🔒 Pour votre sécurité, saisissez uniquement votre <strong style="color:var(--ora)">email</strong> ou <strong style="color:var(--ora)">numéro de téléphone</strong> enregistré.</p>
-  <div class="fg"><label>Email ou téléphone <span style="color:var(--red)">★</span></label><input id="fp-input" placeholder="email@ma ou 0661234567" onkeydown="if(event.key==='Enter')doForgot()"></div>
+  <div class="fg"><label>Email, identifiant ou téléphone <span style="color:var(--red)">★</span></label><input id="fp-input" placeholder="email@ma, identifiant ou 0661234567" onkeydown="if(event.key==='Enter')doForgot()"></div>
   <div id="fp-result" style="display:none;background:rgba(82,201,122,0.08);border:1px solid rgba(82,201,122,0.2);border-radius:10px;padding:13px;margin-bottom:12px;font-size:13px;color:var(--tx2);line-height:1.7"></div>
   <div id="fp-otp-wrap" style="display:none;margin-bottom:12px">
    <div class="fg" style="margin-bottom:8px"><label>Code de vérification reçu <span style="color:var(--red)">★</span></label><input id="fp-otp-inp" placeholder="_ _ _ _ _ _" maxlength="6" style="letter-spacing:4px;font-size:18px;text-align:center" onkeydown="if(event.key==='Enter')verifyOTP()"></div>
@@ -1345,9 +1345,15 @@ function doLogin(){
       else err.innerHTML='Identifiants admin incorrects — <strong style="color:var(--ora)">'+left+' tentative(s)</strong>';
       err.style.display='block';document.getElementById('lp').value='';return;
     }
-    // Connexion client
+    // Connexion client — par identifiant OU email
     var found=null;
-    for(var i=0;i<CLIENTS.length;i++){if(CLIENTS[i].username===u&&CLIENTS[i].password===p){found=CLIENTS[i];break;}}
+    var uLower=u.toLowerCase();
+    for(var i=0;i<CLIENTS.length;i++){
+      var cl=CLIENTS[i];
+      var matchU = cl.username && cl.username===u && cl.password===p;
+      var matchE = cl.email && cl.email.toLowerCase()===uLower && cl.password===p;
+      if(matchU||matchE){found=cl;break;}
+    }
     if(found){
       delete LOGIN_ATTEMPTS[u];
       SESSION={role:'client',id:found.id,name:found.name,city:found.city,region:found.region,phone:found.phone,photo:clientAvatar(found),address:found.address||'',lat:found.lat||null,lng:found.lng||null,email:found.email||''};
@@ -1399,78 +1405,100 @@ function openForgot(){
 }
 function doForgot(){
   var inp=document.getElementById('fp-input').value.trim();
-  if(!inp){toast('Entrez votre email ou téléphone',true);return;}
+  if(!inp){toast('Entrez votre email, identifiant ou téléphone',true);return;}
   var inpL=inp.toLowerCase();
   var res=document.getElementById('fp-result');
   _fpFoundAccount=null;_fpIsAdmin=false;_fpOTPVerified=false;
   var ow=document.getElementById('fp-otp-wrap');
-  // SECURITY: Only email or phone accepted
+
   var isEmail=inpL.includes('@');
   var isPhone=/^[\d\s\+\-]{8,15}$/.test(inp.replace(/\s/g,''));
-  if(!isEmail&&!isPhone){
-    res.innerHTML='<div style="color:var(--ora);font-weight:600">⚠️ Sécurité</div><div style="margin-top:5px;font-size:12px;color:var(--tx2)">Pour votre sécurité, saisissez uniquement votre <strong>email</strong> ou <strong>numéro de téléphone</strong> enregistré.<br>L\'identifiant seul n\'est pas accepté.</div>';
-    res.style.display='block';if(ow)ow.style.display='none';return;
-  }
+
+  // Chercher dans les clients (par email, téléphone ou identifiant)
   var found=null;
   for(var i=0;i<CLIENTS.length;i++){
     var c=CLIENTS[i];
-    if((isEmail&&c.email&&c.email.toLowerCase()===inpL)||
-       (isPhone&&c.phone&&(c.phone.replace(/\s/g,'')===inp.replace(/\s/g,'')))){
-      found=c;break;
-    }
+    var matchEmail = isEmail && c.email && c.email.toLowerCase()===inpL;
+    var matchPhone = isPhone && c.phone && c.phone.replace(/\s/g,'')===inp.replace(/\s/g,'');
+    var matchUser  = !isEmail && !isPhone && c.username && c.username.toLowerCase()===inpL;
+    if(matchEmail||matchPhone||matchUser){found=c;break;}
   }
+
   _fpOTP=String(Math.floor(100000+Math.random()*900000));
+
   if(found){
+    // ── Client trouvé ──
     _fpFoundAccount=found;_fpIsAdmin=false;
-    var contact=isEmail?found.email:found.phone;
-    var masked=isEmail?contact.replace(/(.{2}).+(@.+)/,function(m,a,b){return a+'***'+b;}):contact.substring(0,4)+'****'+contact.slice(-2);
-    // Envoyer le code via Resend (Cloudflare Worker)
-    var sendTarget = isEmail ? found.email : null;
-    if(sendTarget){
-      sendResendEmail(found.email, found.name, _fpOTP).then(function(ok){
-        if(ok) toast('📧 Code envoyé à votre email !');
-        else toast('Erreur envoi email — vérifiez votre connexion',true);
-      });
+    var clientEmail = found.email || '';
+    if(!clientEmail){
+      res.innerHTML='<div style="color:var(--ora);font-weight:600">⚠️ Pas d\'email enregistré</div>'+
+        '<div style="margin-top:5px;font-size:12px;color:var(--tx2)">Votre compte n\'a pas d\'email enregistré. Contactez l\'administrateur.</div>';
+      res.style.display='block';if(ow)ow.style.display='none';return;
     }
+    var masked=clientEmail.replace(/(.{2}).+(@.+)/,function(m,a,b){return a+'***'+b;});
+    sendResendEmail(clientEmail, found.name, _fpOTP).then(function(ok){
+      if(ok) toast('📧 Code envoyé à votre email !');
+      else toast('⚠️ Erreur envoi email — code affiché en secours',true);
+    });
     res.innerHTML='<div style="color:var(--grn);font-weight:600;margin-bottom:6px">✅ Compte identifié</div>'+
       '<div style="font-size:12px;color:var(--tx2)">📧 Code envoyé à : <strong>'+masked+'</strong></div>'+
-      '<div style="margin-top:8px;background:rgba(82,201,122,0.08);border:1px solid rgba(82,201,122,0.2);border-radius:8px;padding:10px;font-size:12px;color:var(--tx2)">Vérifiez votre boîte email et saisissez le code reçu ci-dessous.</div>';
+      '<div style="margin-top:8px;background:rgba(82,201,122,0.08);border:1px solid rgba(82,201,122,0.2);border-radius:8px;padding:10px;font-size:12px;color:var(--tx2)">Vérifiez votre boîte email et saisissez le code ci-dessous.</div>';
     res.style.display='block';
     if(ow)ow.style.display='block';
     document.getElementById('fp-otp-inp').value='';
-  } else if(isEmail&&ADMIN.email&&ADMIN.email.toLowerCase()===inpL){
-    _fpIsAdmin=true;
-    sendResendEmail(ADMIN.email, 'Administrateur', _fpOTP).then(function(ok){
-      if(ok) toast('📧 Code envoyé à votre email admin !');
-      else toast('Erreur envoi email',true);
-    });
-    res.innerHTML='<div style="color:var(--gold);font-weight:600;margin-bottom:6px">🔑 Administrateur identifié</div>'+
-      '<div style="font-size:12px;color:var(--tx2)">📧 Code envoyé à : <strong>'+ADMIN.email.replace(/(.{2}).+(@.+)/,function(m,a,b){return a+'***'+b;})+'</strong></div>'+
-      '<div style="margin-top:8px;background:rgba(201,168,76,0.08);border:1px solid var(--bo);border-radius:8px;padding:10px;font-size:12px;color:var(--tx2)">Vérifiez votre boîte email et saisissez le code reçu.</div>';
-    res.style.display='block';
-    if(ow)ow.style.display='block';
-    document.getElementById('fp-otp-inp').value='';
-  } else if(isEmail&&ADMIN.email&&ADMIN.email.toLowerCase()===inpL){
-    _fpIsAdmin=true;
-    res.innerHTML='<div style="color:var(--gold);font-weight:600;margin-bottom:6px">🔑 Administrateur identifié</div>'+
-      '<div style="margin-top:8px;background:rgba(201,168,76,0.08);border:1px solid var(--bo);border-radius:8px;padding:8px;text-align:center">'+
-      '<div style="font-size:10px;color:var(--tx3);margin-bottom:3px">CODE DE VÉRIFICATION (simulation)</div>'+
-      '<div style="font-size:20px;font-weight:700;color:var(--gold);letter-spacing:5px">'+_fpOTP+'</div></div>';
-    res.style.display='block';
-    if(ow)ow.style.display='block';
-    document.getElementById('fp-otp-inp').value='';
+
   } else {
-    _fpFoundAccount=null;_fpIsAdmin=false;
-    // Check if the input looks like a valid contact but just not found
-    var noEmailRegistered=isEmail&&!CLIENTS.some(function(c){return c.email;})&&(!ADMIN.email);
-    var noPhoneRegistered=!isEmail&&!CLIENTS.some(function(c){return c.phone;});
-    var notFoundMsg='Aucun compte associé à cet email ou téléphone.';
-    if(noEmailRegistered||noPhoneRegistered){notFoundMsg='Récupération impossible : aucun email/téléphone n\'est enregistré pour votre compte. Contactez l\'administrateur.';}
-    res.innerHTML='<div style="color:var(--red);font-weight:600">❌ Aucun compte trouvé</div>'+
-      '<div style="margin-top:5px;font-size:12px;color:var(--tx3)">'+notFoundMsg+'</div>';
-    res.style.display='block';if(ow)ow.style.display='none';
-    document.getElementById('fp-reset-wrap').style.display='none';
-    document.getElementById('fp-reset-btn').style.display='none';
+    // ── Chercher admin (par email identifiant ou email entreprise) ──
+    var adminMatch = false;
+    if(ADMIN.username && inpL===ADMIN.username.toLowerCase()) adminMatch=true;
+    if(ADMIN.email && isEmail && inpL===ADMIN.email.toLowerCase()) adminMatch=true;
+    if(COMPANY.email && isEmail && inpL===COMPANY.email.toLowerCase()) adminMatch=true;
+
+    // Chercher dans ADMINS secondaires
+    var foundAdmin=null;
+    if(!adminMatch){
+      for(var ai=0;ai<ADMINS.length;ai++){
+        if((ADMINS[ai].username&&ADMINS[ai].username.toLowerCase()===inpL)||
+           (ADMINS[ai].email&&isEmail&&ADMINS[ai].email.toLowerCase()===inpL)){
+          foundAdmin=ADMINS[ai];break;
+        }
+      }
+    }
+
+    if(adminMatch||foundAdmin){
+      _fpIsAdmin=true;
+      _fpFoundAccount=foundAdmin||ADMIN;
+      // Envoyer à l'email de l'entreprise (COMPANY.email) ou email admin
+      var adminEmailTarget = COMPANY.email || ADMIN.email || '';
+      if(foundAdmin && foundAdmin.email) adminEmailTarget = foundAdmin.email;
+      var adminName = (foundAdmin&&foundAdmin.name) || ADMIN.name || 'Administrateur';
+
+      if(!adminEmailTarget){
+        res.innerHTML='<div style="color:var(--ora);font-weight:600">⚠️ Pas d\'email entreprise</div>'+
+          '<div style="font-size:12px;color:var(--tx2);margin-top:5px">Configurez l\'email dans Paramètres → Entreprise.</div>';
+        res.style.display='block';if(ow)ow.style.display='none';return;
+      }
+
+      var maskedAdmin=adminEmailTarget.replace(/(.{2}).+(@.+)/,function(m,a,b){return a+'***'+b;});
+      sendResendEmail(adminEmailTarget, adminName, _fpOTP).then(function(ok){
+        if(ok) toast('📧 Code envoyé à l\'email entreprise !');
+        else toast('⚠️ Erreur envoi — code affiché en secours',true);
+      });
+      res.innerHTML='<div style="color:var(--gold);font-weight:600;margin-bottom:6px">🔑 Administrateur identifié</div>'+
+        '<div style="font-size:12px;color:var(--tx2)">📧 Code envoyé à : <strong>'+maskedAdmin+'</strong></div>'+
+        '<div style="margin-top:8px;background:rgba(201,168,76,0.08);border:1px solid var(--bo);border-radius:8px;padding:10px;font-size:12px;color:var(--tx2)">Vérifiez votre boîte email et saisissez le code reçu.</div>';
+      res.style.display='block';
+      if(ow)ow.style.display='block';
+      document.getElementById('fp-otp-inp').value='';
+
+    } else {
+      _fpFoundAccount=null;_fpIsAdmin=false;
+      res.innerHTML='<div style="color:var(--red);font-weight:600">❌ Aucun compte trouvé</div>'+
+        '<div style="margin-top:5px;font-size:12px;color:var(--tx3)">Aucun compte associé à cet identifiant, email ou téléphone.</div>';
+      res.style.display='block';if(ow)ow.style.display='none';
+      document.getElementById('fp-reset-wrap').style.display='none';
+      document.getElementById('fp-reset-btn').style.display='none';
+    }
   }
 }
 function verifyOTP(){
