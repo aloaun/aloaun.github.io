@@ -16,13 +16,19 @@ async function sendResendEmail(to_email, to_name, otp_code){
     var res = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to_email: to_email, to_name: to_name, otp_code: otp_code })
+      body: JSON.stringify({ to_email: to_email, to_name: to_name, otp_code: String(otp_code) })
     });
-    var data = await res.json();
-    if(!res.ok) throw new Error(data.error || 'Erreur envoi');
+    var txt = await res.text();
+    var data = {};
+    try{ data = JSON.parse(txt); }catch(e){}
+    if(!res.ok){
+      console.warn('Resend Worker error:', res.status, txt);
+      return false;
+    }
+    console.log('✅ Email envoyé via Resend à', to_email);
     return true;
   } catch(e){
-    console.warn('Resend error:', e);
+    console.warn('Resend fetch error:', e.message);
     return false;
   }
 }
@@ -3844,14 +3850,30 @@ function renderContactMsgs(){
   el.innerHTML = '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Vos messages précédents</div>'+
     mine.slice().reverse().map(function(m){
       return '<div class="ord-c" style="margin-bottom:8px">'+
-        '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
           '<span style="font-size:13px;font-weight:500;color:var(--gold)">'+m.subject+'</span>'+
-          '<span style="font-size:11px;color:var(--tx3)">'+m.date+'</span>'+
+          '<div style="display:flex;align-items:center;gap:6px">'+
+            '<span style="font-size:11px;color:var(--tx3)">'+m.date+'</span>'+
+            '<button class="btn btn-r btn-sm" onclick="clientDelContactMsg(\''+m.id+'\')" style="padding:2px 7px;font-size:11px">🗑️</button>'+
+          '</div>'+
         '</div>'+
         '<div style="font-size:12px;color:var(--tx3)">'+m.message+'</div>'+
         (m.reply?'<div style="font-size:12px;color:var(--grn);margin-top:6px;padding-top:6px;border-top:1px solid var(--bo2)">✅ Réponse : '+m.reply+'</div>':'')+
       '</div>';
     }).join('');
+}
+
+function clientDelContactMsg(id){
+  if(!confirm('Supprimer ce message ?')) return;
+  var idx = CONTACT_MSGS.findIndex(function(x){return x.id===id;});
+  if(idx > -1){
+    CONTACT_MSGS.splice(idx, 1);
+    try{localStorage.setItem('al_contact', JSON.stringify(CONTACT_MSGS));}catch(e){}
+    if(window._origSave) window._origSave();
+    if(window.saveToCloud) window.saveToCloud();
+    renderContactMsgs();
+    toast('Message supprimé ✓');
+  }
 }
 
 // Panneau messages contact côté admin — injecter dans sec-complaints
@@ -3880,7 +3902,8 @@ function renderAdminContactMsgs(){
       '<td style="font-weight:500">'+m.subject+'</td>'+
       '<td style="font-size:12px;color:var(--tx2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+m.message+'</td>'+
       '<td style="font-size:11px;color:var(--tx3)">'+m.date+'</td>'+
-      '<td><button class="btn btn-b btn-sm" onclick="replyContactMsg(\''+m.id+'\')">✏️ Répondre</button></td>'+
+      '<td style="display:flex;gap:4px"><button class="btn btn-b btn-sm" onclick="replyContactMsg(\''+m.id+'\')">✏️ Répondre</button>'+
+      '<button class="btn btn-r btn-sm" onclick="adminDelContactMsg(\''+m.id+'\')">🗑️</button></td>'+
     '</tr>';
   }).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--tx3)">Aucun message</td></tr>';
 }
@@ -3892,8 +3915,22 @@ function replyContactMsg(id){
   if(rep === null) return;
   m.reply = rep;
   try{localStorage.setItem('al_contact', JSON.stringify(CONTACT_MSGS));}catch(e){}
+  if(window.saveToCloud) window.saveToCloud();
   renderAdminContactMsgs();
   toast('✅ Réponse enregistrée');
+}
+
+function adminDelContactMsg(id){
+  if(!confirm('Supprimer ce message ?')) return;
+  var idx = CONTACT_MSGS.findIndex(function(x){return x.id===id;});
+  if(idx > -1){
+    CONTACT_MSGS.splice(idx, 1);
+    try{localStorage.setItem('al_contact', JSON.stringify(CONTACT_MSGS));}catch(e){}
+    if(window._origSave) window._origSave();
+    if(window.saveToCloud) window.saveToCloud();
+    renderAdminContactMsgs();
+    toast('Message supprimé ✓');
+  }
 }
 
 // ─── 12. PAGE CONTACT dans clPage ─────────────────────────────
