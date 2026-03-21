@@ -8,7 +8,25 @@
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<!-- Resend via Cloudflare Worker -->
+<script>
+var WORKER_URL = 'https://alitos-email.ait-azgar.workers.dev';
+async function sendResendEmail(to_email, to_name, otp_code){
+  try{
+    var res = await fetch(WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ to_email, to_name, otp_code })
+    });
+    var data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'Erreur envoi');
+    return true;
+  } catch(e){
+    console.warn('Resend error:', e);
+    return false;
+  }
+}
+</script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
@@ -1400,20 +1418,12 @@ function doForgot(){
     _fpFoundAccount=found;_fpIsAdmin=false;
     var contact=isEmail?found.email:found.phone;
     var masked=isEmail?contact.replace(/(.{2}).+(@.+)/,function(m,a,b){return a+'***'+b;}):contact.substring(0,4)+'****'+contact.slice(-2);
-    // Envoyer le code via EmailJS (automatique, sécurisé)
-    emailjs.init('C1DacXkNuYRtVYVHA');
+    // Envoyer le code via Resend (Cloudflare Worker)
     var sendTarget = isEmail ? found.email : null;
-    var sendPhone  = !isEmail ? found.phone : null;
     if(sendTarget){
-      emailjs.send('service_alitos','tbqitkvC1DacXkNuYRtVYVHA',{
-        to_email: found.email,
-        to_name:  found.name,
-        otp_code: _fpOTP
-      }).then(function(){
-        toast('📧 Code envoyé à votre email !');
-      }).catch(function(e){
-        console.warn('EmailJS error:',e);
-        toast('Erreur envoi email — vérifiez votre connexion',true);
+      sendResendEmail(found.email, found.name, _fpOTP).then(function(ok){
+        if(ok) toast('📧 Code envoyé à votre email !');
+        else toast('Erreur envoi email — vérifiez votre connexion',true);
       });
     }
     res.innerHTML='<div style="color:var(--grn);font-weight:600;margin-bottom:6px">✅ Compte identifié</div>'+
@@ -1424,16 +1434,9 @@ function doForgot(){
     document.getElementById('fp-otp-inp').value='';
   } else if(isEmail&&ADMIN.email&&ADMIN.email.toLowerCase()===inpL){
     _fpIsAdmin=true;
-    emailjs.init('C1DacXkNuYRtVYVHA');
-    emailjs.send('service_alitos','tbqitkvC1DacXkNuYRtVYVHA',{
-      to_email: ADMIN.email,
-      to_name:  'Administrateur',
-      otp_code: _fpOTP
-    }).then(function(){
-      toast('📧 Code envoyé à votre email admin !');
-    }).catch(function(e){
-      console.warn('EmailJS admin error:',e);
-      toast('Erreur envoi email',true);
+    sendResendEmail(ADMIN.email, 'Administrateur', _fpOTP).then(function(ok){
+      if(ok) toast('📧 Code envoyé à votre email admin !');
+      else toast('Erreur envoi email',true);
     });
     res.innerHTML='<div style="color:var(--gold);font-weight:600;margin-bottom:6px">🔑 Administrateur identifié</div>'+
       '<div style="font-size:12px;color:var(--tx2)">📧 Code envoyé à : <strong>'+ADMIN.email.replace(/(.{2}).+(@.+)/,function(m,a,b){return a+'***'+b;})+'</strong></div>'+
