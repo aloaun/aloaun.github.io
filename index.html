@@ -24,7 +24,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:var(--tx);min-h
 /* ── REFRESH BTN GLOBAL ── */
 .refresh-fab{position:fixed;bottom:18px;right:18px;z-index:8999;width:44px;height:44px;background:var(--gold);border:none;border-radius:50%;color:var(--dk);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(201,168,76,0.4);transition:.2s}
 .refresh-fab:hover{background:var(--gl);transform:scale(1.08)}
-#pg-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:radial-gradient(ellipse at 20% 50%,rgba(201,168,76,0.07) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(74,158,232,0.04) 0%,transparent 50%)}
+#pg-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:radial-gradient(ellipse at 20% 50%,rgba(201,168,76,0.07) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(74,158,232,0.04) 0%,transparent 50%);position:relative;z-index:1}
 #pg-admin,#pg-client{display:none}
 .logo-big{text-align:center;margin-bottom:36px}
 .logo-big h1{font-family:'Playfair Display',serif;font-size:44px;color:var(--gold);letter-spacing:5px}
@@ -162,7 +162,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
 .stk-add-row input{width:90px}
 
 /* Modals */
-.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:9000;align-items:center;justify-content:center;backdrop-filter:blur(10px);padding:16px;overflow-y:auto}
+.mo{display:none;position:fixed;inset:0;background:rgba(0,0,0,.78);z-index:99999;align-items:center;justify-content:center;backdrop-filter:blur(10px);padding:16px;overflow-y:auto}
 .mo.on{display:flex}
 .md{animation:mdIn .22s cubic-bezier(.16,1,.3,1)}@keyframes mdIn{from{opacity:0;transform:scale(.96) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
 .md{background:var(--dk3);border:1px solid var(--bo);border-radius:16px;padding:24px;width:100%;max-width:510px;position:relative;max-height:92vh;overflow-y:auto;margin:auto}
@@ -1160,15 +1160,14 @@ tr:hover td{background:rgba(255,255,255,0.018)}
 
 <script>
 // ═══════════ DATA ═══════════
-var ADMIN={username:'',password:'',email:''}; // Chargé depuis localStorage ou Firebase uniquement
+// Identifiants par défaut — seront remplacés par Firebase au premier chargement
+var ADMIN={username:'admin',password:'alitos2024',email:'admin@alitos.ma'};
 try{
   var _a=localStorage.getItem('al_admin');
-  if(_a){
-    var _ap=JSON.parse(_a);
-    if(_ap&&_ap.username&&_ap.password){ADMIN=_ap;}
-    else{localStorage.removeItem('al_admin');}
-  }
-}catch(e){localStorage.removeItem('al_admin');}
+  if(_a){var _ap=JSON.parse(_a);if(_ap&&_ap.username&&_ap.password)ADMIN=_ap;}
+}catch(e){}
+// Flag pour savoir si Firebase a déjà initialisé les données au moins une fois
+var _fbInitDone=false;
 
 // Admins supplémentaires
 var ADMINS=[];
@@ -1285,39 +1284,28 @@ function doLogin(){
   if(!u||!p){err.textContent='Remplissez tous les champs';err.style.display='block';return;}
   if(LOCKED_USERS[u]){showLockedErr(err,u);return;}
 
-  // Bouton désactivé pendant la vérification
   var btn=document.querySelector('.btn-main');
-  if(btn){btn.disabled=true;btn.textContent='Vérification...';}
+  if(btn){btn.disabled=true;btn.textContent='Connexion...';}
 
-  // Récupérer les identifiants les plus récents depuis Firebase puis vérifier
-  fetch(FB_URL).then(function(r){return r.ok?r.json():Promise.reject('hors-ligne');})
-  .catch(function(){ return '__offline__'; })
-  .then(function(fbData){
+  function tryLogin(fbData){
     if(btn){btn.disabled=false;btn.textContent='Se connecter →';}
-
-    // Si Firebase inaccessible : utiliser uniquement les données locales (localStorage)
-    // Aucun fallback d'usine — si pas de données locales, connexion refusée
-    var offline = (fbData==='__offline__');
-
-    if(!offline){
-      // Firebase répond : mettre à jour les identifiants en mémoire
-      if(fbData&&fbData.admin&&fbData.admin.username&&fbData.admin.password) ADMIN=fbData.admin;
-      if(fbData&&fbData.clients&&Array.isArray(fbData.clients)&&fbData.clients.length>0) CLIENTS=fbData.clients;
-      if(fbData&&fbData.admins&&Array.isArray(fbData.admins)) ADMINS=fbData.admins;
-    } else {
-      // Hors-ligne : on utilise ADMIN/CLIENTS déjà en mémoire (chargés depuis localStorage au démarrage)
-      // Si ADMIN n'a pas de username valide → refuser la connexion pour sécurité
-      if(!ADMIN||!ADMIN.username||!ADMIN.password){
-        err.innerHTML='⚠️ Connexion impossible : vérifiez votre réseau.';
-        err.style.display='block';
-        if(btn){btn.disabled=false;btn.textContent='Se connecter →';}
-        return;
+    // Mettre à jour depuis Firebase si données valides
+    if(fbData&&typeof fbData==='object'){
+      if(fbData.admin&&fbData.admin.username&&fbData.admin.password){
+        ADMIN=fbData.admin;
+        localStorage.setItem('al_admin',JSON.stringify(ADMIN));
+      }
+      if(fbData.clients&&Array.isArray(fbData.clients)&&fbData.clients.length>0){
+        CLIENTS=fbData.clients;
+        localStorage.setItem('al_c',JSON.stringify(CLIENTS));
+      }
+      if(fbData.admins&&Array.isArray(fbData.admins)){
+        ADMINS=fbData.admins;
       }
     }
-
     if(isAdminTab){
       var aFound=null;
-      if(u===ADMIN.username&&p===ADMIN.password){aFound={name:ADMIN.name||'Administrateur'};}
+      if(ADMIN.username&&u===ADMIN.username&&p===ADMIN.password) aFound={name:ADMIN.name||'Administrateur'};
       if(!aFound){for(var ai=0;ai<ADMINS.length;ai++){if(ADMINS[ai].username===u&&ADMINS[ai].password===p){aFound=ADMINS[ai];break;}}}
       if(aFound){
         delete LOGIN_ATTEMPTS[u];
@@ -1330,10 +1318,10 @@ function doLogin(){
       LOGIN_ATTEMPTS[u]=(LOGIN_ATTEMPTS[u]||0)+1;
       var left=3-LOGIN_ATTEMPTS[u];
       if(left<=0){LOCKED_USERS[u]=true;showLockedErr(err,u);}
-      else{err.innerHTML='Identifiants admin incorrects. <strong style="color:var(--ora)">'+left+' tentative(s) restante(s)</strong>';}
+      else err.innerHTML='Identifiants admin incorrects — <strong style="color:var(--ora)">'+left+' tentative(s)</strong>';
       err.style.display='block';document.getElementById('lp').value='';return;
     }
-
+    // Connexion client
     var found=null;
     for(var i=0;i<CLIENTS.length;i++){if(CLIENTS[i].username===u&&CLIENTS[i].password===p){found=CLIENTS[i];break;}}
     if(found){
@@ -1346,15 +1334,21 @@ function doLogin(){
     LOGIN_ATTEMPTS[u]=(LOGIN_ATTEMPTS[u]||0)+1;
     var rem=3-LOGIN_ATTEMPTS[u];
     if(rem<=0){LOCKED_USERS[u]=true;showLockedErr(err,u);}
-    else{err.innerHTML='Identifiant ou mot de passe incorrect. <strong style="color:var(--ora)">'+rem+' tentative(s)</strong>'+(rem===1?'<br><a style="color:var(--gold);cursor:pointer;font-size:11px" onclick="openForgot()">Mot de passe oubli&eacute;&nbsp;?</a>':'');}
+    else err.innerHTML='Identifiant ou mot de passe incorrect — <strong style="color:var(--ora)">'+rem+' tentative(s)</strong>'+(rem===1?'<br><a style="color:var(--gold);cursor:pointer;font-size:11px" onclick="openForgot()">Mot de passe oublié ?</a>':'');
     err.style.display='block';document.getElementById('lp').value='';
-  });
+  }
+
+  // Tenter Firebase d'abord, fallback immédiat si hors-ligne
+  fetch(FB_URL,{signal:AbortSignal.timeout(5000)})
+    .then(function(r){return r.ok?r.json():null;})
+    .then(function(d){tryLogin(d);})
+    .catch(function(){tryLogin(null);});
 }
 function showLockedErr(err,u){
   err.innerHTML='Compte bloqué (3 tentatives). ';
   var a=document.createElement('a');
   a.style.cssText='color:var(--gold);cursor:pointer;text-decoration:underline';
-  a.textContent='Récupérer l’accès →';
+  a.textContent="Récupérer l'accès →";
   a.onclick=function(){openForgotFromLock(u);};
   err.appendChild(a);
   err.style.display='block';
@@ -2071,7 +2065,7 @@ function saveAdminCreds(){
 function updateClient(){
   var id=document.getElementById('ec-id').value;
   var emailEC=(document.getElementById('ec-email').value||'').trim();
-  if(!emailEC||!emailEC.includes('@')){toast('⚠️ L'email est obligatoire',true);return;}
+  if(!emailEC||!emailEC.includes('@')){toast("⚠️ L'email est obligatoire",true);return;}
   var i=CLIENTS.findIndex(function(x){return x.id===id;});
   if(i>-1){
     CLIENTS[i].name=document.getElementById('ec-name').value;
@@ -3200,7 +3194,7 @@ function saveNewAdmin(){
   var pw=document.getElementById('na-pw').value;
   var email=document.getElementById('na-email').value.trim();
   if(!name||!user||!pw){toast('Nom, identifiant et mot de passe requis',true);return;}
-  if(!email||!email.includes('@')){toast('⚠️ L'email est obligatoire pour la récupération du mot de passe',true);return;}
+  if(!email||!email.includes('@')){toast("⚠️ L'email est obligatoire pour la récupération du mot de passe",true);return;}
   if(user===ADMIN.username||ADMINS.find(function(a){return a.username===user;})){toast('Identifiant déjà utilisé',true);return;}
   ADMINS.push({name:name,username:user,password:pw,email:email});
   save();closeAllMd();renderAdmins();
@@ -4256,7 +4250,7 @@ saveClient = function(){
   if(!validateField(user, 'Identifiant')) return;
   if(!validateField(pw, 'Mot de passe')) return;
   var emailV = (document.getElementById('nc-email').value||'').trim();
-  if(!emailV){ toast('⚠️ L'email est obligatoire pour la récupération du mot de passe', true); return; }
+  if(!emailV){ toast("⚠️ L'email est obligatoire pour la récupération du mot de passe", true); return; }
   if(!emailV.includes('@')){ toast('⚠️ Email invalide', true); return; }
   _origSaveClient2();
 };
