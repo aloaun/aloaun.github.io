@@ -451,6 +451,8 @@ tr:hover td{background:rgba(255,255,255,0.018)}
    <div class="topbar">
     <div style="display:flex;align-items:center;gap:10px">
      <button class="ham-btn" onclick="openSide()">☰</button>
+     <button id="admin-back-btn" class="btn btn-o btn-sm" onclick="goBack()" style="display:none;font-size:15px;padding:5px 9px" title="Retour">←</button>
+     <button class="btn btn-o btn-sm" onclick="goSec('dash',document.getElementById('ni-dash'))" style="font-size:15px;padding:5px 9px" title="Accueil">🏠</button>
      <h2 id="pg-ttl">Tableau de bord</h2>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
@@ -523,6 +525,13 @@ tr:hover td{background:rgba(255,255,255,0.018)}
        <input type="number" id="stk-add-qty" placeholder="Quantité" min="1" style="width:100px" oninput="onStkCalcCmp()">
        <input type="number" id="stk-add-price" placeholder="Prix achat (MAD)" min="0" step="0.01" style="width:140px" oninput="onStkCalcCmp()">
        <select id="stk-add-sup" style="min-width:160px"><option value="">— Fournisseur (optionnel) —</option></select>
+       <select id="stk-add-paymethod" style="min-width:140px">
+         <option value="">— Paiement —</option>
+         <option value="cash">💵 Espèces</option>
+         <option value="transfer">🏦 Virement</option>
+         <option value="cheque">📋 Chèque</option>
+         <option value="credit">🔄 À crédit</option>
+       </select>
        <button class="btn btn-o btn-sm" onclick="openMd('add-supplier')">+ Nouveau fourn.</button>
        <button class="btn btn-gn" onclick="doAddStock()">Ajouter au stock</button>
       </div>
@@ -535,6 +544,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
        <th>Stock actuel</th><th>Seuil alerte</th>
        <th>Prix d'achat</th><th>Prix de vente</th>
        <th>Marge unitaire</th><th>Marge %</th><th>État</th>
+       <th>Fournisseur</th>
        <th>Dernier achat</th>
        <th style="min-width:200px">Actions rapides</th>
       </tr></thead><tbody id="stk-tb"></tbody></table>
@@ -571,9 +581,17 @@ tr:hover td{background:rgba(255,255,255,0.018)}
      <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div><h3 style="font-size:13px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Ventes par région &amp; ville</h3>
       <p style="font-size:12px;color:var(--tx3)">Classement produits par quantité vendue — région puis ville</p></div>
-      <div style="display:flex;gap:7px">
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
        <button class="btn btn-o btn-sm" id="reg-view-reg" onclick="setRegView('region')" style="border-color:var(--gold);color:var(--gold)">Par région</button>
        <button class="btn btn-o btn-sm" id="reg-view-city" onclick="setRegView('city')">Par ville</button>
+       <select id="reg-filter-prod" onchange="renderRegional()" style="background:var(--dk4);border:1px solid var(--bo2);border-radius:8px;padding:6px 10px;color:var(--tx);font-size:12px;outline:none">
+         <option value="">Tous produits</option>
+       </select>
+       <select id="reg-sort" onchange="renderRegional()" style="background:var(--dk4);border:1px solid var(--bo2);border-radius:8px;padding:6px 10px;color:var(--tx);font-size:12px;outline:none">
+         <option value="qty-desc">Qté vendue ↓</option>
+         <option value="ca-desc">CA généré ↓</option>
+         <option value="name-asc">Zone A→Z</option>
+       </select>
       </div>
      </div>
      <div id="regional-content"></div>
@@ -620,9 +638,14 @@ tr:hover td{background:rgba(255,255,255,0.018)}
     <div class="sec" id="sec-complaints">
      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <h3 style="font-size:13px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px">Réclamations &amp; Relances</h3>
-      <button class="btn btn-g btn-sm" onclick="renderComplaints()">🔄</button>
+      <div style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn btn-o btn-sm" onclick="toggleSelectComplaints()" id="btn-sel-cmp">☐ Sélectionner</button>
+        <button class="btn btn-r btn-sm" id="btn-del-sel-cmp" style="display:none" onclick="deleteSelectedComplaints()">🗑️ Supprimer sélection</button>
+        <button class="btn btn-r btn-sm" onclick="deleteAllComplaints()">🗑️ Tout supprimer</button>
+        <button class="btn btn-g btn-sm" onclick="renderComplaints()">🔄</button>
+      </div>
      </div>
-     <div class="tc"><table><thead><tr><th>N°</th><th>Client</th><th>Type</th><th>Commande</th><th>Message</th><th>Date</th><th>Statut</th><th>Action</th></tr></thead><tbody id="complaints-tb"></tbody></table></div>
+     <div class="tc"><table><thead><tr><th id="cmp-check-th" style="display:none"><input type="checkbox" id="cmp-check-all" onchange="toggleAllCmpChecks(this.checked)"></th><th>N°</th><th>Client</th><th>Type</th><th>Commande</th><th>Message</th><th>Date</th><th>Statut</th><th>Action</th></tr></thead><tbody id="complaints-tb"></tbody></table></div>
     </div>
 
     <!-- COMPANY -->
@@ -647,6 +670,10 @@ tr:hover td{background:rgba(255,255,255,0.018)}
         <div class="fg"><label>Email <span style="color:var(--red)">★</span></label><input id="co-email" type="email" placeholder="contact@alitos.ma"></div>
        </div>
        <div class="fg"><label>Adresse complète</label><input id="co-addr" placeholder="Maroc"></div>
+       <div class="fr2">
+        <div class="fg"><label>Latitude (carte)</label><input id="co-lat" type="number" step="any" placeholder="ex: 33.5731"></div>
+        <div class="fg"><label>Longitude (carte)</label><input id="co-lng" type="number" step="any" placeholder="ex: -7.5898"></div>
+       </div>
        <div class="fg"><label>ICE / N° RC</label><input id="co-ice" placeholder="000000000000000"></div>
        <button class="btn btn-g" style="width:100%" onclick="saveCompany()">💾 Enregistrer les infos entreprise</button>
       </div>
@@ -1063,7 +1090,19 @@ tr:hover td{background:rgba(255,255,255,0.018)}
    <div class="fg"><label>Solde actuel dû (MAD)</label><input id="sc-balance" type="number" min="0" placeholder="0"></div>
   </div>
   <div class="fg"><label>Règlement (MAD à encaisser)</label><input id="sc-payment" type="number" min="0" placeholder="0" oninput="calcCreditPayment()"></div>
+  <div class="fg">
+    <label>Moyen de remboursement</label>
+    <select id="sc-pay-method" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+      <option value="">— Sélectionner —</option>
+      <option value="cash">💵 Espèces</option>
+      <option value="transfer">🏦 Virement bancaire</option>
+      <option value="cmi">💳 CMI / Carte</option>
+      <option value="cheque">📋 Chèque</option>
+    </select>
+  </div>
   <div id="sc-payment-preview" style="display:none;font-size:12px;color:var(--grn);margin-bottom:10px"></div>
+  <!-- Demandes de paiement en attente -->
+  <div id="sc-pending-payments" style="margin-bottom:12px"></div>
   <button class="btn btn-g" style="width:100%" onclick="saveCreditSettings()">Enregistrer</button>
  </div>
 
@@ -1108,7 +1147,10 @@ tr:hover td{background:rgba(255,255,255,0.018)}
 <!-- CLIENT -->
 <div id="pg-client">
  <header class="cl-hd">
-  <div class="cl-logo" id="cl-logo-click" style="cursor:pointer" onclick="clPage('cat',document.getElementById('bt-cat'))">ALITOS</div>
+  <div style="display:flex;align-items:center;gap:8px">
+   <button onclick="doLogout()" style="background:none;border:none;color:var(--tx3);font-size:18px;cursor:pointer;padding:4px" title="Déconnexion">🚪</button>
+   <div class="cl-logo" id="cl-logo-click" style="cursor:pointer" onclick="clPage('cat',document.getElementById('bt-cat'))">ALITOS</div>
+  </div>
   <div style="display:flex;align-items:center;gap:8px">
    <img id="cl-hd-photo" style="width:32px;height:32px;border-radius:50%;border:2px solid var(--gold);object-fit:cover;display:none;cursor:pointer" src="" onclick="openClProfileMenu()" title="Profil / Déconnexion">
    <span id="cl-gr" style="font-size:12px;color:var(--tx2)"></span>
@@ -1248,6 +1290,9 @@ try{var _cr=localStorage.getItem('al_credits');if(_cr)CREDITS=JSON.parse(_cr);}c
 var COMPLAINTS=[]; // {id, clientId, type, message, date, status, orderId}
 try{var _cmp=localStorage.getItem('al_complaints');if(_cmp)COMPLAINTS=JSON.parse(_cmp);}catch(e){}
 
+var PENDING_PAYMENTS=[]; // {id, clientId, amount, method, methodLabel, date, status:'pending'|'confirmed'|'rejected', note}
+try{var _pp=localStorage.getItem('al_pending_pay');if(_pp)PENDING_PAYMENTS=JSON.parse(_pp);}catch(e){}
+
 var LOGIN_ATTEMPTS={}; // username -> count
 var LOCKED_USERS={}; // username -> true
 
@@ -1263,6 +1308,7 @@ function save(){
     localStorage.setItem('al_sup',JSON.stringify(SUPPLIERS));
     localStorage.setItem('al_credits',JSON.stringify(CREDITS));
     localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));
+    localStorage.setItem('al_pending_pay',JSON.stringify(PENDING_PAYMENTS));
   }catch(e){}
 }
 function getC(id){return CLIENTS.find(function(c){return c.id===id;})||{name:'Inconnu',city:'-',photo:'',phone:'',region:'-'};}
@@ -1595,6 +1641,7 @@ function previewPhoto(inputId,prevId){
 
 // ═══════════ ADMIN NAV ═══════════
 var CH={};var _currentSec='dash';
+var _secHistory=[]; // Navigation history for back button
 function dC(id){if(CH[id]){CH[id].destroy();delete CH[id];}}
 function refreshCurrent(){
   if(_currentSec==='dash')renderDashboard();
@@ -1607,7 +1654,23 @@ function refreshCurrent(){
   else if(_currentSec==='invoices')loadInvSel();
   toast('Actualisé ✓');
 }
+function goBack(){
+  if(_secHistory.length>1){
+    _secHistory.pop(); // remove current
+    var prev=_secHistory[_secHistory.length-1];
+    var ni=document.getElementById('ni-'+prev);
+    goSec(prev,ni);
+    _secHistory.pop(); // goSec will push it again
+  } else {
+    goSec('dash',document.getElementById('ni-dash'));
+  }
+}
 function goSec(n,el){
+  _secHistory.push(n);
+  if(_secHistory.length>10) _secHistory.shift();
+  // Update back button visibility
+  var backBtn=document.getElementById('admin-back-btn');
+  if(backBtn) backBtn.style.display = (_secHistory.length>1 && n!=='dash') ? '' : 'none';
   _currentSec=n;
   document.querySelectorAll('.sec').forEach(function(s){s.className='sec';});
   document.querySelectorAll('.ni').forEach(function(x){x.className='ni';});
@@ -1717,7 +1780,19 @@ function renderDashboard(){
   var cnt={pending:0,confirmed:0,shipped:0,delivered:0};O.forEach(function(o){if(cnt[o.status]!==undefined)cnt[o.status]++;});
   dC('ch-stat');CH['ch-stat']=new Chart(document.getElementById('ch-stat'),{type:'pie',data:{labels:['En attente','Confirmée','Expédiée','Livrée'],datasets:[{data:[cnt.pending,cnt.confirmed,cnt.shipped,cnt.delivered],backgroundColor:['#C9A84C','#4A9EE8','#9B6BDB','#52C97A'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#B0A898',font:{size:10},padding:5}}}}});
 }
-function qVal(id){var o=ORDERS.find(function(x){return x.id===id;});if(o){o.status='confirmed';save();}renderDashboard();}
+function qVal(id){
+  var o=ORDERS.find(function(x){return x.id===id;});
+  if(o && o.status!=='confirmed'){
+    o.status='confirmed';
+    o.items.forEach(function(it){
+      var p=PRODUCTS.find(function(x){return x.id===it.productId;});
+      if(p) p.stock=Math.max(0, p.stock - it.quantity);
+    });
+    save();
+    if(window.saveToCloud) window.saveToCloud();
+  }
+  renderDashboard();
+}
 
 // ═══════════ ORDERS ═══════════
 function resetOF(){['of-q','of-dfrom','of-dto'].forEach(function(id){document.getElementById(id).value='';});['of-client','of-status','of-pay','of-region','of-sort'].forEach(function(id){document.getElementById(id).selectedIndex=0;});renderOrders();}
@@ -1757,13 +1832,98 @@ function renderOrders(){
       '<td>'+o.date+'</td><td>'+badge(o.status)+'</td><td>'+payB(o.payStatus,o.payMethod)+'</td>'+
       '<td style="display:flex;gap:4px;flex-wrap:wrap">'+
         '<button class="btn btn-o btn-sm" onclick="viewOrd(\''+o.id+'\')">👁</button>'+
-        (o.status==='pending'?'<button class="btn btn-gn btn-sm" onclick="updOrd(\''+o.id+'\',\'confirmed\');renderOrders()">✓</button>':'')+
-        (o.status==='confirmed'?'<button class="btn btn-p btn-sm" onclick="updOrd(\''+o.id+'\',\'shipped\');renderOrders()">📦</button>':'')+
-        (o.status==='shipped'?'<button class="btn btn-gn btn-sm" onclick="updOrd(\''+o.id+'\',\'delivered\');renderOrders()">✓✓</button>':'')+
+        (o.status==='pending'?'<button class="btn btn-gn btn-sm" onclick="updOrd(\''+o.id+'\',\'confirmed\');renderOrders()" title="Confirmer">✓</button>':'')+
+        (o.status==='pending'?'<button class="btn btn-r btn-sm" onclick="cancelOrd(\''+o.id+'\')" title="Annuler">✕</button>':'')+
+        (o.status==='confirmed'?'<button class="btn btn-p btn-sm" onclick="updOrd(\''+o.id+'\',\'shipped\');renderOrders()" title="Expédier">📦</button>':'')+
+        (o.status==='confirmed'?'<button class="btn btn-r btn-sm" onclick="cancelOrd(\''+o.id+'\')" title="Annuler">✕</button>':'')+
+        (o.status==='shipped'?'<button class="btn btn-gn btn-sm" onclick="updOrd(\''+o.id+'\',\'delivered\');renderOrders()" title="Livrée">✓✓</button>':'')+
+        (['delivered','confirmed','shipped'].indexOf(o.status)>-1?'<button class="btn btn-o btn-sm" onclick="openReturnOrd(\''+o.id+'\')" title="Retour" style="color:var(--ora);border-color:var(--ora)">↩</button>':'')+
       '</td></tr>';
   }).join('');
 }
-function updOrd(id,s){var o=ORDERS.find(function(x){return x.id===id;});if(o){o.status=s;save();}}
+function updOrd(id,s){
+  var o=ORDERS.find(function(x){return x.id===id;});
+  if(!o) return;
+  var prev=o.status;
+  o.status=s;
+  // ── Diminuer stock quand confirmée ──
+  if(s==='confirmed' && prev!=='confirmed'){
+    o.items.forEach(function(it){
+      var p=PRODUCTS.find(function(x){return x.id===it.productId;});
+      if(p) p.stock=Math.max(0, p.stock - it.quantity);
+    });
+  }
+  // ── Restaurer stock si retour (returned) ──
+  if(s==='returned'){
+    var retQty={};
+    if(o.returnItems){ o.returnItems.forEach(function(it){ retQty[it.productId]=it.quantity; }); }
+    else{ o.items.forEach(function(it){ retQty[it.productId]=it.quantity; }); }
+    Object.keys(retQty).forEach(function(pid){
+      var p=PRODUCTS.find(function(x){return x.id===pid;});
+      if(p) p.stock += retQty[pid];
+    });
+  }
+  // ── Annuler commande non payée ──
+  if(s==='cancelled' && prev==='confirmed'){
+    o.items.forEach(function(it){
+      var p=PRODUCTS.find(function(x){return x.id===it.productId;});
+      if(p) p.stock += it.quantity;
+    });
+  }
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+}
+
+function cancelOrd(id){
+  var o=ORDERS.find(function(x){return x.id===id;});
+  if(!o) return;
+  if(!confirm('Annuler la commande '+id+' ?')) return;
+  updOrd(id,'cancelled');
+  renderOrders();
+  toast('Commande annulée — stock restauré ✓');
+}
+
+function openReturnOrd(id){
+  var o=ORDERS.find(function(x){return x.id===id;});
+  if(!o) return;
+  var html='<h3 style="color:var(--gold);margin-bottom:14px">↩ Retour — '+id+'</h3>'+
+    '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">Saisissez les quantités retournées (0 = pas de retour) :</div>'+
+    o.items.map(function(it){
+      var p=getP(it.productId);
+      return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;background:var(--dk4);padding:8px 10px;border-radius:8px">'+
+        '<span style="font-size:13px">'+p.name+'<span style="color:var(--tx3);font-size:11px"> (acheté: '+it.quantity+')</span></span>'+
+        '<input type="number" id="ret-'+it.productId+'" min="0" max="'+it.quantity+'" value="0" style="width:60px;background:var(--dk5);border:1px solid var(--bo);border-radius:6px;padding:4px 8px;color:var(--tx);text-align:center">'+
+      '</div>';
+    }).join('')+
+    '<button class="btn btn-g" style="width:100%;margin-top:10px" onclick="confirmReturn(\''+id+'\')">✅ Confirmer le retour</button>';
+  document.getElementById('ord-content').innerHTML=html;
+  openMd('ord');
+}
+
+function confirmReturn(id){
+  var o=ORDERS.find(function(x){return x.id===id;});
+  if(!o) return;
+  var retItems=[];
+  o.items.forEach(function(it){
+    var inp=document.getElementById('ret-'+it.productId);
+    if(!inp) return;
+    var qty=parseInt(inp.value)||0;
+    if(qty>0) retItems.push({productId:it.productId,quantity:Math.min(qty,it.quantity)});
+  });
+  if(!retItems.length){toast('Aucune quantité saisie',true);return;}
+  retItems.forEach(function(it){
+    var p=PRODUCTS.find(function(x){return x.id===it.productId;});
+    if(p) p.stock += it.quantity;
+  });
+  o.returnItems=retItems;
+  o.status='returned';
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();
+  renderOrders();
+  toast('↩ Retour enregistré — stock restauré ✓');
+}
+
 function viewOrd(id){
   var o=ORDERS.find(function(x){return x.id===id;});var c=getC(o.clientId);var pr=calcProfit(o);
   var gps=c.lat&&c.lng?'<a href="https://www.openstreetmap.org/?mlat='+c.lat+'&mlon='+c.lng+'&zoom=15" target="_blank" style="color:var(--gold);font-size:12px;text-decoration:none">📍 Voir sur carte</a>':'';
@@ -1945,19 +2105,49 @@ function doAddStock(){
       toast('+'+qty+' unités — Stock: '+(oldStock+qty));
     }
     PRODUCTS[i].stock+=qty;
-    // Enregistrer l'achat
-    if(!PRODUCTS[i].purchases)PRODUCTS[i].purchases=[];
-    PRODUCTS[i].purchases.unshift({id:'PUR'+Date.now(),date:new Date().toISOString().split('T')[0],qty:qty,unitBuy:effectiveBuy,total:Math.round(effectiveBuy*qty),supplierId:supId||null});
-    // Mettre à jour la dette fournisseur
+    var payMethodSel = document.getElementById('stk-add-paymethod');
+    var payMethod = payMethodSel ? payMethodSel.value : '';
+    var payLabels={cash:'💵 Espèces',transfer:'🏦 Virement',cheque:'📋 Chèque',credit:'🔄 À crédit'};
+    var totalAchat = Math.round(effectiveBuy*qty);
+    // Enregistrer l'achat avec moyen de paiement
+    if(!PRODUCTS[i].purchases) PRODUCTS[i].purchases=[];
+    PRODUCTS[i].purchases.unshift({
+      id:'PUR'+Date.now(),
+      date:new Date().toISOString().split('T')[0],
+      qty:qty,
+      unitBuy:effectiveBuy,
+      total:totalAchat,
+      supplierId:supId||null,
+      payMethod:payMethod,
+      payLabel:payLabels[payMethod]||''
+    });
+    // Mettre à jour la dette fournisseur (seulement si à crédit ou pas de paiement)
     if(supId){
       var si=SUPPLIERS.findIndex(function(s){return s.id===supId;});
-      if(si>-1)SUPPLIERS[si].debt=(SUPPLIERS[si].debt||0)+Math.round(effectiveBuy*qty);
+      if(si>-1){
+        if(payMethod==='credit' || !payMethod){
+          SUPPLIERS[si].debt=(SUPPLIERS[si].debt||0)+totalAchat;
+        }
+        // Enregistrer transaction fournisseur
+        if(!SUPPLIERS[si].transactions) SUPPLIERS[si].transactions=[];
+        SUPPLIERS[si].transactions.push({
+          date:new Date().toISOString().split('T')[0],
+          type:'purchase',
+          prodName:PRODUCTS[i].name,
+          qty:qty,
+          total:totalAchat,
+          payMethod:payMethod,
+          payLabel:payLabels[payMethod]||'Non défini'
+        });
+      }
     }
     save();
+    if(window.saveToCloud) window.saveToCloud();
     document.getElementById('stk-add-qty').value='';
     document.getElementById('stk-add-price').value='';
     document.getElementById('stk-add-prod').value='';
-    if(supSel)supSel.value='';
+    if(supSel) supSel.value='';
+    if(payMethodSel) payMethodSel.value='';
     document.getElementById('stk-cmp-preview').style.display='none';
     fillStkAddProd();
     renderStock();
@@ -1973,6 +2163,15 @@ function renderStock(){
   document.getElementById('stk-tb').innerHTML=PRODUCTS.map(function(p){
     var st=stkSt(p);var mx=Math.max(p.stock,(p.threshold||10)*5,50);var pct=mx>0?Math.min(100,Math.round(p.stock/mx*100)):0;
     var b=p.buyPrice||0;var m=p.price-b;var mp=p.price>0?Math.round(m/p.price*100):0;
+    // Last supplier
+    var lastSup='—';
+    if(p.purchases && p.purchases.length>0){
+      var lastPur=p.purchases[0];
+      if(lastPur.supplierId){
+        var sup=SUPPLIERS.find(function(s){return s.id===lastPur.supplierId;});
+        if(sup) lastSup='<span style="color:var(--blu);font-size:11px">'+sup.name+'</span>';
+      }
+    }
     return '<tr>'+
       '<td><div style="display:flex;align-items:center;gap:8px"><img src="'+prodImg(p)+'" style="width:32px;height:32px;border-radius:6px;object-fit:cover" onerror="this.style.display=\'none\'"><span style="font-weight:500">'+p.name+'</span></div></td>'+
       '<td style="color:var(--tx3)">'+p.category+'</td>'+
@@ -1983,6 +2182,7 @@ function renderStock(){
       '<td style="color:var(--grn)">+'+fm(m)+'</td>'+
       '<td><span style="color:var(--pur)">'+mp+'%</span></td>'+
       '<td>'+(p.stock===0?'<span class="sb sx">Rupture</span>':p.stock<=(p.threshold||10)?'<span class="sb sp">Bas</span>':'<span class="sb sd">OK</span>')+'</td>'+
+      '<td style="font-size:12px">'+lastSup+'</td>'+
       '<td><div style="display:flex;gap:4px">'+
         '<button class="btn btn-r btn-sm" onclick="adjStk(\''+p.id+'\',-1)">−1</button>'+
         '<button class="btn btn-gn btn-sm" onclick="adjStk(\''+p.id+'\',1)">+1</button>'+
@@ -2397,6 +2597,15 @@ function saveClCreds(){
 function setCat(c){activeCat=c;clRenderProds();}
 function addCart(id){var p=PRODUCTS.find(function(x){return x.id===id;});if(!p||p.stock===0){toast('Épuisé',true);return;}var q=cart[id]||0;if(q>=p.stock){toast('Stock max atteint',true);return;}cart[id]=(cart[id]||0)+1;updCartUI();clRenderProds();refreshCart();}
 function remCart(id){if(!cart[id])return;cart[id]--;if(!cart[id])delete cart[id];updCartUI();clRenderProds();refreshCart();}
+function setCartQty(id,val){
+  var p=PRODUCTS.find(function(x){return x.id===id;});
+  if(!p) return;
+  var q=parseInt(val)||0;
+  if(q<=0){delete cart[id];}
+  else if(q>p.stock){cart[id]=p.stock;toast('Max '+p.stock+' disponibles',true);}
+  else{cart[id]=q;}
+  updCartUI();clRenderProds();refreshCart();
+}
 function updCartUI(){var tot=Object.values(cart).reduce(function(s,v){return s+v;},0);var el=document.getElementById('cart-n');el.textContent=tot;el.style.display=tot>0?'flex':'none';}
 function toggleCart(){document.getElementById('cart-pn').classList.toggle('on');document.getElementById('cart-ov').classList.toggle('on');refreshCart();}
 function refreshCart(){
@@ -2443,7 +2652,7 @@ function processCMI(){
   var btn=document.getElementById('cmi-btn');btn.disabled=true;btn.textContent='Traitement en cours...';
   setTimeout(function(){
     var items2=[];
-    for(var id in cart){var p=PRODUCTS.find(function(x){return x.id===id;});items2.push({productId:id,quantity:cart[id],price:p.price,buyPrice:p.buyPrice||0});p.stock=Math.max(0,p.stock-cart[id]);}
+    for(var id in cart){var p=PRODUCTS.find(function(x){return x.id===id;});items2.push({productId:id,quantity:cart[id],price:p.price,buyPrice:p.buyPrice||0});}
     var profit=items2.reduce(function(s,it){return s+(it.price-(it.buyPrice||0))*it.quantity;},0);
     var o={id:'ORD'+(1000+ORDERS.length),clientId:SESSION.id,items:items2,total:_pendingOrder.total,profit:profit,note:_pendingOrder.note,payStatus:'paid',payMethod:'cmi',status:'pending',date:new Date().toISOString().split('T')[0]};
     ORDERS.unshift(o);save();cart={};updCartUI();_pendingOrder=null;
@@ -2583,7 +2792,6 @@ function processAltPay(){
   for(var id in cart){
     var p=PRODUCTS.find(function(x){return x.id===id;});
     items2.push({productId:id,quantity:cart[id],price:p.price,buyPrice:p.buyPrice||0});
-    p.stock=Math.max(0,p.stock-cart[id]);
   }
   var profit=items2.reduce(function(s,it){return s+(it.price-(it.buyPrice||0))*it.quantity;},0);
   var extra={};
@@ -2605,6 +2813,8 @@ function loadCompanyForm(){
   document.getElementById('co-addr').value=COMPANY.address||'';
   document.getElementById('co-ice').value=COMPANY.ice||'';
   document.getElementById('co-logo').value=COMPANY.logo||'';
+  var latEl=document.getElementById('co-lat'); if(latEl) latEl.value=COMPANY.lat||'';
+  var lngEl=document.getElementById('co-lng'); if(lngEl) lngEl.value=COMPANY.lng||'';
   var pv=document.getElementById('co-logo-prev');
   pv.src=COMPANY.logo||(COMPANY.name?'https://ui-avatars.com/api/?name='+encodeURIComponent(COMPANY.name)+'&background=C9A84C&color=0A0A0A&size=128':'');
   updateAdminSidebar();
@@ -2619,7 +2829,11 @@ function saveCompany(){
   COMPANY.address=document.getElementById('co-addr').value;
   COMPANY.ice=document.getElementById('co-ice').value;
   COMPANY.logo=document.getElementById('co-logo').value;
-  save();updateAdminSidebar();toast('✅ Informations entreprise sauvegardées');
+  var latEl=document.getElementById('co-lat'); if(latEl&&latEl.value) COMPANY.lat=parseFloat(latEl.value);
+  var lngEl=document.getElementById('co-lng'); if(lngEl&&lngEl.value) COMPANY.lng=parseFloat(lngEl.value);
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  updateAdminSidebar();toast('✅ Informations entreprise sauvegardées');
 }
 function updateAdminSidebar(){
   var co=document.getElementById('admin-side-co');
@@ -2757,12 +2971,28 @@ function updateSupplier(){
 function paySupplierDebt(id){
   var s=SUPPLIERS.find(function(x){return x.id===id;});
   if(!s||!s.debt){toast('Aucune dette à régler',true);return;}
-  var amt=prompt('Montant à régler pour '+s.name+' (dette: '+s.debt+' MAD):','');
-  if(!amt)return;
-  var v=parseFloat(amt);if(isNaN(v)||v<=0){toast('Montant invalide',true);return;}
+  var amt=prompt('Montant à régler pour '+s.name+' (dette: '+fm(s.debt)+'):\n(Entrez le montant)', '');
+  if(!amt) return;
+  var v=parseFloat(amt); if(isNaN(v)||v<=0){toast('Montant invalide',true);return;}
+  var methods=['1 - 💵 Espèces','2 - 🏦 Virement','3 - 📋 Chèque'];
+  var mChoix=prompt('Moyen de remboursement :\n'+methods.join('\n')+'\n\nEntrez 1, 2 ou 3','1');
+  var methodMap={'1':'cash','2':'transfer','3':'cheque'};
+  var payLabels={cash:'💵 Espèces',transfer:'🏦 Virement',cheque:'📋 Chèque'};
+  var method=methodMap[mChoix]||'cash';
   var i=SUPPLIERS.findIndex(function(x){return x.id===id;});
   SUPPLIERS[i].debt=Math.max(0,SUPPLIERS[i].debt-v);
-  save();renderSuppliers();toast('✅ '+fm(v)+' réglés — Reste: '+fm(SUPPLIERS[i].debt));
+  if(!SUPPLIERS[i].transactions) SUPPLIERS[i].transactions=[];
+  SUPPLIERS[i].transactions.push({
+    date:new Date().toISOString().split('T')[0],
+    type:'payment',
+    total:v,
+    payMethod:method,
+    payLabel:payLabels[method]
+  });
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  renderSuppliers();
+  toast('✅ '+fm(v)+' réglés ('+payLabels[method]+') — Reste: '+fm(SUPPLIERS[i].debt));
 }
 function delSup(id){SUPPLIERS=SUPPLIERS.filter(function(s){return s.id!==id;});save();renderSuppliers();toast('Fournisseur supprimé');}
 
@@ -2777,6 +3007,16 @@ function clientCreditOk(cid,amount){
   return(cr.balance+amount)<=cr.limit;
 }
 function renderCredits(){
+  // Badge notification demandes en attente
+  var pendingAll=PENDING_PAYMENTS.filter(function(p){return p.status==='pending';});
+  var niCr=document.getElementById('ni-credits');
+  if(niCr){
+    var badge=niCr.querySelector('.notif-badge');
+    if(pendingAll.length>0){
+      if(!badge){badge=document.createElement('span');badge.className='notif-badge';badge.style.cssText='background:var(--red);color:#fff;border-radius:50%;font-size:10px;font-weight:700;padding:1px 5px;margin-left:6px';niCr.appendChild(badge);}
+      badge.textContent=pendingAll.length;
+    } else if(badge){badge.remove();}
+  }
   document.getElementById('credits-grid').innerHTML=CLIENTS.map(function(c){
     var cr=getClientCredit(c.id);
     var used=cr.balance||0;var lim=cr.limit||0;
@@ -2793,6 +3033,7 @@ function renderCredits(){
         '</div>'+
         (lim>0?'<div style="height:5px;background:var(--dk5);border-radius:3px;overflow:hidden;margin-bottom:5px"><div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:3px;transition:.3s"></div></div>':'')+
         status+
+        (function(){var cp=PENDING_PAYMENTS.filter(function(p){return p.clientId===c.id&&p.status==='pending';});return cp.length?'<div style="margin-top:6px;background:rgba(201,168,76,0.12);border:1px solid var(--bo);border-radius:6px;padding:5px 8px;font-size:11px;color:var(--gold)">⏳ '+cp.length+' paiement(s) en attente</div>':'';})() +
       '</div>'+
       '<div class="cl-acts" style="margin-top:6px">'+
         '<button class="btn btn-b btn-sm" onclick="openSetCredit(\''+c.id+'\')">⚙️ Paramétrer</button>'+
@@ -2807,7 +3048,26 @@ function openSetCredit(cid){
   document.getElementById('sc-limit').value=cr.limit||0;
   document.getElementById('sc-balance').value=cr.balance||0;
   document.getElementById('sc-payment').value='';
+  document.getElementById('sc-pay-method').value='';
   document.getElementById('sc-payment-preview').style.display='none';
+  // Afficher demandes de paiement en attente
+  var pending=PENDING_PAYMENTS.filter(function(p){return p.clientId===cid&&p.status==='pending';});
+  var pp=document.getElementById('sc-pending-payments');
+  if(pp){
+    pp.innerHTML=pending.length?
+      '<div style="background:rgba(201,168,76,0.08);border:1px solid var(--bo);border-radius:10px;padding:10px;margin-bottom:10px">'+
+      '<div style="font-size:11px;color:var(--gold);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">⏳ Demandes de paiement en attente</div>'+
+      pending.map(function(p){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bo2)">'+
+          '<div><div style="font-size:13px;font-weight:600;color:var(--tx)">'+fm(p.amount)+'</div>'+
+          '<div style="font-size:11px;color:var(--tx3)">'+p.methodLabel+' · '+p.date+'</div></div>'+
+          '<div style="display:flex;gap:5px">'+
+          '<button class="btn btn-gn btn-sm" onclick="confirmCreditPayment(\''+p.id+'\')">✅ Confirmer</button>'+
+          '<button class="btn btn-r btn-sm" onclick="rejectCreditPayment(\''+p.id+'\')">✕</button>'+
+          '</div></div>';
+      }).join('')+
+      '</div>':'';
+  }
   openMd('set-credit');
 }
 function calcCreditPayment(){
@@ -2823,14 +3083,42 @@ function saveCreditSettings(){
   var lim=+(document.getElementById('sc-limit').value)||0;
   var bal=+(document.getElementById('sc-balance').value)||0;
   var pay=+(document.getElementById('sc-payment').value)||0;
+  var method=document.getElementById('sc-pay-method').value;
+  var methodLabels={cash:'💵 Espèces',transfer:'🏦 Virement',cmi:'💳 CMI',cheque:'📋 Chèque'};
   if(!CREDITS[cid])CREDITS[cid]={limit:0,balance:0,transactions:[]};
   CREDITS[cid].limit=lim;
   var newBal=Math.max(0,bal-pay);
   if(pay>0){
-    CREDITS[cid].transactions.push({date:new Date().toISOString().split('T')[0],type:'payment',amount:pay,note:'Encaissement'});
+    CREDITS[cid].transactions.push({date:new Date().toISOString().split('T')[0],type:'payment',amount:pay,method:method,note:'Encaissement '+(methodLabels[method]||'')});
   }
   CREDITS[cid].balance=newBal;
-  save();closeAllMd();renderCredits();toast('✅ Crédit mis à jour');
+  try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
+  if(window._origSave) window._origSave();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();renderCredits();toast('✅ Crédit mis à jour');
+}
+function confirmCreditPayment(pid){
+  var p=PENDING_PAYMENTS.find(function(x){return x.id===pid;});
+  if(!p) return;
+  p.status='confirmed';
+  var cr=getClientCredit(p.clientId);
+  cr.balance=Math.max(0,cr.balance-p.amount);
+  cr.transactions.push({date:new Date().toISOString().split('T')[0],type:'payment',amount:p.amount,method:p.method,note:'Paiement confirmé — '+p.methodLabel});
+  try{localStorage.setItem('al_pending_pay',JSON.stringify(PENDING_PAYMENTS));}catch(e){}
+  try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
+  if(window._origSave) window._origSave();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();renderCredits();
+  toast('✅ Paiement confirmé — Solde réduit de '+fm(p.amount));
+}
+function rejectCreditPayment(pid){
+  var p=PENDING_PAYMENTS.find(function(x){return x.id===pid;});
+  if(!p) return;
+  p.status='rejected';
+  try{localStorage.setItem('al_pending_pay',JSON.stringify(PENDING_PAYMENTS));}catch(e){}
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();renderCredits();
+  toast('Demande de paiement rejetée');
 }
 function quickPayCredit(cid){
   var cr=getClientCredit(cid);
@@ -2901,18 +3189,43 @@ function setRegView(v){
   renderRegional();
 }
 function renderRegional(){
+  // Populate product filter
+  var prodSel=document.getElementById('reg-filter-prod');
+  if(prodSel){
+    var cur=prodSel.value;
+    prodSel.innerHTML='<option value="">Tous produits</option>'+
+      PRODUCTS.map(function(p){return'<option value="'+p.id+'"'+(p.id===cur?' selected':'')+'>'+p.name+'</option>';}).join('');
+    prodSel.value=cur;
+  }
+  var filterProd=prodSel?prodSel.value:'';
+  var sortMode=(document.getElementById('reg-sort')?document.getElementById('reg-sort').value:'qty-desc');
   var groupKey=_regView==='city'?function(o){var c=getC(o.clientId);return(c.city||'Inconnu')+' ('+(c.region||'')+')';}:function(o){var c=getC(o.clientId);return c.region||'Inconnu';};
   var regionProd={};
   ORDERS.forEach(function(o){
     var key=groupKey(o);
     if(!regionProd[key])regionProd[key]={};
     o.items.forEach(function(it){
+      if(filterProd && it.productId!==filterProd) return;
       regionProd[key][it.productId]=(regionProd[key][it.productId]||0)+it.quantity;
     });
   });
+  // Remove zones with 0 items after filter
+  Object.keys(regionProd).forEach(function(k){if(!Object.keys(regionProd[k]).length) delete regionProd[k];});
   var colors=['#C9A84C','#4A9EE8','#52C97A','#9B6BDB','#E05252','#E8834A','#4ECDC4','#FF6B6B'];
   var html='';
-  var zones=Object.keys(regionProd).sort();
+  var zones=Object.keys(regionProd);
+  // Sort zones
+  if(sortMode==='name-asc') zones.sort();
+  else if(sortMode==='ca-desc') zones.sort(function(a,b){
+    var ca_a=Object.entries(regionProd[a]).reduce(function(s,e){return s+getP(e[0]).price*e[1];},0);
+    var ca_b=Object.entries(regionProd[b]).reduce(function(s,e){return s+getP(e[0]).price*e[1];},0);
+    return ca_b-ca_a;
+  });
+  else zones.sort(function(a,b){
+    var q_a=Object.values(regionProd[a]).reduce(function(s,v){return s+v;},0);
+    var q_b=Object.values(regionProd[b]).reduce(function(s,v){return s+v;},0);
+    return q_b-q_a;
+  });
   if(!zones.length){html='<div style="text-align:center;padding:40px;color:var(--tx3)">Aucune donnée disponible</div>';}
   zones.forEach(function(zone,ri){
     var prods=Object.entries(regionProd[zone]).sort(function(a,b){return b[1]-a[1];});
@@ -3126,7 +3439,6 @@ processAltPay=function(){
   for(var id in cart){
     var p=PRODUCTS.find(function(x){return x.id===id;});
     items2.push({productId:id,quantity:cart[id],price:p.price,buyPrice:p.buyPrice||0});
-    p.stock=Math.max(0,p.stock-cart[id]);
   }
   var profit=items2.reduce(function(s,it){return s+(it.price-(it.buyPrice||0))*it.quantity;},0);
   var extra={};
@@ -3262,7 +3574,7 @@ function renderPurchases(){
   var all=[];
   PRODUCTS.forEach(function(p){
     if(p.purchases)p.purchases.forEach(function(pur){
-      all.push({date:pur.date,prodName:p.name,cat:p.category,qty:pur.qty,unit:pur.unitBuy,total:pur.total,supId:pur.supplierId||null});
+      all.push({date:pur.date,prodName:p.name,cat:p.category,qty:pur.qty,unit:pur.unitBuy,total:pur.total,supId:pur.supplierId||null,payMethod:pur.payMethod||'',payLabel:pur.payLabel||'—'});
     });
   });
   all.sort(function(a,b){return b.date.localeCompare(a.date);});
@@ -3280,8 +3592,14 @@ function renderPurchases(){
   if(supF)F=F.filter(function(x){return x.supId===supF;});
   if(df)F=F.filter(function(x){return x.date>=df;});
   if(dt)F=F.filter(function(x){return x.date<=dt;});
+  // Update table header to include payment method
+  var purHead=document.querySelector('#sec-purchases table thead tr');
+  if(purHead && purHead.children.length<8){
+    var th=document.createElement('th'); th.textContent='Paiement'; purHead.appendChild(th);
+  }
   document.getElementById('pur-tb').innerHTML=F.length?F.map(function(x){
     var sp=x.supId?SUPPLIERS.find(function(s){return s.id===x.supId;}):null;
+    var payBadge=x.payLabel&&x.payLabel!=='—'?'<span style="background:rgba(82,201,122,0.1);color:var(--grn);padding:2px 7px;border-radius:10px;font-size:11px">'+x.payLabel+'</span>':'<span style="color:var(--tx3);font-size:11px">—</span>';
     return '<tr>'+
       '<td style="color:var(--tx3);white-space:nowrap">'+x.date+'</td>'+
       '<td><strong>'+x.prodName+'</strong></td>'+
@@ -3290,8 +3608,9 @@ function renderPurchases(){
       '<td style="text-align:center;font-weight:600">'+x.qty+'</td>'+
       '<td style="color:var(--tx2)">'+fm(x.unit)+'</td>'+
       '<td style="color:var(--gold);font-weight:600">'+fm(x.total)+'</td>'+
+      '<td>'+payBadge+'</td>'+
     '</tr>';
-  }).join(''):'<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--tx3)">Aucun approvisionnement</td></tr>';
+  }).join(''):'<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--tx3)">Aucun approvisionnement</td></tr>';
 }
 function resetPurFilters(){
   ['pur-q','pur-from','pur-to'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -3391,7 +3710,7 @@ function clRenderProds(){
     var act;
     if(oos)act='<button class="add-btn" disabled>Épuisé</button>';
     else if(q===0)act='<button class="add-btn" onclick="addCart(\''+p.id+'\')">+ Ajouter</button>';
-    else act='<div class="qty-c"><button class="qb" onclick="remCart(\''+p.id+'\')">−</button><span class="qv">'+q+'</span><button class="qb" onclick="addCart(\''+p.id+'\')"'+(q>=p.stock?' disabled':'')+'>+</button></div>';
+    else act='<div class="qty-c"><button class="qb" onclick="remCart(\''+p.id+'\')">−</button><input type="number" class="qv" min="1" max="'+p.stock+'" value="'+q+'" onchange="setCartQty(\''+p.id+'\',this.value)" onclick="event.stopPropagation()" style="width:44px;text-align:center;background:var(--dk4);border:1px solid var(--bo);border-radius:5px;color:var(--tx);font-size:13px;padding:2px 0"><button class="qb" onclick="addCart(\''+p.id+'\')"'+(q>=p.stock?' disabled':'')+'>+</button></div>';
     return'<div class="p-c">'+bdg+'<img src="'+prodImg(p)+'" onerror="this.src=\'https://via.placeholder.com/200?text=Photo\'" loading="lazy"'+(oos?' style="filter:grayscale(60%)opacity(.65)"':'')+'>'+
       '<div class="pb"><div class="pn">'+p.name+'</div><div class="pcat">'+p.category+'</div><div class="pp">'+fm(p.price)+'</div>'+act+'</div></div>';
   }).join('');
@@ -3664,7 +3983,7 @@ clRenderProds = function(){
     var act;
     if(oos) act = '<button class="add-btn" disabled>Épuisé</button>';
     else if(q === 0) act = '<button class="add-btn" onclick="addCart(\''+p.id+'\')">+ Ajouter</button>';
-    else act = '<div class="qty-c"><button class="qb" onclick="remCart(\''+p.id+'\')">−</button><span class="qv">'+q+'</span><button class="qb" onclick="addCart(\''+p.id+'\')"'+(q>=p.stock?' disabled':'')+'>+</button></div>';
+    else act = '<div class="qty-c"><button class="qb" onclick="remCart(\''+p.id+'\')">−</button><input type="number" class="qv" min="1" max="'+p.stock+'" value="'+q+'" onchange="setCartQty(\''+p.id+'\',this.value)" onclick="event.stopPropagation()" style="width:44px;text-align:center;background:var(--dk4);border:1px solid var(--bo);border-radius:5px;color:var(--tx);font-size:13px;padding:2px 0"><button class="qb" onclick="addCart(\''+p.id+'\')"'+(q>=p.stock?' disabled':'')+'>+</button></div>';
     var imgSrc = prodImg(p);
     var zoomStyle = 'cursor:zoom-in' + (oos ? ';filter:grayscale(60%)opacity(.65)' : '');
     var imgOnclick = "_lastZoomSrc='"+imgSrc.replace(/'/g,"\\'")+"';_lastZoomName='"+p.name.replace(/'/g,"\\'")+
@@ -3780,7 +4099,9 @@ renderComplaints = function(){
 
   document.getElementById('complaints-tb').innerHTML = list.length ? list.map(function(cmp){
     var c = getC(cmp.clientId); var sm = statusMap[cmp.status] || statusMap.pending;
+    var selMode = document.getElementById('cmp-check-th') && document.getElementById('cmp-check-th').style.display !== 'none';
     return '<tr>'+
+      '<td id="cmp-check-th-cell-'+cmp.id+'" style="'+(selMode?'':'display:none')+'"><input type="checkbox" class="cmp-chk" value="'+cmp.id+'"></td>'+
       '<td style="color:var(--gold);font-weight:600">#'+cmp.id+'</td>'+
       '<td><div style="display:flex;align-items:center;gap:5px"><img src="'+clientAvatar(c)+'" style="width:20px;height:20px;border-radius:50%;object-fit:cover">'+c.name+'</div></td>'+
       '<td style="font-size:11px">'+(types[cmp.type]||cmp.type)+'</td>'+
@@ -3791,7 +4112,7 @@ renderComplaints = function(){
       '<td style="display:flex;gap:4px"><button class="btn btn-o btn-sm" onclick="viewComplaint(\''+cmp.id+'\')">👁</button>'+
       '<button class="btn btn-r btn-sm" onclick="adminDelComplaint(\''+cmp.id+'\')" title="Supprimer">🗑️</button></td>'+
     '</tr>';
-  }).join('') : '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--tx3)">Aucune réclamation</td></tr>';
+  }).join('') : '<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--tx3)">Aucune réclamation</td></tr>';
 };
 function adminDelComplaint(id){
   if(!confirm('Supprimer cette réclamation ?')) return;
@@ -3804,6 +4125,43 @@ function adminDelComplaint(id){
     renderComplaints();
     toast('Réclamation supprimée ✓');
   }
+}
+var _cmpSelectMode = false;
+function toggleSelectComplaints(){
+  _cmpSelectMode = !_cmpSelectMode;
+  var th = document.getElementById('cmp-check-th');
+  var btn = document.getElementById('btn-sel-cmp');
+  var btnDel = document.getElementById('btn-del-sel-cmp');
+  if(th) th.style.display = _cmpSelectMode ? '' : 'none';
+  if(btn) btn.textContent = _cmpSelectMode ? '✕ Annuler' : '☐ Sélectionner';
+  if(btnDel) btnDel.style.display = _cmpSelectMode ? '' : 'none';
+  // Show/hide checkboxes in rows
+  document.querySelectorAll('.cmp-chk').forEach(function(c){c.closest('td').style.display=_cmpSelectMode?'':'none';});
+}
+function toggleAllCmpChecks(checked){
+  document.querySelectorAll('.cmp-chk').forEach(function(c){c.checked=checked;});
+}
+function deleteSelectedComplaints(){
+  var ids=[];
+  document.querySelectorAll('.cmp-chk:checked').forEach(function(c){ids.push(c.value);});
+  if(!ids.length){toast('Aucune sélection',true);return;}
+  if(!confirm('Supprimer '+ids.length+' réclamation(s) ?')) return;
+  COMPLAINTS = COMPLAINTS.filter(function(c){return ids.indexOf(c.id)<0;});
+  try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(e){}
+  if(window._origSave) window._origSave();
+  if(window.saveToCloud) window.saveToCloud();
+  _cmpSelectMode=false;
+  renderComplaints();
+  toast('✅ '+ids.length+' réclamation(s) supprimée(s)');
+}
+function deleteAllComplaints(){
+  if(!confirm('Supprimer TOUTES les réclamations ?')) return;
+  COMPLAINTS=[];
+  try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(e){}
+  if(window._origSave) window._origSave();
+  if(window.saveToCloud) window.saveToCloud();
+  renderComplaints();
+  toast('✅ Toutes les réclamations supprimées');
 }
 function resetCmpFilters(){
   ['cmpf-client','cmpf-status','cmpf-from','cmpf-to'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -3828,12 +4186,20 @@ function resetCmpFilters(){
         '<div class="fg"><label>Message <span style="color:var(--red)">★</span></label><textarea id="contact-msg" placeholder="Votre message..." style="min-height:100px;resize:vertical"></textarea></div>'+
         '<button class="btn btn-g" style="width:100%" onclick="sendContactMsg()">📤 Envoyer</button>'+
       '</div>'+
-      '<div style="background:var(--dk3);border:1px solid var(--bo);border-radius:12px;padding:16px">'+
+      '<div style="background:var(--dk3);border:1px solid var(--bo);border-radius:12px;padding:16px;margin-bottom:12px">'+
         '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Nos coordonnées</div>'+
         '<div style="font-size:13px;color:var(--tx2);line-height:2" id="contact-coords">'+
           '<div>📞 <span id="contact-phone-val">'+COMPANY.phone+'</span></div>'+
           '<div>✉️ <span id="contact-email-val">'+COMPANY.email+'</span></div>'+
           '<div>📍 <span id="contact-addr-val">'+COMPANY.address+'</span></div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="background:var(--dk3);border:1px solid var(--bo);border-radius:12px;overflow:hidden;margin-bottom:12px">'+
+        '<div style="padding:12px 16px;font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px">📍 Notre localisation</div>'+
+        '<div id="contact-map" style="height:220px;width:100%"></div>'+
+        '<div style="padding:8px 16px;font-size:12px;color:var(--tx3)">'+COMPANY.address+'</div>'+
+        '<div style="padding:0 16px 12px">'+
+          '<a href="https://www.google.com/maps/search/'+encodeURIComponent(COMPANY.address||'Maroc')+'" target="_blank" class="btn btn-b btn-sm" style="text-decoration:none;display:inline-flex;align-items:center;gap:5px">🗺️ Ouvrir dans Maps</a>'+
         '</div>'+
       '</div>'+
       '<div id="contact-msgs-list" style="margin-top:12px"></div>'+
@@ -3862,8 +4228,16 @@ function sendContactMsg(){
   var msg = (document.getElementById('contact-msg').value || '').trim();
   if(!validateField(subj, 'Sujet')) return;
   if(!validateField(msg, 'Message')) return;
-  CONTACT_MSGS.push({id:'MSG'+(100+CONTACT_MSGS.length), clientId:SESSION.id, clientName:SESSION.name, subject:subj, message:msg, date:new Date().toISOString().split('T')[0], status:'new'});
+  var newMsg={id:'MSG'+(100+CONTACT_MSGS.length), clientId:SESSION.id, clientName:SESSION.name, subject:subj, message:msg, date:new Date().toISOString().split('T')[0], status:'new', reply:''};
+  CONTACT_MSGS.push(newMsg);
   try{localStorage.setItem('al_contact', JSON.stringify(CONTACT_MSGS));}catch(e){}
+  if(window._origSave) window._origSave();
+  if(window.saveToCloud) window.saveToCloud();
+  // Envoyer email à l'admin (email entreprise)
+  var adminEmail = COMPANY.email || ADMIN.email || '';
+  if(adminEmail && window.sendResendEmail){
+    sendResendEmail(adminEmail, 'Équipe '+COMPANY.name, '📬 Nouveau message de '+SESSION.name+'\n\nSujet: '+subj+'\n\n'+msg+'\n\nRépondez via le tableau de bord admin.');
+  }
   document.getElementById('contact-subj').value = '';
   document.getElementById('contact-msg').value = '';
   renderContactMsgs();
@@ -3912,8 +4286,14 @@ function clientDelContactMsg(id){
   panel.id = 'admin-contact-panel';
   panel.style.marginTop = '24px';
   panel.innerHTML =
-    '<div class="tc"><div class="tc-h"><h3>📬 Messages de contact clients</h3><button class="btn btn-g btn-sm" onclick="renderAdminContactMsgs()">🔄</button></div>'+
-    '<table><thead><tr><th>N°</th><th>Client</th><th>Sujet</th><th>Message</th><th>Date</th><th>Action</th></tr></thead>'+
+    '<div class="tc"><div class="tc-h"><h3>📬 Messages de contact clients</h3>'+
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">'+
+    '<button class="btn btn-o btn-sm" id="btn-sel-msg" onclick="toggleSelectMsgs()">☐ Sélectionner</button>'+
+    '<button class="btn btn-r btn-sm" id="btn-del-sel-msg" style="display:none" onclick="deleteSelectedMsgs()">🗑️ Supprimer sélection</button>'+
+    '<button class="btn btn-r btn-sm" onclick="deleteAllMsgs()">🗑️ Tout supprimer</button>'+
+    '<button class="btn btn-g btn-sm" onclick="renderAdminContactMsgs()">🔄</button>'+
+    '</div></div>'+
+    '<table><thead><tr><th id="msg-check-th" style="display:none"><input type="checkbox" id="msg-check-all" onchange="toggleAllMsgChecks(this.checked)"></th><th>N°</th><th>Client</th><th>Sujet</th><th>Message</th><th>Date</th><th>Action</th></tr></thead>'+
     '<tbody id="contact-msgs-tb"></tbody></table></div>';
   sec.appendChild(panel);
 })();
@@ -3922,9 +4302,11 @@ function renderAdminContactMsgs(){
   var tb = document.getElementById('contact-msgs-tb');
   if(!tb) return;
   try{ var _cm = localStorage.getItem('al_contact'); if(_cm) CONTACT_MSGS = JSON.parse(_cm); }catch(e){}
+  var selMode = document.getElementById('msg-check-th') && document.getElementById('msg-check-th').style.display !== 'none';
   tb.innerHTML = CONTACT_MSGS.length ? CONTACT_MSGS.slice().reverse().map(function(m){
     var c = getC(m.clientId);
     return '<tr>'+
+      '<td style="'+(selMode?'':'display:none')+'"><input type="checkbox" class="msg-chk" value="'+m.id+'"></td>'+
       '<td style="color:var(--gold);font-size:11px">'+m.id+'</td>'+
       '<td style="font-size:13px">'+c.name+'</td>'+
       '<td style="font-weight:500">'+m.subject+'</td>'+
@@ -3933,7 +4315,44 @@ function renderAdminContactMsgs(){
       '<td style="display:flex;gap:4px"><button class="btn btn-b btn-sm" onclick="replyContactMsg(\''+m.id+'\')">✏️ Répondre</button>'+
       '<button class="btn btn-r btn-sm" onclick="adminDelContactMsg(\''+m.id+'\')">🗑️</button></td>'+
     '</tr>';
-  }).join('') : '<tr><td colspan="6" style="text-align:center;padding:24px;color:var(--tx3)">Aucun message</td></tr>';
+  }).join('') : '<tr><td colspan="7" style="text-align:center;padding:24px;color:var(--tx3)">Aucun message</td></tr>';
+}
+
+var _msgSelectMode = false;
+function toggleSelectMsgs(){
+  _msgSelectMode = !_msgSelectMode;
+  var th = document.getElementById('msg-check-th');
+  var btn = document.getElementById('btn-sel-msg');
+  var btnDel = document.getElementById('btn-del-sel-msg');
+  if(th) th.style.display = _msgSelectMode ? '' : 'none';
+  if(btn) btn.textContent = _msgSelectMode ? '✕ Annuler' : '☐ Sélectionner';
+  if(btnDel) btnDel.style.display = _msgSelectMode ? '' : 'none';
+  document.querySelectorAll('.msg-chk').forEach(function(c){c.closest('td').style.display=_msgSelectMode?'':'none';});
+}
+function toggleAllMsgChecks(checked){
+  document.querySelectorAll('.msg-chk').forEach(function(c){c.checked=checked;});
+}
+function deleteSelectedMsgs(){
+  var ids=[];
+  document.querySelectorAll('.msg-chk:checked').forEach(function(c){ids.push(c.value);});
+  if(!ids.length){toast('Aucune sélection',true);return;}
+  if(!confirm('Supprimer '+ids.length+' message(s) ?')) return;
+  CONTACT_MSGS = CONTACT_MSGS.filter(function(m){return ids.indexOf(m.id)<0;});
+  try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(e){}
+  if(window._origSave) window._origSave();
+  if(window.saveToCloud) window.saveToCloud();
+  _msgSelectMode=false;
+  renderAdminContactMsgs();
+  toast('✅ '+ids.length+' message(s) supprimé(s)');
+}
+function deleteAllMsgs(){
+  if(!confirm('Supprimer TOUS les messages de contact ?')) return;
+  CONTACT_MSGS=[];
+  try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(e){}
+  if(window._origSave) window._origSave();
+  if(window.saveToCloud) window.saveToCloud();
+  renderAdminContactMsgs();
+  toast('✅ Tous les messages supprimés');
 }
 
 function replyContactMsg(id){
@@ -3942,10 +4361,17 @@ function replyContactMsg(id){
   var rep = prompt('Répondre à "'+m.subject+'" de '+getC(m.clientId).name+':\n\n"'+m.message+'"', m.reply||'');
   if(rep === null) return;
   m.reply = rep;
+  m.status = 'replied';
   try{localStorage.setItem('al_contact', JSON.stringify(CONTACT_MSGS));}catch(e){}
   if(window.saveToCloud) window.saveToCloud();
+  // Envoyer la réponse par email au client
+  var clientObj = CLIENTS.find(function(c){return c.id===m.clientId;});
+  if(clientObj && clientObj.email && window.sendResendEmail){
+    sendResendEmail(clientObj.email, clientObj.name,
+      '💬 Réponse à votre message "'+m.subject+'"\n\n'+rep+'\n\n— Équipe '+COMPANY.name);
+  }
   renderAdminContactMsgs();
-  toast('✅ Réponse enregistrée');
+  toast('✅ Réponse enregistrée et envoyée par email');
 }
 
 function adminDelContactMsg(id){
@@ -3974,7 +4400,7 @@ clPage = function(name, el){
   if(name === 'orders'){ renderClOrds(); }
   if(name === 'complaints'){ renderClComplaints(); }
   if(name === 'credit'){ renderClCreditInfo(); }
-  if(name === 'contact'){ renderContactMsgs(); }
+  if(name === 'contact'){ renderContactMsgs(); initContactMap(); }
 };
 
 // ─── 13. FILTRE RÉCLAMATIONS CLIENT PAR ANNÉE ─────────────────
@@ -4050,6 +4476,9 @@ renderClCreditInfo = function(){
   var pct = lim > 0 ? Math.min(100, Math.round(bal/lim*100)) : 0;
   var barColor = pct>=100?'var(--red)':pct>=75?'var(--ora)':'var(--grn)';
   var status = lim===0?'Aucun plafond défini':pct>=100?'🔒 Plafond atteint — crédit bloqué':'Crédit disponible';
+  // Demandes en attente du client
+  var myPending = PENDING_PAYMENTS.filter(function(p){return p.clientId===SESSION.id&&p.status==='pending';});
+  var myConfirmed = PENDING_PAYMENTS.filter(function(p){return p.clientId===SESSION.id&&p.status==='confirmed';}).slice(-3).reverse();
   el.innerHTML = '<div class="cc" style="margin-bottom:12px">'+
     '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Solde dû</div>'+
     '<div style="font-size:28px;font-weight:700;color:var(--red);margin-bottom:8px">'+fm(bal)+'</div>'+
@@ -4057,6 +4486,13 @@ renderClCreditInfo = function(){
     '<div style="height:8px;background:var(--dk5);border-radius:4px;overflow:hidden;margin-bottom:10px"><div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:4px;transition:.3s"></div></div>':'')+
     '<div style="font-size:12px;color:'+(pct>=100?'var(--red)':'var(--grn)')+'">'+status+'</div>'+
     (lim>0?'<div style="margin-top:8px;font-size:11px;color:var(--tx3)">Disponible : <strong style="color:var(--grn)">'+fm(Math.max(0,lim-bal))+'</strong></div>':'')+
+    // Bouton demande de paiement
+    (bal>0?'<div style="margin-top:14px"><button class="btn btn-g" style="width:100%" onclick="openClientPayRequest()">💳 Déclarer un paiement</button></div>':'')+
+    // Demandes en attente
+    (myPending.length?'<div style="margin-top:12px;background:rgba(201,168,76,0.07);border:1px solid var(--bo);border-radius:8px;padding:10px">'+
+      '<div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:7px">⏳ En attente de confirmation</div>'+
+      myPending.map(function(p){return '<div style="font-size:12px;color:var(--tx2);margin-bottom:4px">'+fm(p.amount)+' — '+p.methodLabel+' · '+p.date+'</div>';}).join('')+
+    '</div>':'')+
     (cr.transactions&&cr.transactions.length?
       '<div style="margin-top:12px;border-top:1px solid var(--bo2);padding-top:10px">'+
       '<div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px">Derniers mouvements</div>'+
@@ -4067,6 +4503,57 @@ renderClCreditInfo = function(){
           '<span style="color:'+(isCredit?'var(--red)':'var(--grn)')+'">'+( isCredit?'+':'-')+fm(t.amount)+'</span></div>';
       }).join('')+'</div>':'')+'</div>';
 };
+
+function openClientPayRequest(){
+  if(!SESSION) return;
+  var cr = getClientCredit(SESSION.id);
+  var bal = cr.balance||0;
+  if(bal<=0){toast('Aucun solde à régler',true);return;}
+  var html='<div style="padding:16px">'+
+    '<h3 style="color:var(--gold);margin-bottom:14px">💳 Déclarer un paiement</h3>'+
+    '<div style="font-size:13px;color:var(--tx2);margin-bottom:14px">Solde actuel : <strong style="color:var(--red)">'+fm(bal)+'</strong></div>'+
+    '<div class="fg"><label>Montant (MAD)</label><input type="number" id="cpr-amount" min="1" max="'+bal+'" placeholder="Montant à payer" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-size:13px;outline:none"></div>'+
+    '<div class="fg"><label>Moyen de paiement</label>'+
+    '<select id="cpr-method" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-size:13px;outline:none">'+
+    '<option value="">— Sélectionner —</option>'+
+    '<option value="cash">💵 Espèces</option>'+
+    '<option value="transfer">🏦 Virement bancaire</option>'+
+    '<option value="cmi">💳 CMI / Carte</option>'+
+    '<option value="cheque">📋 Chèque</option>'+
+    '</select></div>'+
+    '<div class="fg"><label>Note (optionnel)</label><input type="text" id="cpr-note" placeholder="Référence, remarque..." style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-size:13px;outline:none"></div>'+
+    '<button class="btn btn-g" style="width:100%" onclick="submitClientPayRequest()">📤 Envoyer la demande</button>'+
+    '</div>';
+  document.getElementById('ord-content').innerHTML=html;
+  openMd('ord');
+}
+
+function submitClientPayRequest(){
+  var amt=parseFloat(document.getElementById('cpr-amount').value)||0;
+  var method=document.getElementById('cpr-method').value;
+  var note=(document.getElementById('cpr-note').value||'').trim();
+  var methodLabels={cash:'💵 Espèces',transfer:'🏦 Virement',cmi:'💳 CMI',cheque:'📋 Chèque'};
+  if(amt<=0){toast('Montant invalide',true);return;}
+  if(!method){toast('Choisissez un moyen de paiement',true);return;}
+  var req={
+    id:'PAY'+Date.now(),
+    clientId:SESSION.id,
+    clientName:SESSION.name,
+    amount:amt,
+    method:method,
+    methodLabel:methodLabels[method]||method,
+    date:new Date().toISOString().split('T')[0],
+    note:note,
+    status:'pending'
+  };
+  PENDING_PAYMENTS.push(req);
+  try{localStorage.setItem('al_pending_pay',JSON.stringify(PENDING_PAYMENTS));}catch(e){}
+  if(window._origSave) window._origSave();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();
+  renderClCreditInfo();
+  toast('✅ Demande envoyée — en attente de confirmation admin');
+}
 
 // ─── 16. GOСEC — charger messages contact dans réclamations ────
 var _origGoSecFinal = goSec;
@@ -4463,6 +4950,7 @@ async function saveToCloud(){
       credits:    JSON.parse(localStorage.getItem('al_credits')||'{}'),
       complaints: JSON.parse(localStorage.getItem('al_complaints')||'[]'),
       contact:    JSON.parse(localStorage.getItem('al_contact')||'[]'),
+      pending_pay:JSON.parse(localStorage.getItem('al_pending_pay')||'[]'),
       updatedAt:  new Date().toISOString()
     };
     _lastSaveTime = Date.now();
@@ -4507,6 +4995,7 @@ async function loadFromCloud(){
     inj('credits',   'al_credits',    'CREDITS',            v=>typeof v==='object');
     inj('complaints','al_complaints', 'COMPLAINTS',         v=>Array.isArray(v));
     inj('contact',   'al_contact',    'CONTACT_MSGS',       v=>Array.isArray(v));
+    inj('pending_pay','al_pending_pay','PENDING_PAYMENTS',   v=>Array.isArray(v));
     fbShow('synced','✅ Synchronisé');
     if(window.SESSION){
       if(window.SESSION.role==='admin'&&window.renderDashboard) window.renderDashboard();
@@ -4538,6 +5027,7 @@ function injectData(d){
   inj('credits',   'al_credits',    'CREDITS',            v=>typeof v==='object'&&v!==null);
   inj('complaints','al_complaints', 'COMPLAINTS',         v=>Array.isArray(v));
   inj('contact',   'al_contact',    'CONTACT_MSGS',       v=>Array.isArray(v));
+  inj('pending_pay','al_pending_pay','PENDING_PAYMENTS',   v=>Array.isArray(v));
 }
 
 // ── Rafraîchir toute l'interface ─────────────────────────
@@ -4578,9 +5068,23 @@ function startRealtimeSync(){
       try{
         var msg = JSON.parse(e.data);
         var d = msg.data;
-        // Ignorer si c'est notre propre sauvegarde (moins de 2s)
-        if(Date.now() - _lastSaveTime < 2000) return;
+        // Ignorer si c'est notre propre sauvegarde (moins de 3s)
+        if(Date.now() - _lastSaveTime < 3000) return;
         if(!d) return;
+        // Fusionner intelligemment les réclamations (garder suppressions)
+        if(d.complaints && Array.isArray(d.complaints)){
+          // Accepter toujours les données Firebase (source de vérité)
+          COMPLAINTS = d.complaints;
+          try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(ex){}
+        }
+        if(d.pending_pay && Array.isArray(d.pending_pay)){
+          PENDING_PAYMENTS = d.pending_pay;
+          try{localStorage.setItem('al_pending_pay',JSON.stringify(PENDING_PAYMENTS));}catch(ex){}
+        }
+        if(d.contact && Array.isArray(d.contact)){
+          CONTACT_MSGS = d.contact;
+          try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(ex){}
+        }
         injectData(d);
         refreshUI();
         fbShow('synced','🔄 Mis à jour');
@@ -4623,6 +5127,29 @@ window.addEventListener('DOMContentLoaded', async function(){
   await loadFromCloud();
   startRealtimeSync();
 });
+
+// ── Carte localisation contact ────────────────────────────
+var _contactMapObj = null;
+function initContactMap(){
+  var mapEl = document.getElementById('contact-map');
+  if(!mapEl) return;
+  // Coordonnées par défaut : Casablanca
+  var lat = COMPANY.lat || 33.5731;
+  var lng = COMPANY.lng || -7.5898;
+  var addr = COMPANY.address || 'Casablanca, Maroc';
+  if(_contactMapObj){ _contactMapObj.remove(); _contactMapObj=null; }
+  try{
+    _contactMapObj = L.map('contact-map',{zoomControl:true,scrollWheelZoom:false}).setView([lat,lng],14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{
+      attribution:'© OpenStreetMap',maxZoom:19
+    }).addTo(_contactMapObj);
+    L.marker([lat,lng]).addTo(_contactMapObj)
+      .bindPopup('<strong>'+( COMPANY.name||'Alitos')+'</strong><br>'+addr).openPopup();
+    setTimeout(function(){if(_contactMapObj)_contactMapObj.invalidateSize();},300);
+  }catch(e){
+    if(mapEl) mapEl.innerHTML='<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:12px">📍 '+addr+'</div>';
+  }
+}
 
 window._fbSave = saveToCloud;
 window._fbLoad = loadFromCloud;
