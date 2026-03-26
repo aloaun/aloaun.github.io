@@ -11,12 +11,15 @@
 <!-- Resend via Cloudflare Worker -->
 <script>
 var WORKER_URL = 'https://alitos-email.ait-azgar.workers.dev';
-async function sendResendEmail(to_email, to_name, otp_code){
+async function sendResendEmail(to_email, to_name, otp_code, customSubject, customHtml){
   try{
+    var payload = { to_email: to_email, to_name: to_name, otp_code: String(otp_code) };
+    if(customSubject) payload.subject = customSubject;
+    if(customHtml) payload.html = customHtml;
     var res = await fetch(WORKER_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ to_email: to_email, to_name: to_name, otp_code: String(otp_code) })
+      body: JSON.stringify(payload)
     });
     var txt = await res.text();
     var data = {};
@@ -495,7 +498,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
      </div>
      <div class="tc">
       <div class="tc-h"><h3>Commandes</h3><span id="o-cnt" style="font-size:12px;color:var(--tx3)"></span></div>
-      <table><thead><tr><th>N°</th><th>Client</th><th>Région</th><th>Produits</th><th>Montant</th><th>Profit</th><th>Date</th><th>Statut</th><th>Paiement</th><th>Actions</th></tr></thead><tbody id="ords-tb"></tbody></table>
+      <table><thead><tr><th>N°</th><th>Client</th><th>Région</th><th>Produits</th><th>Retour</th><th>Montant</th><th>Profit</th><th>Date</th><th>Statut</th><th>Paiement</th><th>Actions</th></tr></thead><tbody id="ords-tb"></tbody></table>
      </div>
     </div>
 
@@ -800,6 +803,22 @@ tr:hover td{background:rgba(255,255,255,0.018)}
    <div id="np-margin" class="margin-box"></div>
   </div>
   <div class="fr2"><div class="fg"><label>Stock initial</label><input type="number" id="np-stock" placeholder="0" min="0"></div><div class="fg"><label>Seuil alerte</label><input type="number" id="np-thr" placeholder="10" min="0"></div></div>
+  <div class="fr2">
+   <div class="fg"><label>Fournisseur initial <span style="color:var(--red)">★</span></label>
+    <select id="np-sup" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:10px 12px;color:var(--tx);font-size:13px;outline:none">
+      <option value="">— Sélectionner —</option>
+    </select>
+   </div>
+   <div class="fg"><label>Paiement initial <span style="color:var(--red)">★</span></label>
+    <select id="np-paymethod" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:10px 12px;color:var(--tx);font-size:13px;outline:none">
+      <option value="">— Sélectionner —</option>
+      <option value="cash">💵 Espèces</option>
+      <option value="transfer">🏦 Virement</option>
+      <option value="cheque">📋 Chèque</option>
+      <option value="credit">🔄 À crédit</option>
+    </select>
+   </div>
+  </div>
   <div class="fg">
    <label>Image produit</label>
    <div class="photo-field-wrap">
@@ -1314,8 +1333,8 @@ function save(){
 function getC(id){return CLIENTS.find(function(c){return c.id===id;})||{name:'Inconnu',city:'-',photo:'',phone:'',region:'-'};}
 function getP(id){return PRODUCTS.find(function(p){return p.id===id;})||{name:id,price:0,buyPrice:0};}
 function fm(v){return Math.round(+v).toLocaleString('fr-FR')+' MAD';}
-var SL={pending:'En attente',confirmed:'Confirmée',shipped:'Expédiée',delivered:'Livrée'};
-function badge(s){var m={pending:'sp',confirmed:'sc',shipped:'ss',delivered:'sd'};return '<span class="sb '+(m[s]||'sp')+'">'+(SL[s]||s)+'</span>';}
+var SL={pending:'En attente',confirmed:'Confirmée',shipped:'Expédiée',delivered:'Livrée',returned:'Retourné',cancelled:'Annulée',partial_return:'Retour partiel'};
+function badge(s){var m={pending:'sp',confirmed:'sc',shipped:'ss',delivered:'sd',returned:'sx',cancelled:'sx',partial_return:'sp'};return '<span class="sb '+(m[s]||'sp')+'">'+(SL[s]||s)+'</span>';}
 function payB(ps,pm){
   if(ps==='paid'){
     if(pm==='cash')return'<span class="sb sd" style="font-size:10px">✓ Espèces</span>';
@@ -1743,7 +1762,7 @@ function initClientFilters(){
 // ═══════════ DASHBOARD ═══════════
 function renderDashboard(){
   var O=ORDERS,today=new Date().toISOString().split('T')[0];
-  var todO=O.filter(function(o){return o.date===today;});
+  var todO=O.filter(function(o){return o.date===today&&o.status!=='cancelled'&&o.status!=='returned';});
   var todCA=todO.reduce(function(s,o){return s+o.total;},0);
   var todPr=todO.reduce(function(s,o){return s+calcProfit(o);},0);
   var totCA=O.filter(function(o){return o.status==='delivered';}).reduce(function(s,o){return s+o.total;},0);
@@ -1754,6 +1773,7 @@ function renderDashboard(){
     {l:"CA total livré",v:fm(totCA),s:totCA>0?Math.round(totPr/totCA*100)+'% marge':'',ac:'#C9A84C',i:'💰'},
     {l:"Profit total livré",v:fm(totPr),s:totCA>0?Math.round(totPr/totCA*100)+'%':'',ac:'#52C97A',i:'📈'},
     {l:"CA aujourd'hui",v:fm(todCA),s:todO.length+' cmd',ac:'#4A9EE8',i:'📅'},
+    {l:"Profit aujourd'hui",v:fm(todPr),s:todO.length+' vente(s)',ac:'#52C97A',i:'🌟'},
     {l:"En attente",v:pend,s:'commandes',ac:'#E05252',i:'⏳'},
     {l:"Clients",v:CLIENTS.length,s:'enregistrés',ac:'#E8834A',i:'👥'},
     {l:"Dettes fourn.",v:fm(supDebt),s:SUPPLIERS.length+' fourn.',ac:'#9B6BDB',i:'🏭'},
@@ -1827,6 +1847,23 @@ function renderOrders(){
       '<td><div style="display:flex;align-items:center;gap:6px"><img src="'+clientAvatar(c)+'" style="width:24px;height:24px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'">'+c.name+'</div></td>'+
       '<td style="font-size:11px;color:var(--tx3)">'+c.region+'</td>'+
       '<td>'+o.items.map(function(it){return getP(it.productId).name.split(' ')[0]+' ×'+it.quantity;}).join(', ')+'</td>'+
+      '<td style="font-size:11px">'+(function(){
+        if(!o.returnItems||!o.returnItems.length) return '<span style="color:var(--tx3)">—</span>';
+        var totalOrd=o.items.reduce(function(s,it){return s+it.quantity;},0);
+        var totalRet=o.returnItems.reduce(function(s,it){return s+it.quantity;},0);
+        var partial=totalRet<totalOrd;
+        var detail=o.returnItems.map(function(it){return getP(it.productId).name.split(' ')[0]+' ×'+it.quantity;}).join(', ');
+        if(partial){
+          var notRet=o.items.map(function(it){
+            var r=o.returnItems.find(function(r){return r.productId===it.productId;})||{quantity:0};
+            var rem=it.quantity-r.quantity;
+            return rem>0?getP(it.productId).name.split(' ')[0]+' ×'+rem:'';
+          }).filter(Boolean).join(', ');
+          return '<span style="color:var(--ora)" title="Retourné: '+detail+'">↩ Partiel: '+detail+'</span>'+
+                 '<br><span style="font-size:10px;color:var(--tx3)">Non retourné: '+notRet+'</span>';
+        }
+        return '<span style="color:var(--grn)" title="'+detail+'">↩ Tout: '+detail+'</span>';
+      })()+'</td>'+
       '<td><strong>'+fm(o.total)+'</strong></td>'+
       '<td style="color:var(--grn)">+'+fm(pr)+'</td>'+
       '<td>'+o.date+'</td><td>'+badge(o.status)+'</td><td>'+payB(o.payStatus,o.payMethod)+'</td>'+
@@ -1837,7 +1874,15 @@ function renderOrders(){
         (o.status==='confirmed'?'<button class="btn btn-p btn-sm" onclick="updOrd(\''+o.id+'\',\'shipped\');renderOrders()" title="Expédier">📦</button>':'')+
         (o.status==='confirmed'?'<button class="btn btn-r btn-sm" onclick="cancelOrd(\''+o.id+'\')" title="Annuler">✕</button>':'')+
         (o.status==='shipped'?'<button class="btn btn-gn btn-sm" onclick="updOrd(\''+o.id+'\',\'delivered\');renderOrders()" title="Livrée">✓✓</button>':'')+
-        (['delivered','confirmed','shipped'].indexOf(o.status)>-1?'<button class="btn btn-o btn-sm" onclick="openReturnOrd(\''+o.id+'\')" title="Retour" style="color:var(--ora);border-color:var(--ora)">↩</button>':'')+
+        (['delivered','confirmed','shipped'].indexOf(o.status)>-1?(function(){
+          var canReturn=true;
+          if(o.status==='delivered'&&o.date){
+            var delDate=new Date(o.deliveredDate||o.date);
+            var diff=(Date.now()-delDate.getTime())/(1000*60*60*24);
+            if(diff>7) canReturn=false;
+          }
+          return canReturn?'<button class="btn btn-o btn-sm" onclick="openReturnOrd(\''+o.id+'\')" title="Retour (7j)" style="color:var(--ora);border-color:var(--ora)">↩</button>':'<button class="btn btn-o btn-sm" disabled title="Délai de retour expiré (>7j)" style="opacity:0.35;cursor:not-allowed">↩</button>';
+        })():'')+
       '</td></tr>';
   }).join('');
 }
@@ -1877,22 +1922,40 @@ function updOrd(id,s){
 function cancelOrd(id){
   var o=ORDERS.find(function(x){return x.id===id;});
   if(!o) return;
-  if(!confirm('Annuler la commande '+id+' ?')) return;
+  if(!confirm('Annuler la commande '+id+' ? Cette action est irréversible.')) return;
+  // Stock already handled in updOrd
   updOrd(id,'cancelled');
+  // Si commande payée en crédit → rétablir le crédit client
+  if(o.payMethod==='credit'||o.payStatus==='partial'){
+    var cr=getClientCredit(o.clientId);
+    var creditAmt=o.creditAmount||o.total;
+    if(creditAmt>0){
+      cr.balance=Math.max(0,cr.balance-creditAmt);
+      if(!cr.transactions) cr.transactions=[];
+      cr.transactions.push({date:new Date().toISOString().split('T')[0],
+        type:'cancel',amount:creditAmt,note:'Annulation commande '+id});
+      try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
+    }
+  }
+  save();
+  if(window.saveToCloud) window.saveToCloud();
   renderOrders();
-  toast('Commande annulée — stock restauré ✓');
+  renderDashboard();
+  toast('Commande annulée — stock et crédit restaurés ✓');
 }
 
 function openReturnOrd(id){
   var o=ORDERS.find(function(x){return x.id===id;});
   if(!o) return;
   var html='<h3 style="color:var(--gold);margin-bottom:14px">↩ Retour — '+id+'</h3>'+
-    '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">Saisissez les quantités retournées (0 = pas de retour) :</div>'+
+    '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">Quantités retournées (max = quantité commandée) :</div>'+
     o.items.map(function(it){
       var p=getP(it.productId);
+      var alreadyRet=o.returnItems?o.returnItems.reduce(function(s,r){return r.productId===it.productId?s+r.quantity:s;},0):0;
+      var maxRet=it.quantity-alreadyRet;
       return '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;background:var(--dk4);padding:8px 10px;border-radius:8px">'+
-        '<span style="font-size:13px">'+p.name+'<span style="color:var(--tx3);font-size:11px"> (acheté: '+it.quantity+')</span></span>'+
-        '<input type="number" id="ret-'+it.productId+'" min="0" max="'+it.quantity+'" value="0" style="width:60px;background:var(--dk5);border:1px solid var(--bo);border-radius:6px;padding:4px 8px;color:var(--tx);text-align:center">'+
+        '<span style="font-size:13px">'+p.name+'<span style="color:var(--tx3);font-size:11px"> (commandé: '+it.quantity+(alreadyRet?' · déjà retourné: '+alreadyRet:'')+')</span></span>'+
+        '<input type="number" id="ret-'+it.productId+'" min="0" max="'+maxRet+'" value="0" style="width:60px;background:var(--dk5);border:1px solid var(--bo);border-radius:6px;padding:4px 8px;color:var(--tx);text-align:center">'+
       '</div>';
     }).join('')+
     '<button class="btn btn-g" style="width:100%;margin-top:10px" onclick="confirmReturn(\''+id+'\')">✅ Confirmer le retour</button>';
@@ -1907,21 +1970,48 @@ function confirmReturn(id){
   o.items.forEach(function(it){
     var inp=document.getElementById('ret-'+it.productId);
     if(!inp) return;
-    var qty=parseInt(inp.value)||0;
-    if(qty>0) retItems.push({productId:it.productId,quantity:Math.min(qty,it.quantity)});
+    var maxQ=it.quantity;
+    var qty=Math.min(parseInt(inp.value)||0, maxQ);
+    if(qty>0) retItems.push({productId:it.productId,quantity:qty});
   });
   if(!retItems.length){toast('Aucune quantité saisie',true);return;}
+  // Restore stock
   retItems.forEach(function(it){
     var p=PRODUCTS.find(function(x){return x.id===it.productId;});
     if(p) p.stock += it.quantity;
   });
-  o.returnItems=retItems;
-  o.status='returned';
+  // Merge with existing returnItems
+  if(!o.returnItems) o.returnItems=[];
+  retItems.forEach(function(newRet){
+    var ex=o.returnItems.find(function(r){return r.productId===newRet.productId;});
+    if(ex) ex.quantity+=newRet.quantity;
+    else o.returnItems.push(newRet);
+  });
+  // Check if fully returned
+  var totalOrd=o.items.reduce(function(s,it){return s+it.quantity;},0);
+  var totalRet=o.returnItems.reduce(function(s,it){return s+it.quantity;},0);
+  o.status=totalRet>=totalOrd?'returned':'partial_return';
+  // Si commande crédit → réduire le crédit proportionnellement
+  if(o.payMethod==='credit'||o.payStatus==='partial'){
+    var retTotal=retItems.reduce(function(s,it){
+      var item=o.items.find(function(x){return x.productId===it.productId;});
+      return s+(item?item.price*it.quantity:0);
+    },0);
+    if(retTotal>0){
+      var cr=getClientCredit(o.clientId);
+      cr.balance=Math.max(0,cr.balance-retTotal);
+      if(!cr.transactions) cr.transactions=[];
+      cr.transactions.push({date:new Date().toISOString().split('T')[0],
+        type:'return',amount:retTotal,note:'Retour commande '+id});
+      try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
+    }
+  }
   save();
   if(window.saveToCloud) window.saveToCloud();
   closeAllMd();
   renderOrders();
-  toast('↩ Retour enregistré — stock restauré ✓');
+  renderDashboard();
+  toast('↩ Retour enregistré — stock'+((o.payMethod==='credit'?' et crédit':'')+' mis à jour ✓'));
 }
 
 function viewOrd(id){
@@ -2038,8 +2128,39 @@ function saveProduct(){
   var catNew=document.getElementById('np-newcat').value.trim();
   var finalCat=catSel==='__new__'?(catNew||'Autre'):catSel;
   if(finalCat&&PRODUCT_CATEGORIES.indexOf(finalCat)<0){PRODUCT_CATEGORIES.push(finalCat);}
-  PRODUCTS.push({id:'P'+(100+PRODUCTS.length),name:name,category:finalCat,buyPrice:+(document.getElementById('np-buy').value)||0,price:+(document.getElementById('np-sell').value)||0,unit:document.getElementById('np-unit').value,stock:+(document.getElementById('np-stock').value)||0,threshold:+(document.getElementById('np-thr').value)||10,image:document.getElementById('np-img').value});
-  save();closeAllMd();initProdFilters();renderProds();toast('Produit ajouté ✓');
+  var supId=document.getElementById('np-sup')?document.getElementById('np-sup').value:'';
+  var payMethod=document.getElementById('np-paymethod')?document.getElementById('np-paymethod').value:'';
+  var initStock=+(document.getElementById('np-stock').value)||0;
+  var initBuy=+(document.getElementById('np-buy').value)||0;
+  if(!supId){toast('⚠️ Fournisseur obligatoire',true);return;}
+  if(!payMethod){toast('⚠️ Moyen de paiement obligatoire',true);return;}
+  if(initBuy<=0){toast('⚠️ Prix d\'achat obligatoire',true);return;}
+  var payLabels={cash:'💵 Espèces',transfer:'🏦 Virement',cheque:'📋 Chèque',credit:'🔄 À crédit'};
+  var newProd={id:'P'+(100+PRODUCTS.length),name:name,category:finalCat,
+    buyPrice:initBuy,price:+(document.getElementById('np-sell').value)||0,
+    unit:document.getElementById('np-unit').value,stock:initStock,
+    threshold:+(document.getElementById('np-thr').value)||10,
+    image:document.getElementById('np-img').value,purchases:[]};
+  if(initStock>0){
+    newProd.purchases.push({id:'PUR'+Date.now(),date:new Date().toISOString().split('T')[0],
+      qty:initStock,unitBuy:initBuy,total:Math.round(initBuy*initStock),
+      supplierId:supId,payMethod:payMethod,payLabel:payLabels[payMethod]||''});
+    // Update supplier debt if credit
+    if(supId){
+      var si=SUPPLIERS.findIndex(function(s){return s.id===supId;});
+      if(si>-1){
+        if(payMethod==='credit') SUPPLIERS[si].debt=(SUPPLIERS[si].debt||0)+Math.round(initBuy*initStock);
+        if(!SUPPLIERS[si].transactions) SUPPLIERS[si].transactions=[];
+        SUPPLIERS[si].transactions.push({date:new Date().toISOString().split('T')[0],type:'purchase',
+          prodName:name,qty:initStock,total:Math.round(initBuy*initStock),
+          payMethod:payMethod,payLabel:payLabels[payMethod]||''});
+      }
+    }
+  }
+  PRODUCTS.push(newProd);
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();initProdFilters();renderProds();toast('Produit ajouté ✓');
 }
 function delProd(id){PRODUCTS=PRODUCTS.filter(function(p){return p.id!==id;});save();renderProds();toast('Produit supprimé');}
 
@@ -2086,8 +2207,13 @@ function doAddStock(){
   var newBuy=parseFloat(document.getElementById('stk-add-price').value);
   var supSel=document.getElementById('stk-add-sup');
   var supId=supSel?supSel.value:'';
+  var payMethodSel=document.getElementById('stk-add-paymethod');
+  var payMethod=payMethodSel?payMethodSel.value:'';
   if(!pid){toast('Sélectionnez un produit',true);return;}
   if(qty<=0){toast('Quantité invalide',true);return;}
+  if(!supId){toast('⚠️ Fournisseur obligatoire',true);return;}
+  if(!payMethod){toast('⚠️ Moyen de paiement obligatoire',true);return;}
+  if(isNaN(newBuy)||newBuy<=0){toast('⚠️ Prix d\'achat obligatoire',true);return;}
   var i=PRODUCTS.findIndex(function(p){return p.id===pid;});
   if(i>-1){
     var p=PRODUCTS[i];
@@ -2544,6 +2670,12 @@ function openMd(name){
     if(sel)sel.innerHTML=buildCatOptions('Cosmétiques','np');
     document.getElementById('np-newcat-wrap').style.display='none';
     document.getElementById('np-img-prev').style.display='none';
+    // Populate supplier select
+    var npSup=document.getElementById('np-sup');
+    if(npSup){
+      npSup.innerHTML='<option value="">— Sélectionner —</option>'+
+        SUPPLIERS.map(function(s){return'<option value="'+s.id+'">'+s.name+'</option>';}).join('');
+    }
   }
 }
 function closeAllMd(){
@@ -3033,7 +3165,14 @@ function renderCredits(){
         '</div>'+
         (lim>0?'<div style="height:5px;background:var(--dk5);border-radius:3px;overflow:hidden;margin-bottom:5px"><div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:3px;transition:.3s"></div></div>':'')+
         status+
-        (function(){var cp=PENDING_PAYMENTS.filter(function(p){return p.clientId===c.id&&p.status==='pending';});return cp.length?'<div style="margin-top:6px;background:rgba(201,168,76,0.12);border:1px solid var(--bo);border-radius:6px;padding:5px 8px;font-size:11px;color:var(--gold)">⏳ '+cp.length+' paiement(s) en attente</div>':'';})() +
+        (function(){
+          var cp=PENDING_PAYMENTS.filter(function(p){return p.clientId===c.id&&p.status==='pending';});
+          var conf=PENDING_PAYMENTS.filter(function(p){return p.clientId===c.id&&p.status==='confirmed';}).slice(-2).reverse();
+          var html='';
+          if(cp.length) html+='<div style="margin-top:6px;background:rgba(201,168,76,0.12);border:1px solid var(--bo);border-radius:6px;padding:5px 8px;font-size:11px;color:var(--gold)">⏳ '+cp.length+' paiement(s) en attente de confirmation</div>';
+          if(conf.length) html+='<div style="margin-top:4px;font-size:10px;color:var(--grn)">✅ Derniers réglés : '+conf.map(function(p){return fm(p.amount)+' ('+p.methodLabel+')';}).join(' · ')+'</div>';
+          return html;
+        })() +
       '</div>'+
       '<div class="cl-acts" style="margin-top:6px">'+
         '<button class="btn btn-b btn-sm" onclick="openSetCredit(\''+c.id+'\')">⚙️ Paramétrer</button>'+
@@ -3123,12 +3262,43 @@ function rejectCreditPayment(pid){
 function quickPayCredit(cid){
   var cr=getClientCredit(cid);
   var c=getC(cid);
-  var amt=prompt('Montant encaissé de '+c.name+' (solde: '+fm(cr.balance)+'):','');
-  if(!amt)return;
-  var v=parseFloat(amt);if(isNaN(v)||v<=0){toast('Montant invalide',true);return;}
-  cr.balance=Math.max(0,cr.balance-v);
-  cr.transactions.push({date:new Date().toISOString().split('T')[0],type:'payment',amount:v,note:'Encaissement rapide'});
-  save();renderCredits();toast('✅ '+fm(v)+' encaissés — Reste: '+fm(cr.balance));
+  // Open inline modal with amount + method
+  var html='<div style="padding:16px">'+
+    '<h3 style="color:var(--gold);margin-bottom:12px">💳 Encaisser — '+c.name+'</h3>'+
+    '<div style="font-size:13px;color:var(--tx2);margin-bottom:12px">Solde dû : <strong style="color:var(--red)">'+fm(cr.balance)+'</strong></div>'+
+    '<div class="fg"><label>Montant (MAD)</label>'+
+    '<input type="number" id="qpc-amt" min="1" max="'+cr.balance+'" placeholder="Montant" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-size:13px;outline:none"></div>'+
+    '<div class="fg"><label>Moyen de règlement <span style="color:var(--red)">★</span></label>'+
+    '<select id="qpc-method" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-size:13px;outline:none">'+
+    '<option value="">— Sélectionner —</option>'+
+    '<option value="cash">💵 Espèces</option>'+
+    '<option value="transfer">🏦 Virement</option>'+
+    '<option value="cmi">💳 CMI / Carte</option>'+
+    '<option value="cheque">📋 Chèque</option>'+
+    '</select></div>'+
+    '<button class="btn btn-g" style="width:100%" onclick="doQuickPay(\''+cid+'\')">✅ Confirmer l\'encaissement</button>'+
+    '</div>';
+  document.getElementById('ord-content').innerHTML=html;
+  openMd('ord');
+}
+function doQuickPay(cid){
+  var amt=parseFloat(document.getElementById('qpc-amt').value)||0;
+  var method=document.getElementById('qpc-method').value;
+  var methodLabels={cash:'💵 Espèces',transfer:'🏦 Virement',cmi:'💳 CMI',cheque:'📋 Chèque'};
+  if(amt<=0){toast('Montant invalide',true);return;}
+  if(!method){toast('⚠️ Choisissez un moyen de règlement',true);return;}
+  var cr=getClientCredit(cid);
+  var c=getC(cid);
+  cr.balance=Math.max(0,cr.balance-amt);
+  if(!cr.transactions) cr.transactions=[];
+  cr.transactions.push({date:new Date().toISOString().split('T')[0],type:'payment',amount:amt,method:method,note:'Encaissement '+methodLabels[method]});
+  try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
+  if(window._origSave) window._origSave();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();
+  renderCredits();
+  if(window.renderClCreditInfo) window.renderClCreditInfo();
+  toast('✅ '+fm(amt)+' encaissés ('+methodLabels[method]+') — Reste: '+fm(cr.balance));
 }
 
 // ═══════════ COMPLAINTS ═══════════
@@ -3335,22 +3505,64 @@ function sendInvoiceByEmail(){
   var o=ORDERS.find(function(x){return x.id===id;});
   var c=getC(o.clientId);
   var email=c.email||'';
-  var phone=c.phone||'';
-  if(!email&&!phone){toast('Ce client n\'a pas d\'email ni telephone enregistre',true);return;}
-  var items=o.items.map(function(it){var p=getP(it.productId);return p.name+' x'+it.quantity+' = '+fm(it.price*it.quantity);}).join(', ');
-  if(email){
-    var subject=encodeURIComponent('Facture '+o.id+' - '+(COMPANY.name||'Alitos'));
-    var body=encodeURIComponent('Bonjour '+c.name+',\n\nVotre facture N: '+o.id+'\nMontant: '+fm(o.total)+'\nDate: '+o.date+'\nArticles: '+items+'\n\nCordialement,\n'+(COMPANY.name||'Alitos'));
-    window.open('mailto:'+email+'?subject='+subject+'&body='+body);
-    toast('Email ouvert pour '+email);
+  if(!email){
+    // Fallback WhatsApp si pas d'email
+    var phone=c.phone||'';
+    if(phone){
+      var waPhone=phone.replace(/[^0-9]/g,'');
+      if(waPhone.startsWith('0'))waPhone='212'+waPhone.substring(1);
+      var items=o.items.map(function(it){var p=getP(it.productId);return p.name+' x'+it.quantity+' = '+fm(it.price*it.quantity);}).join(', ');
+      var smsText=encodeURIComponent('Facture '+o.id+' | '+(COMPANY.name||'Alitos')+' | '+fm(o.total)+' | '+o.date+'\n'+items);
+      window.open('https://wa.me/'+waPhone+'?text='+smsText);
+      toast('WhatsApp ouvert pour '+phone);
+    } else {
+      toast('Ce client n\'a pas d\'email enregistré',true);
+    }
+    return;
   }
-  if(phone){
-    var waPhone=phone.replace(/[^0-9]/g,'');
-    if(waPhone.startsWith('0'))waPhone='212'+waPhone.substring(1);
-    var smsText=encodeURIComponent('Facture '+o.id+' | '+(COMPANY.name||'Alitos')+' | '+fm(o.total)+' | '+o.date);
-    window.open('https://wa.me/'+waPhone+'?text='+smsText);
-    toast('WhatsApp ouvert pour '+phone);
-  }
+  // Générer le HTML de la facture
+  var invEl=document.querySelector('.invoice');
+  if(!invEl){toast('Afficher d\'abord la facture',true);return;}
+  var invHtml=invEl.outerHTML;
+  var items=o.items.map(function(it){var p=getP(it.productId);return p.name+' x'+it.quantity+' = '+fm(it.price*it.quantity);}).join('<br>');
+  // Envoyer via Worker Resend avec HTML de facture
+  var btn=document.querySelector('.no-print.btn-b');
+  if(btn){btn.disabled=true;btn.textContent='⏳ Envoi...';}
+  fetch(window.WORKER_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      to_email:email,
+      to_name:c.name,
+      otp_code:'INVOICE',
+      subject:'Facture '+o.id+' — '+(COMPANY.name||'Alitos'),
+      html:'<div style="font-family:sans-serif;max-width:650px;margin:auto;padding:20px">'+
+        '<div style="background:#111;color:#F5F0E8;padding:20px;border-radius:12px;margin-bottom:16px">'+
+        '<h2 style="color:#C9A84C;margin:0 0 8px">'+( COMPANY.name||'ALITOS')+'</h2>'+
+        '<p style="color:#888;font-size:12px;margin:0">'+( COMPANY.address||'')+'</p>'+
+        '</div>'+
+        '<h3 style="color:#333">Facture N° '+o.id+'</h3>'+
+        '<p>Bonjour <strong>'+c.name+'</strong>,</p>'+
+        '<p>Veuillez trouver ci-dessous le détail de votre commande du <strong>'+o.date+'</strong> :</p>'+
+        '<div style="background:#f8f8f8;border-radius:8px;padding:16px;margin:16px 0">'+items+'</div>'+
+        '<p style="font-size:18px;font-weight:bold;color:#C9A84C">Total : '+fm(o.total)+'</p>'+
+        '<p style="color:#888;font-size:12px">Pour imprimer ou télécharger la facture en PDF, utilisez votre espace client ou contactez-nous.</p>'+
+        '<hr style="border:1px solid #eee;margin:20px 0">'+
+        '<p style="color:#888;font-size:11px">'+( COMPANY.name||'Alitos')+' · '+(COMPANY.phone||'')+' · '+(COMPANY.email||'')+'</p>'+
+        '</div>'
+    })
+  }).then(function(r){return r.json();})
+  .then(function(d){
+    if(btn){btn.disabled=false;btn.textContent='📧 Envoyer par email';}
+    if(d.success!==false){
+      toast('📧 Facture envoyée à '+email+' ✓');
+    } else {
+      toast('Erreur envoi: '+(d.error||'inconnu'),true);
+    }
+  }).catch(function(e){
+    if(btn){btn.disabled=false;btn.textContent='📧 Envoyer par email';}
+    toast('Erreur réseau — vérifiez votre connexion',true);
+  });
 }
 
 // ═══════════ UPDATE goSec FOR NEW SECTIONS ═══════════
@@ -4935,6 +5147,8 @@ function fbShow(state, msg){
 }
 
 // ── Sauvegarder vers Realtime Database ───────────────────
+var _offlineQueue = false; // true si une sauvegarde est en attente (hors ligne)
+
 async function saveToCloud(){
   fbShow('syncing','☁️ Sauvegarde...');
   try{
@@ -4942,7 +5156,7 @@ async function saveToCloud(){
       clients:    JSON.parse(localStorage.getItem('al_c')||'[]'),
       products:   JSON.parse(localStorage.getItem('al_p')||'[]'),
       orders:     JSON.parse(localStorage.getItem('al_o')||'[]'),
-      admin:      ADMIN, // Toujours depuis la mémoire (source de vérité)
+      admin:      ADMIN,
       admins:     ADMINS,
       cats:       JSON.parse(localStorage.getItem('al_cats')||'[]'),
       company:    JSON.parse(localStorage.getItem('al_company')||'{}'),
@@ -4957,11 +5171,24 @@ async function saveToCloud(){
     const res=await fetch(FB_URL,{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
     if(!res.ok) throw new Error('HTTP '+res.status);
     fbShow('synced','✅ Synchronisé');
+    _offlineQueue = false;
   }catch(e){
-    fbShow('error','⚠️ Hors-ligne');
+    fbShow('error','⚠️ Hors-ligne — données sauvegardées localement');
+    _offlineQueue = true;
     console.warn('FB save:',e.message);
   }
 }
+
+// Sync automatique quand la connexion revient
+window.addEventListener('online', function(){
+  if(_offlineQueue){
+    fbShow('syncing','☁️ Reconnecté — synchronisation...');
+    setTimeout(saveToCloud, 1000);
+  }
+});
+window.addEventListener('offline', function(){
+  fbShow('error','⚠️ Hors-ligne — données sauvegardées localement');
+});
 
 // Debounce 900ms
 let _debTimer=null;
@@ -5042,7 +5269,10 @@ function refreshUI(){
       else if(sec==='prods' && window.renderProds) window.renderProds();
       else if(sec==='stock' && window.renderStock) window.renderStock();
       else if(sec==='credits' && window.renderCredits) window.renderCredits();
-      else if(sec==='complaints' && window.renderComplaints) window.renderComplaints();
+      else if(sec==='complaints'){
+        if(window.renderComplaints) window.renderComplaints();
+        if(window.renderAdminContactMsgs) setTimeout(window.renderAdminContactMsgs,100);
+      }
       else if(sec==='suppliers' && window.renderSuppliers) window.renderSuppliers();
       else if(sec==='analytics' && window.renderAnalytics) window.renderAnalytics();
       else if(sec==='purchases' && window.renderPurchases) window.renderPurchases();
@@ -5051,6 +5281,7 @@ function refreshUI(){
       if(window.renderClOrds) window.renderClOrds();
       if(window.renderClComplaints) window.renderClComplaints();
       if(window.renderClCreditInfo) window.renderClCreditInfo();
+      if(window.renderContactMsgs) window.renderContactMsgs();
     }
   }catch(e){ console.warn('refreshUI:',e.message); }
 }
@@ -5071,19 +5302,34 @@ function startRealtimeSync(){
         // Ignorer si c'est notre propre sauvegarde (moins de 3s)
         if(Date.now() - _lastSaveTime < 3000) return;
         if(!d) return;
-        // Fusionner intelligemment les réclamations (garder suppressions)
-        if(d.complaints && Array.isArray(d.complaints)){
-          // Accepter toujours les données Firebase (source de vérité)
-          COMPLAINTS = d.complaints;
+        // Firebase est source de vérité pour TOUT — accepter toujours
+        if(d.complaints !== undefined){
+          COMPLAINTS = Array.isArray(d.complaints) ? d.complaints : [];
           try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(ex){}
         }
-        if(d.pending_pay && Array.isArray(d.pending_pay)){
-          PENDING_PAYMENTS = d.pending_pay;
+        if(d.contact !== undefined){
+          CONTACT_MSGS = Array.isArray(d.contact) ? d.contact : [];
+          try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(ex){}
+        }
+        if(d.pending_pay !== undefined){
+          PENDING_PAYMENTS = Array.isArray(d.pending_pay) ? d.pending_pay : [];
           try{localStorage.setItem('al_pending_pay',JSON.stringify(PENDING_PAYMENTS));}catch(ex){}
         }
-        if(d.contact && Array.isArray(d.contact)){
-          CONTACT_MSGS = d.contact;
-          try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(ex){}
+        if(d.credits !== undefined && typeof d.credits==='object'){
+          CREDITS = d.credits;
+          try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(ex){}
+        }
+        if(d.orders !== undefined && Array.isArray(d.orders)){
+          ORDERS = d.orders;
+          try{localStorage.setItem('al_o',JSON.stringify(ORDERS));}catch(ex){}
+        }
+        if(d.products !== undefined && Array.isArray(d.products)){
+          PRODUCTS = d.products;
+          try{localStorage.setItem('al_p',JSON.stringify(PRODUCTS));}catch(ex){}
+        }
+        if(d.suppliers !== undefined && Array.isArray(d.suppliers)){
+          SUPPLIERS = d.suppliers;
+          try{localStorage.setItem('al_sup',JSON.stringify(SUPPLIERS));}catch(ex){}
         }
         injectData(d);
         refreshUI();
@@ -5095,7 +5341,12 @@ function startRealtimeSync(){
       try{
         var msg = JSON.parse(e.data);
         if(msg.data && Date.now()-_lastSaveTime > 2000){
-          injectData(msg.data);
+          var d=msg.data;
+          // Sync critiques même en patch
+          if(d.complaints !== undefined){ COMPLAINTS=Array.isArray(d.complaints)?d.complaints:[]; try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(ex){} }
+          if(d.contact !== undefined){ CONTACT_MSGS=Array.isArray(d.contact)?d.contact:[]; try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(ex){} }
+          if(d.credits !== undefined && typeof d.credits==='object'){ CREDITS=d.credits; try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(ex){} }
+          injectData(d);
           refreshUI();
         }
       }catch(err){ console.warn('SSE patch:',err.message); }
