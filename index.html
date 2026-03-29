@@ -7,7 +7,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" crossorigin="anonymous" onerror="console.warn('jsPDF non chargé')"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js" crossorigin="anonymous" onerror="console.warn('jsPDF-autotable non chargé')"></script>
 <!-- Resend via Cloudflare Worker -->
 <script>
 var WORKER_URL = 'https://alitos-email.ait-azgar.workers.dev';
@@ -65,6 +67,10 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:var(--tx);min-h
 .fg label{display:block;font-size:11px;color:var(--tx3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
 .fg input,.fg select,.fg textarea{width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:.2s}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold)}
+.fg input.field-err,.fg select.field-err,.fg textarea.field-err{border-color:var(--red)!important;animation:shake .3s ease}
+.field-err-msg{color:var(--red);font-size:11px;margin-top:3px;display:none}
+.field-err-msg.show{display:block}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .fg textarea{resize:vertical;min-height:65px}
 .btn-main{width:100%;padding:13px;background:var(--gold);color:var(--dk);border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;margin-top:6px}
 .btn-main:hover{background:var(--gl)}
@@ -527,7 +533,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
        <select id="stk-add-prod" onchange="onStkProdChange()"><option value="">— Sélectionner un produit —</option></select>
        <input type="number" id="stk-add-qty" placeholder="Quantité" min="1" style="width:100px" oninput="onStkCalcCmp()">
        <input type="number" id="stk-add-price" placeholder="Prix achat (MAD)" min="0" step="0.01" style="width:140px" oninput="onStkCalcCmp()">
-       <select id="stk-add-sup" style="min-width:160px"><option value="">— Fournisseur (optionnel) —</option></select>
+       <select id="stk-add-sup" style="min-width:160px" onchange="if(this.value==='__new__'){openMd('add-supplier');this.value='';}"><option value="">— Fournisseur ★ —</option></select>
        <select id="stk-add-paymethod" style="min-width:140px">
          <option value="">— Paiement —</option>
          <option value="cash">💵 Espèces</option>
@@ -628,11 +634,12 @@ tr:hover td{background:rgba(255,255,255,0.018)}
       <input type="date" id="pur-from" onchange="renderPurchases()" title="Du">
       <input type="date" id="pur-to" onchange="renderPurchases()" title="Au">
       <button class="btn btn-o btn-sm" onclick="resetPurFilters()">✕</button>
+      <button class="btn btn-p btn-sm" onclick="assignMissingSuppliers()" title="Assigner un fournisseur aux achats sans fournisseur">🏭 Assigner fourn.</button>
       <button class="btn btn-g btn-sm" onclick="exportPurchasesCSV()">📥 CSV</button>
      </div>
      <div class="tc" style="overflow-x:auto">
       <table style="min-width:650px"><thead><tr>
-       <th>Date</th><th>Produit</th><th>Catégorie</th><th>Fournisseur</th><th>Qté</th><th>Prix unitaire</th><th>Total</th>
+       <th>Date</th><th>Produit</th><th>Catégorie</th><th>Fournisseur</th><th>Paiement</th><th>Qté</th><th>Prix unitaire</th><th>Total</th>
       </tr></thead><tbody id="pur-tb"></tbody></table>
      </div>
     </div>
@@ -701,8 +708,10 @@ tr:hover td{background:rgba(255,255,255,0.018)}
     <div class="sec" id="sec-invoices">
      <div class="fb no-print">
       <select id="inv-sel" onchange="renderInvoice()" style="flex:1;min-width:280px"><option value="">— Sélectionner une commande —</option></select>
-      <button class="btn btn-g no-print" onclick="window.print()">🖨️ Imprimer / PDF</button>
-      <button class="btn btn-b no-print" onclick="sendInvoiceByEmail()">📧 Envoyer par email</button>
+      <button class="btn btn-g no-print" onclick="window.print()">🖨️ Imprimer</button>
+      <button class="btn btn-o no-print" onclick="downloadInvoicePDF()" id="btn-dl-pdf">📄 PDF</button>
+      <button class="btn btn-b no-print" onclick="sendInvoiceByEmail()" id="btn-email-inv">📧 Email</button>
+      <button class="btn btn-gn no-print" onclick="sendInvoiceWhatsApp()" id="btn-wa-inv">📱 WhatsApp</button>
      </div>
      <div id="inv-box" style="margin-top:18px"></div>
     </div>
@@ -719,8 +728,8 @@ tr:hover td{background:rgba(255,255,255,0.018)}
  <div class="md" id="md-add-cl" style="display:none">
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <h2>Nouveau client</h2>
-  <div class="fr2"><div class="fg"><label>Nom complet</label><input id="nc-name" placeholder="Hassan Benali"></div><div class="fg"><label>Téléphone</label><input id="nc-ph" placeholder="0661234567"></div></div>
-  <div class="fr2"><div class="fg"><label>Ville</label><input id="nc-city" placeholder="Casablanca"></div><div class="fg"><label>Région</label><select id="nc-reg"><option>Grand Casablanca</option><option>Rabat-Salé</option><option>Marrakech-Safi</option><option>Fès-Meknès</option><option>Tanger-Tétouan</option><option>Souss-Massa</option><option>Oriental</option><option>Béni Mellal</option><option>Drâa-Tafilalet</option></select></div></div>
+  <div class="fr2"><div class="fg"><label>Nom complet <span style="color:var(--red)">★</span></label><input id="nc-name" placeholder="Hassan Benali"></div><div class="fg"><label>Téléphone <span style="color:var(--red)">★</span></label><input id="nc-ph" placeholder="0661234567"></div></div>
+  <div class="fr2"><div class="fg"><label>Ville <span style="color:var(--red)">★</span></label><input id="nc-city" placeholder="Casablanca"></div><div class="fg"><label>Région</label><select id="nc-reg"><option>Grand Casablanca</option><option>Rabat-Salé</option><option>Marrakech-Safi</option><option>Fès-Meknès</option><option>Tanger-Tétouan</option><option>Souss-Massa</option><option>Oriental</option><option>Béni Mellal</option><option>Drâa-Tafilalet</option></select></div></div>
   <div class="fg"><label>Adresse</label><input id="nc-addr" placeholder="123 Rue Mohammed V..."></div>
   <div class="fg">
    <label>Localisation sur carte</label>
@@ -731,7 +740,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
    <div class="fr2"><div class="fg" style="margin:0"><label>Latitude</label><input id="nc-lat" type="number" step="any" placeholder="33.5731" oninput="updateLocBadge('nc')"></div><div class="fg" style="margin:0"><label>Longitude</label><input id="nc-lng" type="number" step="any" placeholder="-7.5898" oninput="updateLocBadge('nc')"></div></div>
    <div id="nc-loc-badge" class="map-coords-badge" style="margin-top:7px"></div>
   </div>
-  <div class="fr2"><div class="fg"><label>Identifiant</label><input id="nc-user" placeholder="client1"></div><div class="fg"><label>Mot de passe</label><input type="password" id="nc-pw" placeholder="••••••••"></div></div>
+  <div class="fr2"><div class="fg"><label>Identifiant <span style="color:var(--red)">★</span></label><input id="nc-user" placeholder="client1"></div><div class="fg"><label>Mot de passe <span style="color:var(--red)">★</span></label><input type="password" id="nc-pw" placeholder="••••••••"></div></div>
   <div class="fg"><label>Email <span style="color:var(--red)">★ Obligatoire</span></label><input id="nc-email" type="email" placeholder="client@email.com" required></div>
   <div class="fg">
    <label>Photo du client</label>
@@ -781,7 +790,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
  <div class="md" id="md-add-prod" style="display:none">
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <h2>Nouveau produit</h2>
-  <div class="fg"><label>Nom</label><input id="np-name" placeholder="Nom du produit"></div>
+  <div class="fg"><label>Nom <span style="color:var(--red)">★</span></label><input id="np-name" placeholder="Nom du produit"></div>
   <div class="fr2">
    <div class="fg">
     <label>Catégorie</label>
@@ -797,8 +806,8 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   <div style="background:rgba(201,168,76,0.04);border:1px solid var(--bo);border-radius:10px;padding:13px;margin-bottom:12px">
    <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:9px;text-transform:uppercase;letter-spacing:1px">💰 Prix</div>
    <div class="fr2">
-    <div class="fg" style="margin-bottom:7px"><label>Prix d'achat (MAD)</label><input type="number" id="np-buy" placeholder="0" min="0" oninput="calcMargin('np')"></div>
-    <div class="fg" style="margin-bottom:7px"><label>Prix de vente (MAD)</label><input type="number" id="np-sell" placeholder="0" min="0" oninput="calcMargin('np')"></div>
+    <div class="fg" style="margin-bottom:7px"><label>Prix d'achat (MAD) <span style="color:var(--red)">★</span></label><input type="number" id="np-buy" placeholder="0" min="0" oninput="calcMargin('np')"></div>
+    <div class="fg" style="margin-bottom:7px"><label>Prix de vente (MAD) <span style="color:var(--red)">★</span></label><input type="number" id="np-sell" placeholder="0" min="0" oninput="calcMargin('np')"></div>
    </div>
    <div id="np-margin" class="margin-box"></div>
   </div>
@@ -1479,7 +1488,7 @@ function doForgot(){
   var isEmail=inpL.includes('@');
   var isPhone=/^[\d\s\+\-]{8,15}$/.test(inp.replace(/\s/g,''));
 
-  // Chercher dans les clients (par email, téléphone ou identifiant)
+  // ── Chercher dans les clients ──
   var found=null;
   for(var i=0;i<CLIENTS.length;i++){
     var c=CLIENTS[i];
@@ -1492,35 +1501,42 @@ function doForgot(){
   _fpOTP=String(Math.floor(100000+Math.random()*900000));
 
   if(found){
-    // ── Client trouvé ──
     _fpFoundAccount=found;_fpIsAdmin=false;
-    var clientEmail = found.email || '';
+    // Email du compte client (depuis sa fiche)
+    var clientEmail=found.email||'';
     if(!clientEmail){
       res.innerHTML='<div style="color:var(--ora);font-weight:600">⚠️ Pas d\'email enregistré</div>'+
-        '<div style="margin-top:5px;font-size:12px;color:var(--tx2)">Votre compte n\'a pas d\'email enregistré. Contactez l\'administrateur.</div>';
+        '<div style="margin-top:5px;font-size:12px;color:var(--tx2)">Votre compte n\'a pas d\'email enregistré dans votre fiche. Contactez l\'administrateur.</div>';
       res.style.display='block';if(ow)ow.style.display='none';return;
     }
     var masked=clientEmail.replace(/(.{2}).+(@.+)/,function(m,a,b){return a+'***'+b;});
-    sendResendEmail(clientEmail, found.name, _fpOTP).then(function(ok){
+    // Envoyer le code + identifiant au email du compte client
+    var emailBody='<div style="font-family:sans-serif;max-width:420px;margin:auto;padding:28px;background:#111;color:#F5F0E8;border-radius:12px">'+
+      '<h2 style="color:#C9A84C;letter-spacing:3px;margin-bottom:16px">ALITOS</h2>'+
+      '<p>Bonjour <strong>'+found.name+'</strong>,</p>'+
+      '<p>Votre identifiant de connexion : <strong style="color:#C9A84C">'+found.username+'</strong></p>'+
+      '<p>Votre code de vérification :</p>'+
+      '<div style="font-size:34px;font-weight:bold;color:#C9A84C;letter-spacing:8px;margin:18px 0;text-align:center;background:rgba(201,168,76,0.08);padding:14px;border-radius:8px">'+_fpOTP+'</div>'+
+      '<p style="color:#888;font-size:12px">Ce code expire dans 10 minutes. Ne le partagez pas.</p>'+
+      '</div>';
+    sendResendEmail(clientEmail, found.name, _fpOTP,
+      'Code récupération — '+( COMPANY.name||'Alitos'), emailBody).then(function(ok){
       if(ok) toast('📧 Code envoyé à votre email !');
-      else toast('⚠️ Erreur envoi email — code affiché en secours',true);
+      else toast('⚠️ Erreur envoi email',true);
     });
     res.innerHTML='<div style="color:var(--grn);font-weight:600;margin-bottom:6px">✅ Compte identifié</div>'+
-      '<div style="font-size:12px;color:var(--tx2)">📧 Code envoyé à : <strong>'+masked+'</strong></div>'+
+      '<div style="font-size:12px;color:var(--tx2)">📧 Code + identifiant envoyés à : <strong>'+masked+'</strong></div>'+
       '<div style="margin-top:8px;background:rgba(82,201,122,0.08);border:1px solid rgba(82,201,122,0.2);border-radius:8px;padding:10px;font-size:12px;color:var(--tx2)">Vérifiez votre boîte email et saisissez le code ci-dessous.</div>';
     res.style.display='block';
     if(ow)ow.style.display='block';
     document.getElementById('fp-otp-inp').value='';
 
   } else {
-    // ── Chercher admin (par email identifiant ou email entreprise) ──
-    var adminMatch = false;
-    if(ADMIN.username && inpL===ADMIN.username.toLowerCase()) adminMatch=true;
-    if(ADMIN.email && isEmail && inpL===ADMIN.email.toLowerCase()) adminMatch=true;
-    if(COMPANY.email && isEmail && inpL===COMPANY.email.toLowerCase()) adminMatch=true;
-
-    // Chercher dans ADMINS secondaires
+    // ── Chercher admin principal ou secondaire ──
+    var adminMatch=false;
     var foundAdmin=null;
+    if(ADMIN.username&&inpL===ADMIN.username.toLowerCase()) adminMatch=true;
+    if(ADMIN.email&&isEmail&&inpL===ADMIN.email.toLowerCase()) adminMatch=true;
     if(!adminMatch){
       for(var ai=0;ai<ADMINS.length;ai++){
         if((ADMINS[ai].username&&ADMINS[ai].username.toLowerCase()===inpL)||
@@ -1532,25 +1548,35 @@ function doForgot(){
 
     if(adminMatch||foundAdmin){
       _fpIsAdmin=true;
-      _fpFoundAccount=foundAdmin||ADMIN;
-      // Envoyer à l'email de l'entreprise (COMPANY.email) ou email admin
-      var adminEmailTarget = COMPANY.email || ADMIN.email || '';
-      if(foundAdmin && foundAdmin.email) adminEmailTarget = foundAdmin.email;
-      var adminName = (foundAdmin&&foundAdmin.name) || ADMIN.name || 'Administrateur';
+      var adminData=foundAdmin||ADMIN;
+      _fpFoundAccount=adminData;
+      // Envoyer à l'email PROPRE de l'admin (pas email entreprise)
+      var adminEmailTarget=adminData.email||ADMIN.email||COMPANY.email||'';
+      var adminName=adminData.name||'Administrateur';
+      var adminUser=adminData.username||ADMIN.username||'admin';
 
       if(!adminEmailTarget){
-        res.innerHTML='<div style="color:var(--ora);font-weight:600">⚠️ Pas d\'email entreprise</div>'+
-          '<div style="font-size:12px;color:var(--tx2);margin-top:5px">Configurez l\'email dans Paramètres → Entreprise.</div>';
+        res.innerHTML='<div style="color:var(--ora);font-weight:600">⚠️ Pas d\'email admin</div>'+
+          '<div style="font-size:12px;color:var(--tx2);margin-top:5px">Aucun email configuré pour ce compte admin.</div>';
         res.style.display='block';if(ow)ow.style.display='none';return;
       }
 
       var maskedAdmin=adminEmailTarget.replace(/(.{2}).+(@.+)/,function(m,a,b){return a+'***'+b;});
-      sendResendEmail(adminEmailTarget, adminName, _fpOTP).then(function(ok){
-        if(ok) toast('📧 Code envoyé à l\'email entreprise !');
-        else toast('⚠️ Erreur envoi — code affiché en secours',true);
+      var adminEmailBody='<div style="font-family:sans-serif;max-width:420px;margin:auto;padding:28px;background:#111;color:#F5F0E8;border-radius:12px">'+
+        '<h2 style="color:#C9A84C;letter-spacing:3px;margin-bottom:16px">ALITOS — Admin</h2>'+
+        '<p>Bonjour <strong>'+adminName+'</strong>,</p>'+
+        '<p>Votre identifiant admin : <strong style="color:#C9A84C">'+adminUser+'</strong></p>'+
+        '<p>Votre code de vérification :</p>'+
+        '<div style="font-size:34px;font-weight:bold;color:#C9A84C;letter-spacing:8px;margin:18px 0;text-align:center;background:rgba(201,168,76,0.08);padding:14px;border-radius:8px">'+_fpOTP+'</div>'+
+        '<p style="color:#888;font-size:12px">Ce code expire dans 10 minutes.</p>'+
+        '</div>';
+      sendResendEmail(adminEmailTarget, adminName, _fpOTP,
+        'Code récupération Admin — '+(COMPANY.name||'Alitos'), adminEmailBody).then(function(ok){
+        if(ok) toast('📧 Code envoyé à votre email admin !');
+        else toast('⚠️ Erreur envoi',true);
       });
       res.innerHTML='<div style="color:var(--gold);font-weight:600;margin-bottom:6px">🔑 Administrateur identifié</div>'+
-        '<div style="font-size:12px;color:var(--tx2)">📧 Code envoyé à : <strong>'+maskedAdmin+'</strong></div>'+
+        '<div style="font-size:12px;color:var(--tx2)">📧 Code + identifiant envoyés à : <strong>'+maskedAdmin+'</strong></div>'+
         '<div style="margin-top:8px;background:rgba(201,168,76,0.08);border:1px solid var(--bo);border-radius:8px;padding:10px;font-size:12px;color:var(--tx2)">Vérifiez votre boîte email et saisissez le code reçu.</div>';
       res.style.display='block';
       if(ow)ow.style.display='block';
@@ -1566,6 +1592,7 @@ function doForgot(){
     }
   }
 }
+
 function verifyOTP(){
   var entered=(document.getElementById('fp-otp-inp').value||'').trim();
   if(entered===_fpOTP){
@@ -2167,9 +2194,13 @@ function delProd(id){PRODUCTS=PRODUCTS.filter(function(p){return p.id!==id;});sa
 // ═══════════ STOCK ═══════════
 function fillStkAddProd(){
   var sel=document.getElementById('stk-add-prod');
-  sel.innerHTML='<option value="">— Sélectionner un produit —</option>'+PRODUCTS.map(function(p){return'<option value="'+p.id+'">'+p.name+' (stock: '+p.stock+')</option>';}).join('');
+  sel.innerHTML='<option value="">— Sélectionner un produit ★ —</option>'+PRODUCTS.map(function(p){return'<option value="'+p.id+'">'+p.name+' (stock: '+p.stock+')</option>';}).join('');
   var supSel=document.getElementById('stk-add-sup');
-  if(supSel){supSel.innerHTML='<option value="">— Fournisseur (optionnel) —</option>'+SUPPLIERS.map(function(s){return'<option value="'+s.id+'">'+s.name+'</option>';}).join('');}
+  if(supSel){
+    supSel.innerHTML='<option value="">— Fournisseur ★ —</option>'+
+      SUPPLIERS.map(function(s){return'<option value="'+s.id+'">'+s.name+'</option>';}).join('')+
+      '<option value="__new__" style="color:var(--gold);font-weight:600">➕ Nouveau fournisseur...</option>';
+  }
 }
 function onStkProdChange(){
   var pid=document.getElementById('stk-add-prod').value;
@@ -2298,10 +2329,12 @@ function renderStock(){
         if(sup) lastSup='<span style="color:var(--blu);font-size:11px">'+sup.name+'</span>';
       }
     }
+    // Stock color
+    var stkColor=p.stock===0?'var(--red)':p.stock<=(p.threshold||10)?'var(--ora)':'var(--tx)';
     return '<tr>'+
       '<td><div style="display:flex;align-items:center;gap:8px"><img src="'+prodImg(p)+'" style="width:32px;height:32px;border-radius:6px;object-fit:cover" onerror="this.style.display=\'none\'"><span style="font-weight:500">'+p.name+'</span></div></td>'+
       '<td style="color:var(--tx3)">'+p.category+'</td>'+
-      '<td><input type="number" id="sv-'+p.id+'" value="'+p.stock+'" min="0" style="width:65px;background:var(--dk4);border:1px solid var(--bo2);border-radius:6px;padding:5px 7px;color:var(--tx);font-family:\'DM Sans\',sans-serif;font-size:12px;outline:none;text-align:center" onchange="directSetStk(\''+p.id+'\')"></td>'+
+      '<td><span style="font-size:15px;font-weight:700;color:'+stkColor+'">'+p.stock+'</span><span style="font-size:10px;color:var(--tx3);margin-left:4px">unités</span></td>'+
       '<td><input type="number" id="st-'+p.id+'" value="'+(p.threshold||10)+'" min="0" style="width:55px;background:var(--dk4);border:1px solid var(--bo2);border-radius:6px;padding:5px 7px;color:var(--tx);font-family:\'DM Sans\',sans-serif;font-size:12px;outline:none;text-align:center" onchange="setThreshold(\''+p.id+'\')"></td>'+
       '<td><input type="number" id="sb-'+p.id+'" value="'+b+'" min="0" style="width:75px;background:var(--dk4);border:1px solid rgba(82,201,122,0.2);border-radius:6px;padding:5px 7px;color:var(--grn);font-family:\'DM Sans\',sans-serif;font-size:12px;outline:none;text-align:center" onchange="setPriceBuy(\''+p.id+'\')"></td>'+
       '<td><input type="number" id="ss-'+p.id+'" value="'+p.price+'" min="0" style="width:75px;background:var(--dk4);border:1px solid rgba(201,168,76,0.2);border-radius:6px;padding:5px 7px;color:var(--gold);font-family:\'DM Sans\',sans-serif;font-size:12px;outline:none;text-align:center" onchange="setPriceSell(\''+p.id+'\')"></td>'+
@@ -2309,11 +2342,8 @@ function renderStock(){
       '<td><span style="color:var(--pur)">'+mp+'%</span></td>'+
       '<td>'+(p.stock===0?'<span class="sb sx">Rupture</span>':p.stock<=(p.threshold||10)?'<span class="sb sp">Bas</span>':'<span class="sb sd">OK</span>')+'</td>'+
       '<td style="font-size:12px">'+lastSup+'</td>'+
-      '<td><div style="display:flex;gap:4px">'+
-        '<button class="btn btn-r btn-sm" onclick="adjStk(\''+p.id+'\',-1)">−1</button>'+
-        '<button class="btn btn-gn btn-sm" onclick="adjStk(\''+p.id+'\',1)">+1</button>'+
-        '<button class="btn btn-b btn-sm" onclick="adjStk(\''+p.id+'\',10)">+10</button>'+
-      '</div></td></tr>';
+      '<td><button class="btn btn-b btn-sm" onclick="goSec(\'stock\',document.getElementById(\'ni-stock\'));setTimeout(function(){var el=document.getElementById(\'stk-add-prod\');if(el){el.value=\''+p.id+'\';onStkProdChange();}},300)" title="Approvisionner ce produit">📦 Approvisionner</button></td>'+
+    '</tr>';
   }).join('');
 }
 function directSetStk(id){var v=+(document.getElementById('sv-'+id).value);if(isNaN(v)||v<0)return;var i=PRODUCTS.findIndex(function(p){return p.id===id;});if(i>-1){PRODUCTS[i].stock=v;save();toast('Stock mis à jour ✓');}}
@@ -2453,10 +2483,16 @@ function updateClient(){
   }
 }
 function saveClient(){
+  if(!validateForm([
+    {id:'nc-name',label:'Nom complet'},
+    {id:'nc-ph',label:'Téléphone'},
+    {id:'nc-city',label:'Ville'},
+    {id:'nc-user',label:'Identifiant'},
+    {id:'nc-pw',label:'Mot de passe'}
+  ])) return;
   var name=document.getElementById('nc-name').value.trim();
   var user=document.getElementById('nc-user').value.trim();
   var pw=document.getElementById('nc-pw').value;
-  if(!name||!user||!pw){toast('Nom, identifiant et mot de passe requis',true);return;}
   if(CLIENTS.find(function(c){return c.username===user;})){toast('Identifiant déjà utilisé',true);return;}
   var latV=parseFloat(document.getElementById('nc-lat').value)||null;
   var lngV=parseFloat(document.getElementById('nc-lng').value)||null;
@@ -3499,34 +3535,175 @@ function payMethodLabel(o){
 }
 
 // ═══════════ SEND INVOICE ═══════════
+// ── Générer PDF facture avec jsPDF ────────────────────────
+function buildInvoiceData(id){
+  if(!id) return null;
+  var o=ORDERS.find(function(x){return x.id===id;});
+  if(!o) return null;
+  var c=getC(o.clientId);
+  return {o:o, c:c};
+}
+
+function generateInvoicePDF(id){
+  var d=buildInvoiceData(id);
+  if(!d){toast('Sélectionnez une commande',true);return null;}
+  // Vérifier que jsPDF est disponible
+  if(typeof jspdf === 'undefined' || !jspdf.jsPDF){
+    toast('⚠️ jsPDF non chargé — utilisez Imprimer pour obtenir le PDF',true);
+    window.print();
+    return null;
+  }
+  var o=d.o, c=d.c;
+  var doc=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  var gold=[201,168,76], dark=[17,17,17], grey=[100,100,100], black=[30,30,30];
+
+  // Header background
+  doc.setFillColor(17,17,17);
+  doc.rect(0,0,210,40,'F');
+
+  // Company name
+  doc.setTextColor(201,168,76);
+  doc.setFontSize(22);
+  doc.setFont('helvetica','bold');
+  doc.text(COMPANY.name||'ALITOS', 14, 18);
+
+  // Tagline
+  doc.setFontSize(9);
+  doc.setTextColor(150,150,150);
+  doc.setFont('helvetica','normal');
+  doc.text(COMPANY.tagline||'Commerce & Distribution', 14, 26);
+  doc.text(COMPANY.address||'Maroc', 14, 32);
+  doc.text((COMPANY.phone||'')+'  '+(COMPANY.email||''), 14, 37);
+
+  // Invoice title
+  doc.setFontSize(16);
+  doc.setTextColor(201,168,76);
+  doc.setFont('helvetica','bold');
+  doc.text('FACTURE', 160, 18);
+  doc.setFontSize(10);
+  doc.setTextColor(255,255,255);
+  doc.text('N° '+o.id, 160, 26);
+  doc.text('Date : '+o.date, 160, 32);
+
+  // Divider
+  doc.setDrawColor(201,168,76);
+  doc.setLineWidth(0.5);
+  doc.line(0,42,210,42);
+
+  // Client info
+  var y=50;
+  doc.setFillColor(240,240,240);
+  doc.roundedRect(14,y-5,85,28,2,2,'F');
+  doc.setTextColor(100,100,100); doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('CLIENT', 18, y+1);
+  doc.setTextColor(30,30,30); doc.setFontSize(11); doc.setFont('helvetica','bold');
+  doc.text(c.name, 18, y+8);
+  doc.setFontSize(9); doc.setFont('helvetica','normal'); doc.setTextColor(80,80,80);
+  doc.text(c.city+(c.region?' — '+c.region:''), 18, y+14);
+  if(c.phone) doc.text('Tél: '+c.phone, 18, y+20);
+
+  // Order info
+  doc.setFillColor(240,240,240);
+  doc.roundedRect(110,y-5,86,28,2,2,'F');
+  doc.setTextColor(100,100,100); doc.setFontSize(8); doc.setFont('helvetica','bold');
+  doc.text('DÉTAILS', 114, y+1);
+  doc.setTextColor(30,30,30); doc.setFontSize(9); doc.setFont('helvetica','normal');
+  var payLabels={cash:'Espèces',transfer:'Virement',cmi:'CMI/Carte',cheque:'Chèque',credit:'Crédit'};
+  doc.text('Statut : '+(SL[o.status]||o.status), 114, y+8);
+  doc.text('Paiement : '+(o.payStatus==='paid'?'Réglé':'En attente'), 114, y+14);
+  if(o.payMethod) doc.text('Mode : '+(payLabels[o.payMethod]||o.payMethod), 114, y+20);
+
+  // Products table
+  var tableY=y+35;
+  var rows=o.items.map(function(it){
+    var p=getP(it.productId);
+    var htU=Math.round(it.price/1.2);
+    return [p.name, it.quantity, fm(it.price), fm(it.price*it.quantity)];
+  });
+  doc.autoTable({
+    startY:tableY,
+    head:[['Produit','Qté','Prix unitaire','Total HT']],
+    body:rows,
+    styles:{fontSize:10,cellPadding:4,textColor:[30,30,30]},
+    headStyles:{fillColor:[201,168,76],textColor:[17,17,17],fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[248,248,248]},
+    columnStyles:{0:{cellWidth:80},1:{halign:'center',cellWidth:20},2:{halign:'right',cellWidth:40},3:{halign:'right',cellWidth:40}},
+    margin:{left:14,right:14}
+  });
+
+  // Totals
+  var finalY=doc.lastAutoTable.finalY+8;
+  doc.setDrawColor(220,220,220);
+  doc.line(120,finalY,196,finalY);
+  finalY+=6;
+  var tva=Math.round(o.total-o.total/1.2);
+  var ht=Math.round(o.total/1.2);
+  doc.setFontSize(9); doc.setTextColor(80,80,80);
+  doc.text('Sous-total HT :', 120, finalY); doc.text(fm(ht), 196, finalY, {align:'right'});
+  finalY+=6;
+  doc.text('TVA (20%) :', 120, finalY); doc.text(fm(tva), 196, finalY, {align:'right'});
+  finalY+=2;
+  doc.setDrawColor(201,168,76); doc.setLineWidth(0.7);
+  doc.line(120,finalY,196,finalY);
+  finalY+=7;
+  doc.setFontSize(13); doc.setFont('helvetica','bold');
+  doc.setTextColor(201,168,76);
+  doc.text('TOTAL TTC :', 120, finalY);
+  doc.text(fm(o.total), 196, finalY, {align:'right'});
+
+  // Footer
+  var pageH=doc.internal.pageSize.height;
+  doc.setFillColor(17,17,17);
+  doc.rect(0,pageH-18,210,18,'F');
+  doc.setFontSize(8); doc.setTextColor(150,150,150); doc.setFont('helvetica','normal');
+  doc.text(COMPANY.name+' — '+( COMPANY.address||'Maroc')+' — ICE: '+(COMPANY.ice||'—'), 105, pageH-10, {align:'center'});
+  doc.text('Merci de votre confiance.', 105, pageH-5, {align:'center'});
+
+  return doc;
+}
+
+function downloadInvoicePDF(){
+  var id=document.getElementById('inv-sel').value;
+  if(!id){toast('Sélectionnez une commande',true);return;}
+  var doc=generateInvoicePDF(id);
+  if(!doc) return;
+  doc.save('Facture_'+id+'_'+(COMPANY.name||'Alitos')+'.pdf');
+  toast('✅ PDF téléchargé — Facture '+id);
+}
+
+function sendInvoiceWhatsApp(){
+  var id=document.getElementById('inv-sel').value;
+  if(!id){toast('Sélectionnez une commande',true);return;}
+  var o=ORDERS.find(function(x){return x.id===id;});
+  if(!o){toast('Commande introuvable',true);return;}
+  var c=getC(o.clientId);
+  var phone=c.phone||'';
+  if(!phone){toast('Ce client n\'a pas de téléphone enregistré',true);return;}
+  var waPhone=phone.replace(/[^0-9]/g,'');
+  if(waPhone.startsWith('0')) waPhone='212'+waPhone.substring(1);
+  var items=o.items.map(function(it){var p=getP(it.productId);return '• '+p.name+' x'+it.quantity+' = '+fm(it.price*it.quantity);}).join('\n');
+  var msg='🧾 *Facture N° '+o.id+'*\n'+(COMPANY.name||'Alitos')+'\n'+'─────────────────\n'+items+'\n'+'─────────────────\n'+'*Total : '+fm(o.total)+'*\nDate : '+o.date+'\n\nMerci pour votre commande ! 🙏';
+  window.open('https://wa.me/'+waPhone+'?text='+encodeURIComponent(msg),'_blank');
+  toast('WhatsApp ouvert pour '+phone);
+}
+
 function sendInvoiceByEmail(){
   var id=document.getElementById('inv-sel').value;
-  if(!id){toast('Selectionnez une commande',true);return;}
+  if(!id){toast('Sélectionnez une commande',true);return;}
   var o=ORDERS.find(function(x){return x.id===id;});
+  if(!o){toast('Commande introuvable',true);return;}
   var c=getC(o.clientId);
   var email=c.email||'';
   if(!email){
-    // Fallback WhatsApp si pas d'email
-    var phone=c.phone||'';
-    if(phone){
-      var waPhone=phone.replace(/[^0-9]/g,'');
-      if(waPhone.startsWith('0'))waPhone='212'+waPhone.substring(1);
-      var items=o.items.map(function(it){var p=getP(it.productId);return p.name+' x'+it.quantity+' = '+fm(it.price*it.quantity);}).join(', ');
-      var smsText=encodeURIComponent('Facture '+o.id+' | '+(COMPANY.name||'Alitos')+' | '+fm(o.total)+' | '+o.date+'\n'+items);
-      window.open('https://wa.me/'+waPhone+'?text='+smsText);
-      toast('WhatsApp ouvert pour '+phone);
-    } else {
-      toast('Ce client n\'a pas d\'email enregistré',true);
-    }
+    toast('Ce client n\'a pas d\'email enregistré — utilisez WhatsApp 📱',true);
     return;
   }
-  // Générer le HTML de la facture
-  var invEl=document.querySelector('.invoice');
-  if(!invEl){toast('Afficher d\'abord la facture',true);return;}
-  var invHtml=invEl.outerHTML;
-  var items=o.items.map(function(it){var p=getP(it.productId);return p.name+' x'+it.quantity+' = '+fm(it.price*it.quantity);}).join('<br>');
-  // Envoyer via Worker Resend avec HTML de facture
-  var btn=document.querySelector('.no-print.btn-b');
+  // Générer le PDF
+  var doc=generateInvoicePDF(id);
+  if(!doc) return;
+  var pdfBase64=doc.output('datauristring').split(',')[1];
+  var items=o.items.map(function(it){var p=getP(it.productId);return p.name+' ×'+it.quantity+' = '+fm(it.price*it.quantity);}).join('<br>');
+  var btn=document.getElementById('btn-email-inv');
   if(btn){btn.disabled=true;btn.textContent='⏳ Envoi...';}
   fetch(window.WORKER_URL,{
     method:'POST',
@@ -3536,32 +3713,27 @@ function sendInvoiceByEmail(){
       to_name:c.name,
       otp_code:'INVOICE',
       subject:'Facture '+o.id+' — '+(COMPANY.name||'Alitos'),
-      html:'<div style="font-family:sans-serif;max-width:650px;margin:auto;padding:20px">'+
+      pdf_base64:pdfBase64,
+      pdf_name:'Facture_'+o.id+'.pdf',
+      html:'<div style="font-family:sans-serif;max-width:600px;margin:auto;padding:20px">'+
         '<div style="background:#111;color:#F5F0E8;padding:20px;border-radius:12px;margin-bottom:16px">'+
-        '<h2 style="color:#C9A84C;margin:0 0 8px">'+( COMPANY.name||'ALITOS')+'</h2>'+
-        '<p style="color:#888;font-size:12px;margin:0">'+( COMPANY.address||'')+'</p>'+
+        '<h2 style="color:#C9A84C;margin:0 0 6px">'+(COMPANY.name||'ALITOS')+'</h2>'+
+        '<p style="color:#888;font-size:11px;margin:0">'+(COMPANY.address||'')+' — '+(COMPANY.phone||'')+'</p>'+
         '</div>'+
-        '<h3 style="color:#333">Facture N° '+o.id+'</h3>'+
         '<p>Bonjour <strong>'+c.name+'</strong>,</p>'+
-        '<p>Veuillez trouver ci-dessous le détail de votre commande du <strong>'+o.date+'</strong> :</p>'+
-        '<div style="background:#f8f8f8;border-radius:8px;padding:16px;margin:16px 0">'+items+'</div>'+
-        '<p style="font-size:18px;font-weight:bold;color:#C9A84C">Total : '+fm(o.total)+'</p>'+
-        '<p style="color:#888;font-size:12px">Pour imprimer ou télécharger la facture en PDF, utilisez votre espace client ou contactez-nous.</p>'+
-        '<hr style="border:1px solid #eee;margin:20px 0">'+
-        '<p style="color:#888;font-size:11px">'+( COMPANY.name||'Alitos')+' · '+(COMPANY.phone||'')+' · '+(COMPANY.email||'')+'</p>'+
-        '</div>'
+        '<p>Veuillez trouver en pièce jointe votre <strong>Facture N° '+o.id+'</strong> du <strong>'+o.date+'</strong>.</p>'+
+        '<div style="background:#f9f9f9;border-left:4px solid #C9A84C;padding:14px;border-radius:4px;margin:16px 0">'+items+'</div>'+
+        '<p style="font-size:20px;font-weight:bold;color:#C9A84C">Total TTC : '+fm(o.total)+'</p>'+
+        '<hr style="border:1px solid #eee"><p style="color:#aaa;font-size:11px">'+
+        (COMPANY.name||'Alitos')+' · '+(COMPANY.phone||'')+' · '+(COMPANY.email||'')+'</p></div>'
     })
   }).then(function(r){return r.json();})
   .then(function(d){
-    if(btn){btn.disabled=false;btn.textContent='📧 Envoyer par email';}
-    if(d.success!==false){
-      toast('📧 Facture envoyée à '+email+' ✓');
-    } else {
-      toast('Erreur envoi: '+(d.error||'inconnu'),true);
-    }
-  }).catch(function(e){
-    if(btn){btn.disabled=false;btn.textContent='📧 Envoyer par email';}
-    toast('Erreur réseau — vérifiez votre connexion',true);
+    if(btn){btn.disabled=false;btn.textContent='📧 Email';}
+    toast(d.success!==false?'📧 Facture PDF envoyée à '+email+' ✓':'⚠️ Erreur: '+(d.error||''),d.success===false);
+  }).catch(function(){
+    if(btn){btn.disabled=false;btn.textContent='📧 Email';}
+    toast('Erreur réseau',true);
   });
 }
 
@@ -3776,6 +3948,32 @@ function delAdmin(idx){
 // ══════════════════════════════════════════
 // PURCHASES LOG
 // ══════════════════════════════════════════
+function assignMissingSuppliers(){
+  // Find purchases without supplier
+  var missing=[];
+  PRODUCTS.forEach(function(p){
+    if(p.purchases) p.purchases.forEach(function(pur,idx){
+      if(!pur.supplierId) missing.push({prod:p,idx:idx,pur:pur});
+    });
+  });
+  if(!missing.length){toast('Tous les achats ont déjà un fournisseur ✓');return;}
+  if(!SUPPLIERS.length){toast('Aucun fournisseur enregistré',true);return;}
+  var supOptions=SUPPLIERS.map(function(s,i){return (i+1)+'. '+s.name;}).join('\n');
+  var choice=prompt('Assigner un fournisseur aux '+missing.length+' achat(s) sans fournisseur:\n\n'+supOptions+'\n\nEntrez le numéro du fournisseur :','1');
+  if(!choice) return;
+  var idx=parseInt(choice)-1;
+  if(idx<0||idx>=SUPPLIERS.length){toast('Choix invalide',true);return;}
+  var sup=SUPPLIERS[idx];
+  missing.forEach(function(m){
+    m.prod.purchases[m.idx].supplierId=sup.id;
+    m.prod.purchases[m.idx].supplierName=sup.name;
+  });
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  renderPurchases();
+  toast('✅ '+missing.length+' achat(s) assigné(s) à '+sup.name);
+}
+
 function renderPurchases(){
   var sel=document.getElementById('pur-sup');
   if(sel){sel.innerHTML='<option value="">Tous fournisseurs</option>'+SUPPLIERS.map(function(s){return'<option value="'+s.id+'">'+s.name+'</option>';}).join('');}
@@ -3961,6 +4159,18 @@ function validateField(val, label, opts){
   opts = opts || {};
   val = (val || '').toString().trim();
   if(opts.required !== false && !val){
+    // Show inline error if elId provided
+    if(opts.elId){
+      var el=document.getElementById(opts.elId);
+      if(el){
+        el.classList.add('field-err');
+        var errEl=el.parentNode.querySelector('.field-err-msg');
+        if(!errEl){errEl=document.createElement('div');errEl.className='field-err-msg';el.parentNode.appendChild(errEl);}
+        errEl.textContent='⚠️ '+label+' est obligatoire';
+        errEl.classList.add('show');
+        el.addEventListener('input',function(){el.classList.remove('field-err');errEl.classList.remove('show');},{once:true});
+      }
+    }
     toast('⚠️ Le champ "'+label+'" est obligatoire', true); return false;
   }
   if(opts.numeric && val && isNaN(parseFloat(val.replace(',','.')))) {
@@ -3973,6 +4183,27 @@ function validateField(val, label, opts){
     toast('⚠️ "'+label+'" ne peut pas être négatif', true); return false;
   }
   return true;
+}
+
+// Helper: validate and highlight multiple fields at once
+function validateForm(fields){
+  var ok=true;
+  fields.forEach(function(f){
+    var el=document.getElementById(f.id);
+    if(!el) return;
+    var val=(el.value||'').trim();
+    if(!val){
+      el.classList.add('field-err');
+      var errEl=el.parentNode.querySelector('.field-err-msg');
+      if(!errEl){errEl=document.createElement('div');errEl.className='field-err-msg';el.parentNode.appendChild(errEl);}
+      errEl.textContent='⚠️ '+f.label+' est obligatoire';
+      errEl.classList.add('show');
+      el.addEventListener('input',function(){el.classList.remove('field-err');errEl.classList.remove('show');},{once:true});
+      ok=false;
+    }
+  });
+  if(!ok) toast('⚠️ Veuillez remplir tous les champs obligatoires (★)',true);
+  return ok;
 }
 
 // ─── 3. PAIEMENT PARTIEL → RESTE AU CRÉDIT ────────────────────
