@@ -2228,7 +2228,17 @@ function updateProduct(){
   }
 }
 function saveProduct(){
-  var name=document.getElementById('np-name').value.trim();if(!name){toast('Nom requis',true);return;}
+  var name=document.getElementById('np-name').value.trim();
+  if(!name){showErr('np-name','Nom du produit obligatoire');return;}
+  // Vérifier doublon de nom
+  var existing=PRODUCTS.find(function(p){return p.name.toLowerCase()===name.toLowerCase();});
+  if(existing){
+    showErr('np-name','Ce produit existe déjà : "'+existing.name+'". Utilisez 📦 Approvisionner.');
+    if(confirm('Produit "'+existing.name+'" déjà existant.\nAller à sa fiche stock pour l\'approvisionner ?')){
+      closeAllMd();setTimeout(function(){approProd(existing.id);},300);
+    }
+    return;
+  }
   var catSel=document.getElementById('np-cat').value;
   var catNew=document.getElementById('np-newcat').value.trim();
   var finalCat=catSel==='__new__'?(catNew||'Autre'):catSel;
@@ -2318,11 +2328,11 @@ function doAddStock(){
   var supId=supSel?supSel.value:'';
   var payMethodSel=document.getElementById('stk-add-paymethod');
   var payMethod=payMethodSel?payMethodSel.value:'';
-  if(!pid){toast('Sélectionnez un produit',true);return;}
-  if(qty<=0){toast('Quantité invalide',true);return;}
-  if(!supId){toast('⚠️ Fournisseur obligatoire',true);return;}
+  if(!pid){toast('⚠️ Sélectionnez un produit',true);return;}
+  if(qty<=0){showErr('stk-add-qty','Quantité doit être supérieure à 0');return;}
+  if(!supId||supId==='__new__'){toast('⚠️ Fournisseur obligatoire',true);return;}
   if(!payMethod){toast('⚠️ Moyen de paiement obligatoire',true);return;}
-  if(isNaN(newBuy)||newBuy<=0){toast('⚠️ Prix d\'achat obligatoire',true);return;}
+  if(isNaN(newBuy)||newBuy<=0){showErr('stk-add-price','Prix d\'achat obligatoire et doit être > 0');return;}
   var i=PRODUCTS.findIndex(function(p){return p.id===pid;});
   if(i>-1){
     var p=PRODUCTS[i];
@@ -2420,9 +2430,31 @@ function renderStock(){
       '<td><span style="color:var(--pur)">'+mp+'%</span></td>'+
       '<td>'+(p.stock===0?'<span class="sb sx">Rupture</span>':p.stock<=(p.threshold||10)?'<span class="sb sp">Bas</span>':'<span class="sb sd">OK</span>')+'</td>'+
       '<td style="font-size:12px">'+lastSup+'</td>'+
-      '<td><button class="btn btn-b btn-sm" onclick="goSec(\'stock\',document.getElementById(\'ni-stock\'));setTimeout(function(){var el=document.getElementById(\'stk-add-prod\');if(el){el.value=\''+p.id+'\';onStkProdChange();}},300)" title="Approvisionner ce produit">📦 Approvisionner</button></td>'+
+      '<td><button class="btn btn-b btn-sm" onclick="approProd(\''+p.id+'\')" title="Approvisionner ce produit">📦 Approvisionner</button></td>'+
     '</tr>';
   }).join('');
+}
+function approProd(pid){
+  // Aller à la section stock
+  var niStock=document.getElementById('ni-stock');
+  goSec('stock',niStock);
+  // Attendre que la section soit visible puis pré-remplir
+  setTimeout(function(){
+    var sel=document.getElementById('stk-add-prod');
+    if(sel){
+      sel.value=pid;
+      onStkProdChange();
+      // Scroll vers le formulaire d'approvisionnement
+      var box=document.querySelector('.stk-add-box');
+      if(box){
+        box.scrollIntoView({behavior:'smooth',block:'start'});
+        box.style.border='2px solid var(--gold)';
+        box.style.borderRadius='12px';
+        box.style.padding='14px';
+        setTimeout(function(){box.style.border='';box.style.padding='';},3000);
+      }
+    }
+  },400);
 }
 function directSetStk(id){var v=+(document.getElementById('sv-'+id).value);if(isNaN(v)||v<0)return;var i=PRODUCTS.findIndex(function(p){return p.id===id;});if(i>-1){PRODUCTS[i].stock=v;save();toast('Stock mis à jour ✓');}}
 function setThreshold(id){var v=+(document.getElementById('st-'+id).value);if(isNaN(v)||v<0)return;var i=PRODUCTS.findIndex(function(p){return p.id===id;});if(i>-1){PRODUCTS[i].threshold=v;save();}}
@@ -2526,38 +2558,58 @@ function saveAdminCreds(){
   var nu=document.getElementById('adm-user').value.trim();
   var np=document.getElementById('adm-new').value;
   var cp=document.getElementById('adm-conf').value;
-  if(cur!==ADMIN.password){toast('Mot de passe actuel incorrect',true);return;}
-  if(np&&np!==cp){toast('Les mots de passe ne correspondent pas',true);return;}
+  clearErr('adm-cur');clearErr('adm-user');clearErr('adm-new');clearErr('adm-conf');
+  if(!cur){showErr('adm-cur','Mot de passe actuel obligatoire');return;}
+  if(cur!==ADMIN.password){showErr('adm-cur','Mot de passe actuel incorrect');return;}
   if(!np&&!nu){toast('Aucun changement effectué',true);return;}
-  if(nu)ADMIN.username=nu;
-  if(np)ADMIN.password=np;
-  save();closeAllMd();toast('Identifiants admin mis à jour ✓');
+  if(np){
+    if(!validatePassword(np,'adm-new')) return;
+    if(np!==cp){showErr('adm-conf','Les mots de passe ne correspondent pas');return;}
+  }
+  if(nu) ADMIN.username=nu;
+  if(np) ADMIN.password=np;
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();toast('Identifiants admin mis à jour ✓');
 }
 function updateClient(){
   var id=document.getElementById('ec-id').value;
+  var name=document.getElementById('ec-name').value.trim();
+  var phone=document.getElementById('ec-ph').value.trim();
   var emailEC=(document.getElementById('ec-email').value||'').trim();
-  if(!emailEC||!emailEC.includes('@')){toast("⚠️ L'email est obligatoire",true);return;}
+  var lat=document.getElementById('ec-lat').value;
+  var lng=document.getElementById('ec-lng').value;
+  if(!name){showErr('ec-name','Nom obligatoire');return;}
+  if(!phone){showErr('ec-ph','Téléphone obligatoire');return;}
+  if(phone && !/^[\d\s\+\-\.]{6,15}$/.test(phone)){showErr('ec-ph','Numéro invalide (chiffres uniquement)');return;}
+  if(!emailEC||!emailEC.includes('@')){showErr('ec-email','Email valide obligatoire');return;}
+  if(lat && isNaN(parseFloat(lat))){showErr('ec-lat','Latitude doit être un nombre');return;}
+  if(lng && isNaN(parseFloat(lng))){showErr('ec-lng','Longitude doit être un nombre');return;}
   var i=CLIENTS.findIndex(function(x){return x.id===id;});
   if(i>-1){
-    CLIENTS[i].name=document.getElementById('ec-name').value;
-    CLIENTS[i].phone=document.getElementById('ec-ph').value;
+    CLIENTS[i].name=name;
+    CLIENTS[i].phone=phone;
     CLIENTS[i].city=document.getElementById('ec-city').value;
     CLIENTS[i].region=document.getElementById('ec-reg').value;
-    CLIENTS[i].email=document.getElementById('ec-email').value;
-    var latVal=document.getElementById('ec-lat').value;
-    var lngVal=document.getElementById('ec-lng').value;
-    CLIENTS[i].lat=latVal!==''?parseFloat(latVal):null;
-    CLIENTS[i].lng=lngVal!==''?parseFloat(lngVal):null;
+    CLIENTS[i].email=emailEC;
+    CLIENTS[i].lat=lat!==''?parseFloat(lat):null;
+    CLIENTS[i].lng=lng!==''?parseFloat(lng):null;
     CLIENTS[i].address=document.getElementById('ec-addr').value;
     var ph=document.getElementById('ec-photo').value.trim();
-    CLIENTS[i].photo=ph||('https://ui-avatars.com/api/?name='+encodeURIComponent(CLIENTS[i].name)+'&background=C9A84C&color=0A0A0A&size=128');
+    CLIENTS[i].photo=ph||('https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128');
     var nu=document.getElementById('ec-user').value.trim();
     if(nu&&nu!==CLIENTS[i].username){
-      if(CLIENTS.find(function(c,j){return j!==i&&c.username===nu;})){toast('Identifiant déjà utilisé',true);return;}
+      if(CLIENTS.find(function(c,j){return j!==i&&c.username===nu;})){showErr('ec-user','Identifiant déjà utilisé');return;}
       CLIENTS[i].username=nu;
     }
-    var np2=document.getElementById('ec-pw').value;if(np2)CLIENTS[i].password=np2;
-    save();closeAllMd();initClientFilters();renderClients();toast('Client mis à jour ✓');
+    var np2=document.getElementById('ec-pw').value;
+    if(np2){
+      if(!validatePassword(np2,'ec-pw')) return;
+      CLIENTS[i].password=np2;
+    }
+    save();
+    if(window.saveToCloud) window.saveToCloud();
+    closeAllMd();initClientFilters();renderClients();toast('Client mis à jour ✓');
   }
 }
 function saveClient(){
@@ -3117,12 +3169,18 @@ function saveAdminCreds(){
   var nu=document.getElementById('adm-user').value.trim();
   var np=document.getElementById('adm-new').value;
   var cp=document.getElementById('adm-conf').value;
-  if(cur!==ADMIN.password){toast('Mot de passe actuel incorrect',true);return;}
-  if(np&&np!==cp){toast('Les mots de passe ne correspondent pas',true);return;}
+  if(!cur){showErr('adm-cur','Mot de passe actuel obligatoire');return;}
+  if(cur!==ADMIN.password){showErr('adm-cur','Mot de passe actuel incorrect');return;}
   if(!np&&!nu){toast('Aucun changement effectué',true);return;}
-  if(nu)ADMIN.username=nu;
-  if(np)ADMIN.password=np;
-  save();closeAllMd();updateAdminSidebar();toast('Identifiants admin mis à jour ✓');
+  if(np){
+    if(!validatePassword(np,'adm-new')) return;
+    if(np!==cp){showErr('adm-conf','Les mots de passe ne correspondent pas');return;}
+  }
+  if(nu) ADMIN.username=nu;
+  if(np) ADMIN.password=np;
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();updateAdminSidebar();toast('Identifiants admin mis à jour ✓');
 }
 
 // ═══════════ SUPPLIERS ═══════════
@@ -3194,9 +3252,17 @@ function renderSuppliers(){
 
 function saveSupplier(){
   var name=document.getElementById('ns-name').value.trim();
-  if(!name){toast('Nom requis',true);return;}
-  SUPPLIERS.push({id:'S'+(100+SUPPLIERS.length),name:name,phone:document.getElementById('ns-phone').value,city:document.getElementById('ns-city').value,email:document.getElementById('ns-email').value,debt:+(document.getElementById('ns-debt').value)||0,notes:document.getElementById('ns-notes').value});
-  save();closeAllMd();fillStkAddProd();renderSuppliers();toast('Fournisseur ajouté');
+  var phone=document.getElementById('ns-phone').value.trim();
+  var email=document.getElementById('ns-email').value.trim();
+  var debt=document.getElementById('ns-debt').value;
+  if(!name){showErr('ns-name','Nom du fournisseur obligatoire');return;}
+  if(phone && !/^[\d\s\+\-\.]{6,15}$/.test(phone)){showErr('ns-phone','Numéro de téléphone invalide (chiffres uniquement)');return;}
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('ns-email','Adresse email invalide');return;}
+  if(debt && isNaN(parseFloat(debt))){showErr('ns-debt','La dette doit être un nombre');return;}
+  SUPPLIERS.push({id:'S'+(100+SUPPLIERS.length),name:name,phone:phone,city:document.getElementById('ns-city').value,email:email,debt:+(debt)||0,notes:document.getElementById('ns-notes').value});
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();fillStkAddProd();renderSuppliers();toast('Fournisseur ajouté');
 }
 function openEditSupplier(id){
   var s=SUPPLIERS.find(function(x){return x.id===id;});if(!s)return;
@@ -4019,11 +4085,21 @@ function saveNewAdmin(){
   var user=document.getElementById('na-user').value.trim();
   var pw=document.getElementById('na-pw').value;
   var email=document.getElementById('na-email').value.trim();
-  if(!name||!user||!pw){toast('Nom, identifiant et mot de passe requis',true);return;}
-  if(!email||!email.includes('@')){toast("⚠️ L'email est obligatoire pour la récupération du mot de passe",true);return;}
-  if(user===ADMIN.username||ADMINS.find(function(a){return a.username===user;})){toast('Identifiant déjà utilisé',true);return;}
+  if(!validateForm([
+    {id:'na-name',label:'Nom complet'},
+    {id:'na-user',label:'Identifiant'},
+    {id:'na-pw',label:'Mot de passe'},
+    {id:'na-email',label:'Email'}
+  ])) return;
+  if(!email.includes('@')){showErr('na-email','Adresse email invalide');return;}
+  if(!validatePassword(pw,'na-pw')) return;
+  if(user===ADMIN.username||ADMINS.find(function(a){return a.username===user;})){
+    showErr('na-user','Identifiant déjà utilisé');return;
+  }
   ADMINS.push({name:name,username:user,password:pw,email:email});
-  save();closeAllMd();renderAdmins();
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();renderAdmins();
   toast(name+' ajouté comme admin');
 }
 function delAdmin(idx){
@@ -4188,10 +4264,38 @@ confirmDel=function(type,id,name){
 // ═══════════ INIT — update admin sidebar on load ═══════════
 window.addEventListener('DOMContentLoaded',function(){
   updateAdminSidebar();
-  // Fix logo display in company section
   var cl=document.getElementById('co-logo-prev');
   if(cl&&COMPANY.logo){cl.src=COMPANY.logo;}
   else if(cl){cl.src='https://ui-avatars.com/api/?name='+(COMPANY.name||'A')+'&background=C9A84C&color=0A0A0A&size=128';}
+
+  // ── Validation globale des champs numériques ──
+  document.addEventListener('input',function(e){
+    var el=e.target;
+    if(!el.id) return;
+    // Champs numériques — interdire les lettres
+    if(el.type==='number'||el.getAttribute('data-type')==='number'){
+      var v=el.value.replace(',','.');
+      if(v!==''&&isNaN(parseFloat(v))){
+        showErr(el.id,'Ce champ doit contenir un nombre');
+      } else if(el.min!==undefined&&parseFloat(v)<parseFloat(el.min)){
+        showErr(el.id,'La valeur minimum est '+el.min);
+      } else {
+        clearErr(el.id);
+      }
+    }
+    // Champs email
+    if(el.type==='email'&&el.value){
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(el.value)){
+        showErr(el.id,'Adresse email invalide');
+      } else { clearErr(el.id); }
+    }
+    // Champs téléphone
+    if(el.getAttribute('data-type')==='phone'&&el.value){
+      if(!/^[\d\s\+\-\.]{6,15}$/.test(el.value)){
+        showErr(el.id,'Numéro de téléphone invalide (chiffres uniquement)');
+      } else { clearErr(el.id); }
+    }
+  });
 });
 
 function clRenderProds(){
@@ -4823,10 +4927,14 @@ function renderContactMsgs(){
   var el = document.getElementById('contact-msgs-list');
   if(!el) return;
   var mine = CONTACT_MSGS.filter(function(m){return m.clientId === SESSION.id;});
-  if(!mine.length){ el.innerHTML = ''; return; }
-  el.innerHTML = '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Vos messages précédents</div>'+
-    mine.slice().reverse().map(function(m){
-      return '<div class="ord-c" style="margin-bottom:8px">'+
+  // Séparer les messages avec réponse et sans réponse
+  var withReply = mine.filter(function(m){return m.reply && m.reply.trim();});
+  var pending = mine.filter(function(m){return !m.reply || !m.reply.trim();});
+  var html = '';
+  if(withReply.length){
+    html += '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">💬 Réponses reçues</div>';
+    html += withReply.slice().reverse().map(function(m){
+      return '<div class="ord-c" style="margin-bottom:10px;border-left:3px solid var(--grn)">'+
         '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
           '<span style="font-size:13px;font-weight:500;color:var(--gold)">'+m.subject+'</span>'+
           '<div style="display:flex;align-items:center;gap:6px">'+
@@ -4834,10 +4942,30 @@ function renderContactMsgs(){
             '<button class="btn btn-r btn-sm" onclick="clientDelContactMsg(\''+m.id+'\')" style="padding:2px 7px;font-size:11px">🗑️</button>'+
           '</div>'+
         '</div>'+
-        '<div style="font-size:12px;color:var(--tx3)">'+m.message+'</div>'+
-        (m.reply?'<div style="font-size:12px;color:var(--grn);margin-top:6px;padding-top:6px;border-top:1px solid var(--bo2)">✅ Réponse : '+m.reply+'</div>':'')+
+        '<div style="font-size:12px;color:var(--grn);background:rgba(82,201,122,0.07);border-radius:8px;padding:10px;margin-top:6px">'+
+          '<div style="font-size:10px;color:var(--tx3);margin-bottom:4px;text-transform:uppercase;letter-spacing:1px">Réponse de '+(COMPANY.name||'Alitos')+'</div>'+
+          m.reply+
+        '</div>'+
       '</div>';
     }).join('');
+  }
+  if(pending.length){
+    html += '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin:'+(withReply.length?'14px':'0')+'px 0 8px">⏳ En attente de réponse ('+pending.length+')</div>';
+    html += pending.slice().reverse().map(function(m){
+      return '<div class="ord-c" style="margin-bottom:8px;opacity:0.7">'+
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
+          '<span style="font-size:13px;font-weight:500;color:var(--tx2)">'+m.subject+'</span>'+
+          '<div style="display:flex;align-items:center;gap:6px">'+
+            '<span style="font-size:11px;color:var(--tx3)">'+m.date+'</span>'+
+            '<span class="sb sp" style="font-size:10px">En attente</span>'+
+            '<button class="btn btn-r btn-sm" onclick="clientDelContactMsg(\''+m.id+'\')" style="padding:2px 7px;font-size:11px">🗑️</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  }
+  if(!mine.length) html='';
+  el.innerHTML = html;
 }
 
 function clientDelContactMsg(id){
@@ -5740,6 +5868,34 @@ function startRealtimeSync(){
 window.addEventListener('DOMContentLoaded', async function(){
   await loadFromCloud();
   startRealtimeSync();
+  // Validation globale des champs numériques
+  document.addEventListener('input', function(e){
+    var el=e.target;
+    if(!el||el.type!=='number') return;
+    var val=el.value.trim();
+    if(val===''||val==='-') return;
+    if(isNaN(parseFloat(val))){
+      el.classList.add('field-err');
+      var errId=el.id+'-err';
+      var errDiv=document.getElementById(errId);
+      if(!errDiv){errDiv=document.createElement('div');errDiv.id=errId;errDiv.style.cssText='color:var(--red);font-size:11px;margin-top:3px';if(el.parentNode)el.parentNode.appendChild(errDiv);}
+      errDiv.textContent='⚠️ Valeur numérique requise';
+      errDiv.style.display='block';
+    } else {
+      el.classList.remove('field-err');
+      var errDiv2=document.getElementById(el.id+'-err');
+      if(errDiv2) errDiv2.style.display='none';
+    }
+    // Vérifier min
+    if(el.min!==''&&parseFloat(val)<parseFloat(el.min)){
+      el.classList.add('field-err');
+      var errId3=el.id+'-err';
+      var errDiv3=document.getElementById(errId3);
+      if(!errDiv3){errDiv3=document.createElement('div');errDiv3.id=errId3;errDiv3.style.cssText='color:var(--red);font-size:11px;margin-top:3px';if(el.parentNode)el.parentNode.appendChild(errDiv3);}
+      errDiv3.textContent='⚠️ Valeur minimum: '+el.min;
+      errDiv3.style.display='block';
+    }
+  });
 });
 
 // ── Carte localisation contact ────────────────────────────
