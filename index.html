@@ -37,6 +37,58 @@ async function sendResendEmail(to_email, to_name, otp_code, customSubject, custo
     return false;
   }
 }
+
+// ── Validation mot de passe fort ──────────────────────────
+function validatePassword(pw, elId){
+  var rules=[
+    {test:/^.{8,}$/,msg:'Au moins 8 caractères'},
+    {test:/[A-Z]/,msg:'Au moins une lettre majuscule'},
+    {test:/[a-z]/,msg:'Au moins une lettre minuscule'},
+    {test:/[0-9]/,msg:'Au moins un chiffre'},
+    {test:/[^A-Za-z0-9]/,msg:'Au moins un caractère spécial (!@#$%...)'}
+  ];
+  var failed=rules.filter(function(r){return !r.test.test(pw);});
+  if(elId){
+    var el=document.getElementById(elId);
+    var errDiv=document.getElementById(elId+'-err');
+    if(!errDiv){errDiv=document.createElement('div');errDiv.id=elId+'-err';errDiv.style.cssText='color:var(--red);font-size:11px;margin-top:4px';if(el&&el.parentNode)el.parentNode.appendChild(errDiv);}
+    if(failed.length>0){
+      el&&el.classList.add('field-err');
+      errDiv.innerHTML='⚠️ '+failed.map(function(r){return r.msg;}).join(' · ');
+      errDiv.style.display='block';
+    } else {
+      el&&el.classList.remove('field-err');
+      errDiv.style.display='none';
+    }
+  }
+  return failed.length===0;
+}
+
+// ── Envoyer SMS via WhatsApp (fallback) ───────────────────
+function sendSMSWhatsApp(phone, message){
+  if(!phone) return;
+  var waPhone=phone.replace(/[^0-9]/g,'');
+  if(waPhone.startsWith('0')) waPhone='212'+waPhone.substring(1);
+  window.open('https://wa.me/'+waPhone+'?text='+encodeURIComponent(message),'_blank');
+}
+
+// ── Afficher erreur inline sur un champ ───────────────────
+function showErr(elId, msg){
+  var el=document.getElementById(elId);
+  if(!el) return;
+  el.classList.add('field-err');
+  var errDiv=document.getElementById(elId+'-err');
+  if(!errDiv){errDiv=document.createElement('div');errDiv.id=elId+'-err';errDiv.style.cssText='color:var(--red);font-size:11px;margin-top:4px';el.parentNode.appendChild(errDiv);}
+  errDiv.innerHTML='⚠️ '+msg;
+  errDiv.style.display='block';
+  el.addEventListener('input',function(){el.classList.remove('field-err');errDiv.style.display='none';},{once:true});
+}
+function clearErr(elId){
+  var el=document.getElementById(elId);
+  if(el) el.classList.remove('field-err');
+  var errDiv=document.getElementById(elId+'-err');
+  if(errDiv) errDiv.style.display='none';
+}
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -740,7 +792,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
    <div class="fr2"><div class="fg" style="margin:0"><label>Latitude</label><input id="nc-lat" type="number" step="any" placeholder="33.5731" oninput="updateLocBadge('nc')"></div><div class="fg" style="margin:0"><label>Longitude</label><input id="nc-lng" type="number" step="any" placeholder="-7.5898" oninput="updateLocBadge('nc')"></div></div>
    <div id="nc-loc-badge" class="map-coords-badge" style="margin-top:7px"></div>
   </div>
-  <div class="fr2"><div class="fg"><label>Identifiant <span style="color:var(--red)">★</span></label><input id="nc-user" placeholder="client1"></div><div class="fg"><label>Mot de passe <span style="color:var(--red)">★</span></label><input type="password" id="nc-pw" placeholder="••••••••"></div></div>
+  <div class="fr2"><div class="fg"><label>Identifiant <span style="color:var(--red)">★</span></label><input id="nc-user" placeholder="client1"></div><div class="fg"><label>Mot de passe <span style="color:var(--red)">★</span></label><input type="password" id="nc-pw" placeholder="Min. 8 car., Maj., min., chiffre, spécial" oninput="validatePassword(this.value,'nc-pw')"></div></div>
   <div class="fg"><label>Email <span style="color:var(--red)">★ Obligatoire</span></label><input id="nc-email" type="email" placeholder="client@email.com" required></div>
   <div class="fg">
    <label>Photo du client</label>
@@ -971,7 +1023,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   </div>
   <div id="fp-reset-wrap" style="display:none;background:rgba(201,168,76,0.06);border:1px solid var(--bo);border-radius:10px;padding:13px;margin-bottom:12px">
    <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:9px;text-transform:uppercase;letter-spacing:1px">🔄 Nouveau mot de passe</div>
-   <div class="fg" style="margin-bottom:8px"><label>Nouveau mot de passe <span style="color:var(--red)">★</span></label><input type="password" id="fp-newpw" placeholder="Min. 4 caractères"></div>
+   <div class="fg" style="margin-bottom:8px"><label>Nouveau mot de passe <span style="color:var(--red)">★</span></label><input type="password" id="fp-newpw" placeholder="Min. 8 car., maj., min., chiffre, spécial" oninput="validatePassword(this.value,'fp-newpw')"></div>
    <div class="fg" style="margin-bottom:0"><label>Confirmer <span style="color:var(--red)">★</span></label><input type="password" id="fp-confpw" placeholder="Répéter le mot de passe"></div>
   </div>
   <button class="btn btn-g" style="width:100%;margin-bottom:8px" onclick="doForgot()">🔍 Rechercher mon compte</button>
@@ -1378,8 +1430,10 @@ function doLogin(){
   var p=document.getElementById('lp').value;
   var err=document.getElementById('lerr');
   err.style.display='none';
+  clearErr('lu'); clearErr('lp');
   var isAdminTab=document.getElementById('tab-a').classList.contains('on');
-  if(!u||!p){err.textContent='Remplissez tous les champs';err.style.display='block';return;}
+  if(!u){showErr('lu','Identifiant ou email obligatoire');err.textContent='Remplissez tous les champs';err.style.display='block';return;}
+  if(!p){showErr('lp','Mot de passe obligatoire');err.textContent='Remplissez tous les champs';err.style.display='block';return;}
   if(LOCKED_USERS[u]){showLockedErr(err,u);return;}
 
   var btn=document.querySelector('.btn-main');
@@ -1524,9 +1578,14 @@ function doForgot(){
       if(ok) toast('📧 Code envoyé à votre email !');
       else toast('⚠️ Erreur envoi email',true);
     });
+    // Envoyer aussi par WhatsApp si téléphone disponible
+    if(found.phone){
+      var smsMsg='['+( COMPANY.name||'Alitos')+'] Bonjour '+found.name+', votre identifiant: *'+found.username+'* — Code: *'+_fpOTP+'* (expire 10 min)';
+      setTimeout(function(){ sendSMSWhatsApp(found.phone, smsMsg); }, 1500);
+    }
     res.innerHTML='<div style="color:var(--grn);font-weight:600;margin-bottom:6px">✅ Compte identifié</div>'+
-      '<div style="font-size:12px;color:var(--tx2)">📧 Code + identifiant envoyés à : <strong>'+masked+'</strong></div>'+
-      '<div style="margin-top:8px;background:rgba(82,201,122,0.08);border:1px solid rgba(82,201,122,0.2);border-radius:8px;padding:10px;font-size:12px;color:var(--tx2)">Vérifiez votre boîte email et saisissez le code ci-dessous.</div>';
+      '<div style="font-size:12px;color:var(--tx2)">📧 '+masked+(found.phone?' · 📱 WhatsApp envoyé':' ')+'</div>'+
+      '<div style="margin-top:8px;background:rgba(82,201,122,0.08);border:1px solid rgba(82,201,122,0.2);border-radius:8px;padding:10px;font-size:12px;color:var(--tx2)">Code envoyé par email'+(found.phone?' et WhatsApp':'')+'. Saisissez-le ci-dessous.</div>';
     res.style.display='block';
     if(ow)ow.style.display='block';
     document.getElementById('fp-otp-inp').value='';
@@ -1607,17 +1666,36 @@ function doResetPw(){
   if(!_fpOTPVerified){toast('Vérifiez d\'abord le code reçu',true);return;}
   var np=document.getElementById('fp-newpw').value;
   var cp=document.getElementById('fp-confpw').value;
-  if(!np||np.length<4){toast('Mot de passe trop court (min 4 caractères)',true);return;}
-  if(np!==cp){toast('Les mots de passe ne correspondent pas',true);return;}
+  clearErr('fp-newpw'); clearErr('fp-confpw');
+  if(!np){showErr('fp-newpw','Nouveau mot de passe obligatoire');return;}
+  if(!validatePassword(np,'fp-newpw')){return;}
+  if(np!==cp){showErr('fp-confpw','Les mots de passe ne correspondent pas');return;}
   if(_fpIsAdmin){
-    ADMIN.password=np;save();
-    delete LOCKED_USERS[ADMIN.username];delete LOGIN_ATTEMPTS[ADMIN.username];
-    closeAllMd();toast('✅ Mot de passe admin réinitialisé !');return;
+    // Trouver le bon admin à modifier
+    if(_fpFoundAccount && _fpFoundAccount.username !== ADMIN.username){
+      // Admin secondaire
+      var ai=ADMINS.findIndex(function(a){return a.id===_fpFoundAccount.id||a.username===_fpFoundAccount.username;});
+      if(ai>-1){
+        ADMINS[ai].password=np;
+        delete LOCKED_USERS[ADMINS[ai].username];
+        delete LOGIN_ATTEMPTS[ADMINS[ai].username];
+      }
+    } else {
+      ADMIN.password=np;
+      delete LOCKED_USERS[ADMIN.username];
+      delete LOGIN_ATTEMPTS[ADMIN.username];
+    }
+    save();
+    if(window.saveToCloud) window.saveToCloud();
+    closeAllMd();
+    toast('✅ Mot de passe admin réinitialisé avec succès !');
+    return;
   }
   if(_fpFoundAccount){
     var i=CLIENTS.findIndex(function(c){return c.id===_fpFoundAccount.id;});
     if(i>-1){
       CLIENTS[i].password=np;save();
+      if(window.saveToCloud) window.saveToCloud();
       delete LOCKED_USERS[CLIENTS[i].username];delete LOGIN_ATTEMPTS[CLIENTS[i].username];
       closeAllMd();toast('✅ Mot de passe réinitialisé pour '+_fpFoundAccount.name+' !');return;
     }
@@ -2493,7 +2571,8 @@ function saveClient(){
   var name=document.getElementById('nc-name').value.trim();
   var user=document.getElementById('nc-user').value.trim();
   var pw=document.getElementById('nc-pw').value;
-  if(CLIENTS.find(function(c){return c.username===user;})){toast('Identifiant déjà utilisé',true);return;}
+  if(!validatePassword(pw,'nc-pw')) return;
+  if(CLIENTS.find(function(c){return c.username===user;})){showErr('nc-user','Identifiant déjà utilisé');return;}
   var latV=parseFloat(document.getElementById('nc-lat').value)||null;
   var lngV=parseFloat(document.getElementById('nc-lng').value)||null;
   CLIENTS.push({id:'C'+(100+CLIENTS.length),name:name,phone:document.getElementById('nc-ph').value,city:document.getElementById('nc-city').value,region:document.getElementById('nc-reg').value,address:document.getElementById('nc-addr').value,lat:latV,lng:lngV,username:user,password:pw,email:document.getElementById('nc-email').value,photo:document.getElementById('nc-photo').value||'https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128'});
@@ -2753,14 +2832,21 @@ function saveClCreds(){
   var cpw=document.getElementById('conf-pw').value;
   var i=CLIENTS.findIndex(function(c){return c.id===SESSION.id;});
   if(i<0){toast('Erreur',true);return;}
-  if(CLIENTS[i].password!==curpw){toast('Mot de passe actuel incorrect',true);return;}
-  if(npw&&npw!==cpw){toast('Les mots de passe ne correspondent pas',true);return;}
-  if(nuser&&nuser!==CLIENTS[i].username){
-    if(CLIENTS.find(function(c,j){return j!==i&&c.username===nuser;})){toast('Identifiant déjà utilisé',true);return;}
-    CLIENTS[i].username=nuser;
+  if(!curpw){showErr('cur-pw','Mot de passe actuel obligatoire');return;}
+  if(CLIENTS[i].password!==curpw){showErr('cur-pw','Mot de passe actuel incorrect');return;}
+  if(npw){
+    if(!validatePassword(npw,'new-pw')) return;
+    if(npw!==cpw){showErr('conf-pw','Les mots de passe ne correspondent pas');return;}
   }
-  if(npw)CLIENTS[i].password=npw;
-  save();closeAllMd();toast('Identifiants mis à jour ✓');
+  if(nuser&&nuser!==CLIENTS[i].username){
+    if(CLIENTS.find(function(c,j){return j!==i&&c.username===nuser;})){showErr('new-user','Identifiant déjà utilisé');return;}
+    CLIENTS[i].username=nuser;
+    SESSION.username=nuser;
+  }
+  if(npw) CLIENTS[i].password=npw;
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();toast('Identifiants mis à jour ✓');
 }
 function setCat(c){activeCat=c;clRenderProds();}
 function addCart(id){var p=PRODUCTS.find(function(x){return x.id===id;});if(!p||p.stock===0){toast('Épuisé',true);return;}var q=cart[id]||0;if(q>=p.stock){toast('Stock max atteint',true);return;}cart[id]=(cart[id]||0)+1;updCartUI();clRenderProds();refreshCart();}
@@ -3321,11 +3407,12 @@ function doQuickPay(cid){
   var amt=parseFloat(document.getElementById('qpc-amt').value)||0;
   var method=document.getElementById('qpc-method').value;
   var methodLabels={cash:'💵 Espèces',transfer:'🏦 Virement',cmi:'💳 CMI',cheque:'📋 Chèque'};
-  if(amt<=0){toast('Montant invalide',true);return;}
-  if(!method){toast('⚠️ Choisissez un moyen de règlement',true);return;}
   var cr=getClientCredit(cid);
-  var c=getC(cid);
-  cr.balance=Math.max(0,cr.balance-amt);
+  var bal=cr.balance||0;
+  if(amt<=0){showErr('qpc-amt','Montant invalide');return;}
+  if(amt>bal){showErr('qpc-amt','Le montant ('+fm(amt)+') dépasse le solde dû ('+fm(bal)+')');return;}
+  if(!method){toast('⚠️ Choisissez un moyen de règlement',true);return;}
+  cr.balance=Math.max(0,bal-amt);
   if(!cr.transactions) cr.transactions=[];
   cr.transactions.push({date:new Date().toISOString().split('T')[0],type:'payment',amount:amt,method:method,note:'Encaissement '+methodLabels[method]});
   try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
@@ -4491,9 +4578,14 @@ function deleteMyComplaint(id){
   if(idx > -1){
     COMPLAINTS.splice(idx, 1);
     try{ localStorage.setItem('al_complaints', JSON.stringify(COMPLAINTS)); }catch(e){}
-    if(window._origSave) window._origSave();
-    if(window.saveToCloud) window.saveToCloud();
-    renderClComplaints();
+    // Sync immédiate Firebase — source de vérité
+    if(window.saveToCloud){
+      window.saveToCloud().then(function(){
+        renderClComplaints();
+      });
+    } else {
+      renderClComplaints();
+    }
     toast('Réclamation supprimée ✓');
   }
 }
@@ -4563,9 +4655,13 @@ function adminDelComplaint(id){
   if(idx > -1){
     COMPLAINTS.splice(idx,1);
     try{ localStorage.setItem('al_complaints', JSON.stringify(COMPLAINTS)); }catch(e){}
-    if(window._origSave) window._origSave();
-    if(window.saveToCloud) window.saveToCloud();
-    renderComplaints();
+    if(window.saveToCloud){
+      window.saveToCloud().then(function(){
+        renderComplaints();
+      });
+    } else {
+      renderComplaints();
+    }
     toast('Réclamation supprimée ✓');
   }
 }
@@ -4671,20 +4767,56 @@ function sendContactMsg(){
   var msg = (document.getElementById('contact-msg').value || '').trim();
   if(!validateField(subj, 'Sujet')) return;
   if(!validateField(msg, 'Message')) return;
+  var sendBtn = document.querySelector('#cl-pg-contact .btn-g');
+  if(sendBtn){sendBtn.disabled=true;sendBtn.textContent='⏳ Envoi...';}
   var newMsg={id:'MSG'+(100+CONTACT_MSGS.length), clientId:SESSION.id, clientName:SESSION.name, subject:subj, message:msg, date:new Date().toISOString().split('T')[0], status:'new', reply:''};
   CONTACT_MSGS.push(newMsg);
   try{localStorage.setItem('al_contact', JSON.stringify(CONTACT_MSGS));}catch(e){}
   if(window._origSave) window._origSave();
   if(window.saveToCloud) window.saveToCloud();
-  // Envoyer email à l'admin (email entreprise)
+  // Envoyer email à l'admin
   var adminEmail = COMPANY.email || ADMIN.email || '';
+  var emailHtml='<div style="font-family:sans-serif;max-width:500px;margin:auto;padding:20px;background:#111;color:#F5F0E8;border-radius:12px">'+
+    '<h2 style="color:#C9A84C">📬 Nouveau message client</h2>'+
+    '<p><strong>De :</strong> '+SESSION.name+'</p>'+
+    '<p><strong>Sujet :</strong> '+subj+'</p>'+
+    '<div style="background:rgba(255,255,255,0.05);border-radius:8px;padding:14px;margin:12px 0">'+msg+'</div>'+
+    '<p style="color:#888;font-size:11px">Répondez via le tableau de bord Admin → Réclamations</p></div>';
   if(adminEmail && window.sendResendEmail){
-    sendResendEmail(adminEmail, 'Équipe '+COMPANY.name, '📬 Nouveau message de '+SESSION.name+'\n\nSujet: '+subj+'\n\n'+msg+'\n\nRépondez via le tableau de bord admin.');
+    sendResendEmail(adminEmail,'Admin '+(COMPANY.name||'Alitos'),'MSG',
+      '📬 Message de '+SESSION.name+' — '+(COMPANY.name||'Alitos'), emailHtml).then(function(ok){
+      if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='📤 Envoyer';}
+      if(ok){
+        document.getElementById('contact-subj').value='';
+        document.getElementById('contact-msg').value='';
+        renderContactMsgs();
+        // Afficher confirmation sur le site
+        var confirmDiv=document.getElementById('contact-confirm-msg');
+        if(!confirmDiv){
+          confirmDiv=document.createElement('div');
+          confirmDiv.id='contact-confirm-msg';
+          confirmDiv.style.cssText='background:rgba(82,201,122,0.1);border:1px solid rgba(82,201,122,0.3);border-radius:10px;padding:14px;margin-top:10px;font-size:13px;color:var(--grn);text-align:center';
+          var sendBtnParent=document.querySelector('#cl-pg-contact .btn-g');
+          if(sendBtnParent&&sendBtnParent.parentNode) sendBtnParent.parentNode.appendChild(confirmDiv);
+        }
+        confirmDiv.innerHTML='✅ Message envoyé à l\'équipe '+( COMPANY.name||'Alitos')+' ! Nous vous répondrons dans les plus brefs délais.';
+        confirmDiv.style.display='block';
+        setTimeout(function(){if(confirmDiv)confirmDiv.style.display='none';},5000);
+        toast('✅ Message envoyé à l\'admin !');
+      } else {
+        toast('⚠️ Erreur envoi email — message sauvegardé',true);
+        document.getElementById('contact-subj').value='';
+        document.getElementById('contact-msg').value='';
+        renderContactMsgs();
+      }
+    });
+  } else {
+    if(sendBtn){sendBtn.disabled=false;sendBtn.textContent='📤 Envoyer';}
+    document.getElementById('contact-subj').value='';
+    document.getElementById('contact-msg').value='';
+    renderContactMsgs();
+    toast('✅ Message envoyé !');
   }
-  document.getElementById('contact-subj').value = '';
-  document.getElementById('contact-msg').value = '';
-  renderContactMsgs();
-  toast('✅ Message envoyé ! Nous vous répondrons bientôt.');
 }
 
 function renderContactMsgs(){
