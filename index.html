@@ -3181,25 +3181,6 @@ function openAdminProfileMenu(){
 
 // ═══════════ ADMIN CREDS (with photo) ═══════════
 // Extend admin creds modal to handle photo and login
-function saveAdminCreds(){
-  var cur=document.getElementById('adm-cur').value;
-  var nu=document.getElementById('adm-user').value.trim();
-  var np=document.getElementById('adm-new').value;
-  var cp=document.getElementById('adm-conf').value;
-  if(!cur){showErr('adm-cur','Mot de passe actuel obligatoire');return;}
-  if(cur!==ADMIN.password){showErr('adm-cur','Mot de passe actuel incorrect');return;}
-  if(!np&&!nu){toast('Aucun changement effectué',true);return;}
-  if(np){
-    if(!validatePassword(np,'adm-new')) return;
-    if(np!==cp){showErr('adm-conf','Les mots de passe ne correspondent pas');return;}
-  }
-  if(nu) ADMIN.username=nu;
-  if(np) ADMIN.password=np;
-  save();
-  if(window.saveToCloud) window.saveToCloud();
-  closeAllMd();updateAdminSidebar();toast('Identifiants admin mis à jour ✓');
-}
-
 // ═══════════ SUPPLIERS ═══════════
 function renderSuppliers(){
   var totalDebt=SUPPLIERS.reduce(function(s,x){return s+(x.debt||0);},0);
@@ -5721,8 +5702,21 @@ async function loadFromCloud(){
     inj('clients',   'al_c',          'CLIENTS',            v=>Array.isArray(v)&&v.length>0);
     inj('products',  'al_p',          'PRODUCTS',           v=>Array.isArray(v)&&v.length>0);
     inj('orders',    'al_o',          'ORDERS',             v=>Array.isArray(v)&&v.length>0);
-    // NE PAS écraser ADMIN depuis Firebase — garder les identifiants locaux
-    // inj('admin', ...) supprimé pour éviter l'écrasement des identifiants
+    // Recharger ADMIN depuis Firebase — mais garder le mot de passe local en priorité
+    if(d.admin && d.admin.username){
+      var fbAdmin = d.admin;
+      var localAdmin = JSON.parse(localStorage.getItem('al_admin')||'{}');
+      // Fusionner : prendre le plus récent entre local et Firebase
+      ADMIN.username = fbAdmin.username || ADMIN.username;
+      ADMIN.email    = fbAdmin.email    || ADMIN.email;
+      ADMIN.name     = fbAdmin.name     || ADMIN.name;
+      ADMIN.photo    = fbAdmin.photo    || ADMIN.photo;
+      // Garder le mot de passe local sauf si Firebase est plus récent
+      if(fbAdmin.password && fbAdmin.password !== 'alitos2024'){
+        ADMIN.password = fbAdmin.password;
+      }
+      localStorage.setItem('al_admin', JSON.stringify(ADMIN));
+    }
     inj('admins',    'al_admins',     'ADMINS',             v=>Array.isArray(v));
     inj('cats',      'al_cats',       'PRODUCT_CATEGORIES', v=>Array.isArray(v)&&v.length>0);
     inj('company',   'al_company',    'COMPANY',            v=>v&&v.name);
