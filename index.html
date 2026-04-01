@@ -1000,11 +1000,12 @@ tr:hover td{background:rgba(255,255,255,0.018)}
  <div class="md" id="md-admin-creds" style="display:none;max-width:420px">
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <h2>🔑 Identifiants administrateur</h2>
-  <div class="fg"><label>Mot de passe actuel</label><input type="password" id="adm-cur" placeholder="••••••••"></div>
+  <div class="fg"><label>Mot de passe actuel <span style="color:var(--red)">★</span></label><input type="password" id="adm-cur" placeholder="••••••••"></div>
   <div style="background:rgba(201,168,76,0.04);border:1px solid var(--bo);border-radius:10px;padding:13px;margin-bottom:12px">
    <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Nouveaux identifiants</div>
    <div class="fg"><label>Nouvel identifiant (optionnel)</label><input id="adm-user" placeholder="Laisser vide = inchangé"></div>
-   <div class="fg" style="margin-bottom:0"><label>Nouveau mot de passe (optionnel)</label><input type="password" id="adm-new" placeholder="Laisser vide = inchangé"></div>
+   <div class="fg"><label>Email de récupération <span style="color:var(--red)">★</span></label><input type="email" id="adm-email" placeholder="votre@email.com"></div>
+   <div class="fg" style="margin-bottom:0"><label>Nouveau mot de passe (optionnel)</label><input type="password" id="adm-new" placeholder="Laisser vide = inchangé" oninput="validatePassword(this.value,'adm-new')"></div>
   </div>
   <div class="fg"><label>Confirmer nouveau mot de passe</label><input type="password" id="adm-conf" placeholder="••••••••"></div>
   <button class="btn btn-g" style="width:100%" onclick="saveAdminCreds()">Enregistrer</button>
@@ -1307,7 +1308,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
 <script>
 // ═══════════ DATA ═══════════
 // Identifiants par défaut — seront remplacés par Firebase au premier chargement
-var ADMIN={username:'admin',password:'alitos2024',email:'admin@alitos.ma'};
+var ADMIN={username:'admin',password:'alitos2024',email:''};
 try{
   var _a=localStorage.getItem('al_admin');
   if(_a){var _ap=JSON.parse(_a);if(_ap&&_ap.username&&_ap.password)ADMIN=_ap;}
@@ -2556,21 +2557,24 @@ function openEditCl(id){
 function saveAdminCreds(){
   var cur=document.getElementById('adm-cur').value;
   var nu=document.getElementById('adm-user').value.trim();
+  var ne=document.getElementById('adm-email').value.trim();
   var np=document.getElementById('adm-new').value;
   var cp=document.getElementById('adm-conf').value;
-  clearErr('adm-cur');clearErr('adm-user');clearErr('adm-new');clearErr('adm-conf');
+  clearErr('adm-cur');clearErr('adm-user');clearErr('adm-new');clearErr('adm-conf');clearErr('adm-email');
   if(!cur){showErr('adm-cur','Mot de passe actuel obligatoire');return;}
   if(cur!==ADMIN.password){showErr('adm-cur','Mot de passe actuel incorrect');return;}
-  if(!np&&!nu){toast('Aucun changement effectué',true);return;}
+  if(!np&&!nu&&!ne){toast('Aucun changement effectué',true);return;}
+  if(ne && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ne)){showErr('adm-email','Email invalide');return;}
   if(np){
     if(!validatePassword(np,'adm-new')) return;
     if(np!==cp){showErr('adm-conf','Les mots de passe ne correspondent pas');return;}
   }
   if(nu) ADMIN.username=nu;
+  if(ne) ADMIN.email=ne;
   if(np) ADMIN.password=np;
   save();
   if(window.saveToCloud) window.saveToCloud();
-  closeAllMd();toast('Identifiants admin mis à jour ✓');
+  closeAllMd();toast('✅ Identifiants admin mis à jour — Email : '+(ADMIN.email||'—'));
 }
 function updateClient(){
   var id=document.getElementById('ec-id').value;
@@ -2831,6 +2835,13 @@ function openMd(name){
   document.getElementById('mo-bg').className='mo on';
   document.querySelectorAll('.md').forEach(function(m){m.style.display='none';});
   var el=document.getElementById('md-'+name);if(el)el.style.display='block';
+  // Pré-remplir email admin
+  if(name==='admin-creds'){
+    var admEmailEl=document.getElementById('adm-email');
+    if(admEmailEl) admEmailEl.value=ADMIN.email||'';
+    var admCur=document.getElementById('adm-cur');
+    if(admCur) admCur.value='';
+  }
   // When opening add-prod, build cat options
   if(name==='add-prod'){
     var sel=document.getElementById('np-cat');
@@ -3127,11 +3138,13 @@ function loadCompanyForm(){
 }
 function saveCompany(){
   var n=document.getElementById('co-name').value.trim();
-  if(!n){toast('Nom de l\'entreprise requis',true);return;}
+  var email=document.getElementById('co-email').value.trim();
+  if(!n){showErr('co-name','Nom de l\'entreprise obligatoire');return;}
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('co-email','Adresse email invalide');return;}
   COMPANY.name=n;
   COMPANY.tagline=document.getElementById('co-tag').value;
   COMPANY.phone=document.getElementById('co-phone').value;
-  COMPANY.email=document.getElementById('co-email').value;
+  COMPANY.email=email;
   COMPANY.address=document.getElementById('co-addr').value;
   COMPANY.ice=document.getElementById('co-ice').value;
   COMPANY.logo=document.getElementById('co-logo').value;
@@ -3139,7 +3152,11 @@ function saveCompany(){
   var lngEl=document.getElementById('co-lng'); if(lngEl&&lngEl.value) COMPANY.lng=parseFloat(lngEl.value);
   save();
   if(window.saveToCloud) window.saveToCloud();
-  updateAdminSidebar();toast('✅ Informations entreprise sauvegardées');
+  // Mettre à jour l'affichage email sur la page contact client
+  var contactEmailEl=document.getElementById('contact-email-val');
+  if(contactEmailEl) contactEmailEl.textContent=COMPANY.email||'—';
+  updateAdminSidebar();
+  toast('✅ Informations entreprise sauvegardées');
 }
 function updateAdminSidebar(){
   var co=document.getElementById('admin-side-co');
