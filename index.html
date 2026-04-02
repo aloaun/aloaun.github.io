@@ -13,6 +13,30 @@
 <!-- Resend via Cloudflare Worker -->
 <script>
 var WORKER_URL = 'https://alitos-email.ait-azgar.workers.dev';
+
+// ── Données secteurs/quartiers par ville ──────────────────
+var SECTEURS_VILLES = {
+  'casablanca': ['Ain Chock','Ain Sebaa','Anfa','Ben M\'Sick','Bernoussi','Hay Hassani','Hay Mohammadi','Maarif','Mers Sultan','Moulay Rachid','Sidi Belyout','Sidi Bernoussi','Sidi Moumen','Sidi Othmane','Ain Diab','Bourgogne','CIL','Derb Ghallef','Derb Soltane','Oulfa','Roches Noires','Sbata','2 Mars','Hay Moulay Abdellah','Salmia','Nassim','Rachida','Bournazel','Cité Portugaise','Hay Hassani Est','Hay Inara','Hay Lala','Hay Moulay Idriss'],
+  'rabat': ['Agdal','Hay Riad','Hassan','L\'Océan','Orangers','Souissi','Akkari','Diour Jamaa','Médina','Takaddoum','Youssoufia','Aviation','Les Almohades'],
+  'marrakech': ['Médina','Guéliz','Hivernage','Semlalia','Massira','Daoudiate','Targa','Azzouzia','M\'Hamid','Mhamid 9','Syba'],
+  'fes': ['Médina','Ville Nouvelle','Saiss','Narjiss','Bensouda','Champs de courses','Hay Adarissa','Hay Moulay Slimane','Oued Fès'],
+  'tanger': ['Médina','Malabata','Mesnana','Beni Makada','Gzenneya','Ibn Batouta','Moujahidine','Val Fleuri','Cité Tetouan'],
+  'agadir': ['Talborjt','Nouveau Talborjt','Hay Mohammadi','Ait Melloul','Dcheira','Founty','Hay Nasr','Secteur Touristique'],
+  'meknes': ['Médina','Hamria','Marjane','Riad','Zitoune','Hay Salam','Boufekrane'],
+  'oujda': ['Médina','Hay Lazaar','Hay Al Wafa','Sidi Maafa','Boudir','Lazaret'],
+  'default': ['Centre ville','Quartier Nord','Quartier Sud','Quartier Est','Quartier Ouest','Zone industrielle','Médina','Hay Jadid','Lotissement Al Amal']
+};
+
+function updateSecteurList(secteurId, cityId){
+  var cityEl=document.getElementById(cityId);
+  var sectEl=document.getElementById(secteurId);
+  if(!cityEl||!sectEl) return;
+  var city=(cityEl.value||cityEl.textContent||'').trim().toLowerCase();
+  var quartiers=SECTEURS_VILLES[city]||SECTEURS_VILLES['default'];
+  sectEl.innerHTML='<option value="">— Sélectionner le secteur —</option>'+
+    quartiers.map(function(q){return'<option value="'+q+'">'+q+'</option>';}).join('')+
+    '<option value="__autre__">Autre (saisir manuellement)</option>';
+}
 async function sendResendEmail(to_email, to_name, otp_code, customSubject, customHtml){
   try{
     var payload = { to_email: to_email, to_name: to_name, otp_code: String(otp_code) };
@@ -579,22 +603,43 @@ tr:hover td{background:rgba(255,255,255,0.018)}
       <h3 style="font-size:13px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px">Inventaire &amp; Prix</h3>
       <button class="btn btn-g btn-sm" onclick="renderStock()">🔄 Actualiser</button>
      </div>
-     <div class="stk-add-box">
-      <h4>➕ Ajouter un approvisionnement</h4>
-      <div class="stk-add-row">
-       <select id="stk-add-prod" onchange="onStkProdChange()"><option value="">— Sélectionner un produit —</option></select>
-       <input type="number" id="stk-add-qty" placeholder="Quantité" min="1" style="width:100px" oninput="onStkCalcCmp()">
-       <input type="number" id="stk-add-price" placeholder="Prix achat (MAD)" min="0" step="0.01" style="width:140px" oninput="onStkCalcCmp()">
-       <select id="stk-add-sup" style="min-width:160px" onchange="if(this.value==='__new__'){openMd('add-supplier');this.value='';}"><option value="">— Fournisseur ★ —</option></select>
-       <select id="stk-add-paymethod" style="min-width:140px">
-         <option value="">— Paiement —</option>
-         <option value="cash">💵 Espèces</option>
-         <option value="transfer">🏦 Virement</option>
-         <option value="cheque">📋 Chèque</option>
-         <option value="credit">🔄 À crédit</option>
-       </select>
-       <button class="btn btn-o btn-sm" onclick="openMd('add-supplier')">+ Nouveau fourn.</button>
-       <button class="btn btn-gn" onclick="doAddStock()">Ajouter au stock</button>
+     <div class="stk-add-box" id="stk-add-form">
+      <h4>➕ Ajouter un approvisionnement <span style="font-size:10px;color:var(--tx3);font-weight:400">— champs <span style="color:var(--red)">★</span> obligatoires</span></h4>
+      <div class="stk-add-row" style="flex-wrap:wrap;gap:10px">
+       <div style="display:flex;flex-direction:column;gap:3px;min-width:160px">
+        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Produit <span style="color:var(--red)">★</span></label>
+        <select id="stk-add-prod" onchange="onStkProdChange()"><option value="">— Sélectionner —</option></select>
+       </div>
+       <div style="display:flex;flex-direction:column;gap:3px">
+        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Quantité <span style="color:var(--red)">★</span></label>
+        <input type="number" id="stk-add-qty" placeholder="Ex: 50" min="1" style="width:90px" oninput="onStkCalcCmp()">
+       </div>
+       <div style="display:flex;flex-direction:column;gap:3px">
+        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Prix achat MAD <span style="color:var(--red)">★</span></label>
+        <input type="number" id="stk-add-price" placeholder="Ex: 95" min="0" step="0.01" style="width:110px" oninput="onStkCalcCmp()">
+       </div>
+       <div style="display:flex;flex-direction:column;gap:3px;min-width:170px">
+        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Fournisseur <span style="color:var(--red)">★</span></label>
+        <select id="stk-add-sup" onchange="if(this.value==='__new__'){openMd('add-supplier');this.value='';}" ><option value="">— Choisir —</option></select>
+       </div>
+       <div style="display:flex;flex-direction:column;gap:3px;min-width:140px">
+        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Mode paiement <span style="color:var(--red)">★</span></label>
+        <select id="stk-add-paymethod">
+          <option value="">— Choisir —</option>
+          <option value="cash">💵 Espèces</option>
+          <option value="transfer">🏦 Virement</option>
+          <option value="cheque">📋 Chèque</option>
+          <option value="credit">🔄 À crédit</option>
+        </select>
+       </div>
+       <div style="display:flex;flex-direction:column;gap:3px">
+        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Réf. paiement</label>
+        <input type="text" id="stk-add-payref" placeholder="Optionnel" style="width:120px">
+       </div>
+       <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:5px">
+        <button class="btn btn-o btn-sm" onclick="openMd('add-supplier')" title="Ajouter un nouveau fournisseur">➕ Nouveau fourn.</button>
+        <button class="btn btn-gn" onclick="doAddStock()">✅ Ajouter au stock</button>
+       </div>
       </div>
       <div id="stk-cmp-preview" style="display:none;margin-top:9px;background:rgba(155,107,219,0.07);border:1px solid rgba(155,107,219,0.18);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--pur)"></div>
      </div>
@@ -605,9 +650,9 @@ tr:hover td{background:rgba(255,255,255,0.018)}
        <th>Stock actuel</th><th>Seuil alerte</th>
        <th>Prix d'achat</th><th>Prix de vente</th>
        <th>Marge unitaire</th><th>Marge %</th><th>État</th>
-       <th>Fournisseur</th>
-       <th>Dernier achat</th>
-       <th style="min-width:200px">Actions rapides</th>
+       <th>Fournisseurs</th>
+       <th>Historique achats</th>
+       <th>Action</th>
       </tr></thead><tbody id="stk-tb"></tbody></table>
      </div>
     </div>
@@ -781,8 +826,8 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <h2>Nouveau client</h2>
   <div class="fr2"><div class="fg"><label>Nom complet <span style="color:var(--red)">★</span></label><input id="nc-name" placeholder="Hassan Benali"></div><div class="fg"><label>Téléphone <span style="color:var(--red)">★</span></label><input id="nc-ph" placeholder="0661234567"></div></div>
-  <div class="fr2"><div class="fg"><label>Ville <span style="color:var(--red)">★</span></label><input id="nc-city" placeholder="Casablanca"></div><div class="fg"><label>Région</label><select id="nc-reg"><option>Grand Casablanca</option><option>Rabat-Salé</option><option>Marrakech-Safi</option><option>Fès-Meknès</option><option>Tanger-Tétouan</option><option>Souss-Massa</option><option>Oriental</option><option>Béni Mellal</option><option>Drâa-Tafilalet</option></select></div></div>
-  <div class="fg"><label>Adresse</label><input id="nc-addr" placeholder="123 Rue Mohammed V..."></div>
+  <div class="fr2"><div class="fg"><label>Ville <span style="color:var(--red)">★</span></label><input id="nc-city" placeholder="Casablanca" oninput="updateSecteurList('nc-sector','nc-city')"></div><div class="fg"><label>Région</label><select id="nc-reg"><option>Grand Casablanca</option><option>Rabat-Salé</option><option>Marrakech-Safi</option><option>Fès-Meknès</option><option>Tanger-Tétouan</option><option>Souss-Massa</option><option>Oriental</option><option>Béni Mellal</option><option>Drâa-Tafilalet</option></select></div></div>
+  <div class="fr2"><div class="fg"><label>Secteur / Quartier <span style="color:var(--red)">★</span></label><select id="nc-sector"><option value="">— Choisir ville d'abord —</option></select></div><div class="fg"><label>Adresse <span style="color:var(--red)">★</span></label><input id="nc-addr" placeholder="123 Rue Mohammed V..."></div></div>
   <div class="fg">
    <label>Localisation sur carte</label>
    <div style="display:flex;gap:7px;margin-bottom:8px">
@@ -810,9 +855,9 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <h2>Modifier le client</h2>
   <input type="hidden" id="ec-id">
-  <div class="fr2"><div class="fg"><label>Nom</label><input id="ec-name"></div><div class="fg"><label>Téléphone</label><input id="ec-ph"></div></div>
-  <div class="fr2"><div class="fg"><label>Ville</label><input id="ec-city"></div><div class="fg"><label>Région</label><select id="ec-reg"><option>Grand Casablanca</option><option>Rabat-Salé</option><option>Marrakech-Safi</option><option>Fès-Meknès</option><option>Tanger-Tétouan</option><option>Souss-Massa</option><option>Oriental</option><option>Béni Mellal</option><option>Drâa-Tafilalet</option></select></div></div>
-  <div class="fg"><label>Adresse</label><input id="ec-addr"></div>
+  <div class="fr2"><div class="fg"><label>Nom <span style="color:var(--red)">★</span></label><input id="ec-name"></div><div class="fg"><label>Téléphone <span style="color:var(--red)">★</span></label><input id="ec-ph"></div></div>
+  <div class="fr2"><div class="fg"><label>Ville <span style="color:var(--red)">★</span></label><input id="ec-city" oninput="updateSecteurList('ec-sector','ec-city')"></div><div class="fg"><label>Région</label><select id="ec-reg"><option>Grand Casablanca</option><option>Rabat-Salé</option><option>Marrakech-Safi</option><option>Fès-Meknès</option><option>Tanger-Tétouan</option><option>Souss-Massa</option><option>Oriental</option><option>Béni Mellal</option><option>Drâa-Tafilalet</option></select></div></div>
+  <div class="fr2"><div class="fg"><label>Secteur / Quartier</label><select id="ec-sector"><option value="">— Sélectionner —</option></select></div><div class="fg"><label>Adresse <span style="color:var(--red)">★</span></label><input id="ec-addr"></div></div>
   <div class="fg">
    <label>Localisation sur carte</label>
    <div style="display:flex;gap:7px;margin-bottom:8px">
@@ -896,26 +941,35 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <h2>Modifier le produit</h2>
   <input type="hidden" id="ep-id">
-  <div class="fg"><label>Nom</label><input id="ep-name"></div>
+  <div class="fg"><label>Nom <span style="color:var(--red)">★</span></label><input id="ep-name" placeholder="Nom du produit"></div>
   <div class="fr2">
    <div class="fg">
-    <label>Catégorie</label>
+    <label>Catégorie <span style="color:var(--red)">★</span></label>
     <div style="display:flex;gap:6px">
      <select id="ep-cat" style="flex:1" onchange="checkNewCat('ep')"></select>
     </div>
    </div>
-   <div class="fg"><label>Unité</label><input id="ep-unit"></div>
+   <div class="fg"><label>Unité</label><input id="ep-unit" placeholder="pièce, kg..."></div>
   </div>
   <div id="ep-newcat-wrap" class="fg" style="display:none"><label>Nom de la nouvelle catégorie</label><input id="ep-newcat" placeholder="Ex: Électronique"></div>
   <div style="background:rgba(201,168,76,0.04);border:1px solid var(--bo);border-radius:10px;padding:13px;margin-bottom:12px">
    <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:9px;text-transform:uppercase;letter-spacing:1px">💰 Prix</div>
    <div class="fr2">
-    <div class="fg" style="margin-bottom:7px"><label>Prix d'achat (MAD)</label><input type="number" id="ep-buy" min="0" oninput="calcMargin('ep')"></div>
-    <div class="fg" style="margin-bottom:7px"><label>Prix de vente (MAD)</label><input type="number" id="ep-sell" min="0" oninput="calcMargin('ep')"></div>
+    <div class="fg" style="margin-bottom:7px"><label>Prix d'achat (MAD) <span style="color:var(--red)">★</span></label><input type="number" id="ep-buy" min="0" oninput="calcMargin('ep')"></div>
+    <div class="fg" style="margin-bottom:7px"><label>Prix de vente (MAD) <span style="color:var(--red)">★</span></label><input type="number" id="ep-sell" min="0" oninput="calcMargin('ep')"></div>
    </div>
    <div id="ep-margin" class="margin-box"></div>
   </div>
-  <div class="fr2"><div class="fg"><label>Stock</label><input type="number" id="ep-stock" min="0"></div><div class="fg"><label>Seuil alerte</label><input type="number" id="ep-thr" min="0"></div></div>
+  <div class="fr2">
+   <div class="fg"><label>Stock <span style="color:var(--red)">★</span></label><input type="number" id="ep-stock" min="0"></div>
+   <div class="fg"><label>Seuil alerte</label><input type="number" id="ep-thr" min="0"></div>
+  </div>
+  <div class="fg">
+   <label>Fournisseur principal <span style="color:var(--red)">★</span></label>
+   <select id="ep-sup" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-size:13px;outline:none">
+    <option value="">— Sélectionner un fournisseur —</option>
+   </select>
+  </div>
   <div class="fg">
    <label>Image produit</label>
    <div class="photo-field-wrap">
@@ -989,9 +1043,10 @@ tr:hover td{background:rgba(255,255,255,0.018)}
  <div class="md" id="md-cl-creds" style="display:none;max-width:410px">
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <h2>🔑 Modifier mes identifiants</h2>
-  <div class="fg"><label>Mot de passe actuel</label><input type="password" id="cur-pw" placeholder="••••••••"></div>
+  <div class="fg"><label>Mot de passe actuel <span style="color:var(--red)">★</span></label><input type="password" id="cur-pw" placeholder="••••••••"></div>
   <div class="fg"><label>Nouvel identifiant (optionnel)</label><input id="new-user" placeholder="Laisser vide = inchangé"></div>
-  <div class="fg"><label>Nouveau mot de passe (optionnel)</label><input type="password" id="new-pw" placeholder="Laisser vide = inchangé"></div>
+  <div class="fg"><label>Nouvel email (optionnel)</label><input type="email" id="new-email-cl" placeholder="votre@email.com"></div>
+  <div class="fg"><label>Nouveau mot de passe (optionnel)</label><input type="password" id="new-pw" placeholder="Min. 8 car., Maj., min., chiffre, spécial" oninput="validatePassword(this.value,'new-pw')"></div>
   <div class="fg"><label>Confirmer nouveau mot de passe</label><input type="password" id="conf-pw" placeholder="••••••••"></div>
   <button class="btn btn-g" style="width:100%" onclick="saveClCreds()">Enregistrer les changements</button>
  </div>
@@ -1868,9 +1923,11 @@ function initClientFilters(){
 // ═══════════ DASHBOARD ═══════════
 function renderDashboard(){
   var O=ORDERS,today=new Date().toISOString().split('T')[0];
-  var todO=O.filter(function(o){return o.date===today&&o.status!=='cancelled'&&o.status!=='returned';});
+  // CA aujourd'hui = seulement les commandes LIVRÉES aujourd'hui
+  var todO=O.filter(function(o){return (o.deliveryDate===today||o.date===today)&&o.status==='delivered';});
   var todCA=todO.reduce(function(s,o){return s+o.total;},0);
   var todPr=todO.reduce(function(s,o){return s+calcProfit(o);},0);
+  // CA total = seulement livrées
   var totCA=O.filter(function(o){return o.status==='delivered';}).reduce(function(s,o){return s+o.total;},0);
   var totPr=O.filter(function(o){return o.status==='delivered';}).reduce(function(s,o){return s+calcProfit(o);},0);
   var pend=O.filter(function(o){return o.status==='pending';}).length;
@@ -1972,7 +2029,14 @@ function renderOrders(){
       })()+'</td>'+
       '<td><strong>'+fm(o.total)+'</strong></td>'+
       '<td style="color:var(--grn)">+'+fm(pr)+'</td>'+
-      '<td>'+o.date+'</td><td>'+badge(o.status)+'</td><td>'+payB(o.payStatus,o.payMethod)+'</td>'+
+      '<td>'+
+        '<div>'+o.date+'</div>'+
+        (o.deliveryDate?'<div style="font-size:10px;color:var(--grn)">✅ Livré: '+o.deliveryDate+'</div>':'')+
+        (o.returnDate?'<div style="font-size:10px;color:var(--ora)">↩ Retour: '+o.returnDate+'</div>':'')+
+        (o.cancelDate?'<div style="font-size:10px;color:var(--red)">✕ Annulé: '+o.cancelDate+'</div>':'')+
+        (o.shippedDate?'<div style="font-size:10px;color:var(--blu)">📦 Expédié: '+o.shippedDate+'</div>':'')+
+      '</td>'+
+      '<td>'+badge(o.status)+'</td><td>'+payB(o.payStatus,o.payMethod)+'</td>'+
       '<td style="display:flex;gap:4px;flex-wrap:wrap">'+
         '<button class="btn btn-o btn-sm" onclick="viewOrd(\''+o.id+'\')">👁</button>'+
         (o.status==='pending'?'<button class="btn btn-gn btn-sm" onclick="updOrd(\''+o.id+'\',\'confirmed\');renderOrders()" title="Confirmer">✓</button>':'')+
@@ -1997,6 +2061,12 @@ function updOrd(id,s){
   if(!o) return;
   var prev=o.status;
   o.status=s;
+  var today=new Date().toISOString().split('T')[0];
+  // Enregistrer la date selon le statut
+  if(s==='delivered' && prev!=='delivered') o.deliveryDate=today;
+  if(s==='returned') o.returnDate=today;
+  if(s==='cancelled') o.cancelDate=today;
+  if(s==='shipped' && prev!=='shipped') o.shippedDate=today;
   // ── Diminuer stock quand confirmée ──
   if(s==='confirmed' && prev!=='confirmed'){
     o.items.forEach(function(it){
@@ -2196,9 +2266,8 @@ function openEditProd(id){
   var p=PRODUCTS.find(function(x){return x.id===id;});if(!p)return;
   document.getElementById('ep-id').value=p.id;
   document.getElementById('ep-name').value=p.name;
-  // build cat options
   document.getElementById('ep-cat').innerHTML=buildCatOptions(p.category,'ep');
-  document.getElementById('ep-unit').value=p.unit;
+  document.getElementById('ep-unit').value=p.unit||'';
   document.getElementById('ep-buy').value=p.buyPrice||0;
   document.getElementById('ep-sell').value=p.price;
   document.getElementById('ep-stock').value=p.stock;
@@ -2207,26 +2276,58 @@ function openEditProd(id){
   var pv=document.getElementById('ep-img-prev');
   if(p.image){pv.src=p.image;pv.style.display='block';}else pv.style.display='none';
   document.getElementById('ep-newcat-wrap').style.display='none';
+  // Remplir fournisseurs
+  var epSup=document.getElementById('ep-sup');
+  if(epSup){
+    // Fournisseur actuel du produit (dernier achat)
+    var currentSupId='';
+    if(p.purchases&&p.purchases.length) currentSupId=p.purchases[0].supplierId||'';
+    epSup.innerHTML='<option value="">— Sélectionner un fournisseur —</option>'+
+      SUPPLIERS.map(function(s){
+        return '<option value="'+s.id+'"'+(s.id===currentSupId?' selected':'')+'>'+s.name+'</option>';
+      }).join('');
+  }
   calcMargin('ep');openMd('edit-prod');
 }
 function updateProduct(){
   var id=document.getElementById('ep-id').value;
   var i=PRODUCTS.findIndex(function(x){return x.id===id;});
-  if(i>-1){
-    PRODUCTS[i].name=document.getElementById('ep-name').value;
-    var catSel=document.getElementById('ep-cat').value;
-    var catNew=document.getElementById('ep-newcat').value.trim();
-    var finalCat=catSel==='__new__'?(catNew||'Autre'):catSel;
-    if(finalCat&&PRODUCT_CATEGORIES.indexOf(finalCat)<0){PRODUCT_CATEGORIES.push(finalCat);}
-    PRODUCTS[i].category=finalCat;
-    PRODUCTS[i].unit=document.getElementById('ep-unit').value;
-    PRODUCTS[i].buyPrice=+(document.getElementById('ep-buy').value)||0;
-    PRODUCTS[i].price=+(document.getElementById('ep-sell').value)||0;
-    PRODUCTS[i].stock=+(document.getElementById('ep-stock').value)||0;
-    PRODUCTS[i].threshold=+(document.getElementById('ep-thr').value)||10;
-    PRODUCTS[i].image=document.getElementById('ep-img').value;
-    save();closeAllMd();renderProds();toast('Produit mis à jour ✓');
+  if(i<0) return;
+  var name=document.getElementById('ep-name').value.trim();
+  var buy=+(document.getElementById('ep-buy').value)||0;
+  var sell=+(document.getElementById('ep-sell').value)||0;
+  var stock=+(document.getElementById('ep-stock').value);
+  var supId=document.getElementById('ep-sup')?document.getElementById('ep-sup').value:'';
+  // Validation
+  if(!name){showErr('ep-name','Nom du produit obligatoire');return;}
+  if(buy<=0){showErr('ep-buy','Prix d\'achat obligatoire et doit être > 0');return;}
+  if(sell<=0){showErr('ep-sell','Prix de vente obligatoire et doit être > 0');return;}
+  if(sell<buy){showErr('ep-sell','Prix de vente doit être ≥ au prix d\'achat');return;}
+  if(isNaN(stock)||stock<0){showErr('ep-stock','Stock doit être ≥ 0');return;}
+  if(!supId){showErr('ep-sup','Fournisseur obligatoire');return;}
+  var catSel=document.getElementById('ep-cat').value;
+  var catNew=document.getElementById('ep-newcat').value.trim();
+  var finalCat=catSel==='__new__'?(catNew||'Autre'):catSel;
+  if(finalCat&&PRODUCT_CATEGORIES.indexOf(finalCat)<0){PRODUCT_CATEGORIES.push(finalCat);}
+  PRODUCTS[i].name=name;
+  PRODUCTS[i].category=finalCat;
+  PRODUCTS[i].unit=document.getElementById('ep-unit').value;
+  PRODUCTS[i].buyPrice=buy;
+  PRODUCTS[i].price=sell;
+  PRODUCTS[i].stock=stock;
+  PRODUCTS[i].threshold=+(document.getElementById('ep-thr').value)||10;
+  PRODUCTS[i].image=document.getElementById('ep-img').value;
+  // Mettre à jour fournisseur principal si changement
+  if(supId && PRODUCTS[i].purchases && PRODUCTS[i].purchases.length>0){
+    if(PRODUCTS[i].purchases[0].supplierId !== supId){
+      var sup=SUPPLIERS.find(function(s){return s.id===supId;});
+      PRODUCTS[i].purchases[0].supplierId=supId;
+      PRODUCTS[i].purchases[0].supplierName=sup?sup.name:'';
+    }
   }
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();renderProds();renderStock();toast('Produit mis à jour ✓');
 }
 function saveProduct(){
   var name=document.getElementById('np-name').value.trim();
@@ -2296,6 +2397,34 @@ function onStkProdChange(){
   if(!pid){document.getElementById('stk-cmp-preview').style.display='none';document.getElementById('stk-add-price').value='';return;}
   var p=PRODUCTS.find(function(x){return x.id===pid;});
   if(p){document.getElementById('stk-add-price').value=p.buyPrice||0;}
+  // Mettre à jour le dropdown fournisseur : montrer fournisseurs connus pour ce produit en premier
+  var supSel=document.getElementById('stk-add-sup');
+  if(supSel){
+    var prodSupIds={};
+    if(p&&p.purchases){
+      p.purchases.forEach(function(pur){if(pur.supplierId) prodSupIds[pur.supplierId]=(prodSupIds[pur.supplierId]||0)+pur.qty;});
+    }
+    var html='<option value="">— Fournisseur ★ —</option>';
+    // Fournisseurs de ce produit en premier
+    var known=Object.keys(prodSupIds);
+    if(known.length){
+      html+='<optgroup label="Fournisseurs de ce produit">';
+      known.forEach(function(sid){
+        var sup=SUPPLIERS.find(function(s){return s.id===sid;});
+        if(sup) html+='<option value="'+sid+'">'+sup.name+' ('+prodSupIds[sid]+' u. achetées)</option>';
+      });
+      html+='</optgroup>';
+    }
+    // Autres fournisseurs
+    var others=SUPPLIERS.filter(function(s){return known.indexOf(s.id)<0;});
+    if(others.length){
+      html+='<optgroup label="Autres fournisseurs">';
+      others.forEach(function(s){html+='<option value="'+s.id+'">'+s.name+'</option>';});
+      html+='</optgroup>';
+    }
+    html+='<option value="__new__" style="color:var(--gold);font-weight:600">➕ Nouveau fournisseur...</option>';
+    supSel.innerHTML=html;
+  }
   onStkCalcCmp();
 }
 function onStkCalcCmp(){
@@ -2430,7 +2559,40 @@ function renderStock(){
       '<td style="color:var(--grn)">+'+fm(m)+'</td>'+
       '<td><span style="color:var(--pur)">'+mp+'%</span></td>'+
       '<td>'+(p.stock===0?'<span class="sb sx">Rupture</span>':p.stock<=(p.threshold||10)?'<span class="sb sp">Bas</span>':'<span class="sb sd">OK</span>')+'</td>'+
-      '<td style="font-size:12px">'+lastSup+'</td>'+
+      // Colonne Fournisseurs - tous les fournisseurs avec qtés et dates
+      '<td style="font-size:11px;max-width:160px">'+(function(){
+        if(!p.purchases||!p.purchases.length) return '<span style="color:var(--tx3)">—</span>';
+        // Grouper par fournisseur
+        var supMap={};
+        p.purchases.forEach(function(pur){
+          var sname=pur.supplierName||(SUPPLIERS.find(function(s){return s.id===pur.supplierId;})||{name:'?'}).name;
+          if(!supMap[sname]) supMap[sname]={qty:0,dates:[],returns:0};
+          supMap[sname].qty+=pur.qty||0;
+          supMap[sname].dates.push(pur.date||'');
+          if(pur.returnQty) supMap[sname].returns+=pur.returnQty;
+        });
+        return Object.keys(supMap).map(function(sn){
+          var s=supMap[sn];
+          var lastDate=s.dates.sort().reverse()[0]||'';
+          return '<div style="margin-bottom:3px">'+
+            '<span style="color:var(--blu);font-weight:500">'+sn+'</span>'+
+            '<div style="color:var(--tx3)">📦 '+s.qty+' u · '+lastDate+
+            (s.returns>0?'<span style="color:var(--ora)"> · ↩'+s.returns+' retour</span>':'')+
+            '</div></div>';
+        }).join('');
+      })()+'</td>'+
+      // Colonne Historique achats
+      '<td style="font-size:11px;max-width:140px">'+(function(){
+        if(!p.purchases||!p.purchases.length) return '<span style="color:var(--tx3)">—</span>';
+        var last=p.purchases.slice(0,2);
+        return last.map(function(pur){
+          return '<div style="margin-bottom:3px;color:var(--tx3)">'+
+            (pur.date||'')+'<br>'+
+            '<span style="color:var(--grn)">'+fm(pur.unitBuy||0)+'/u</span> × '+(pur.qty||0)+
+            (pur.payLabel?'<span style="color:var(--tx3)"> · '+pur.payLabel+'</span>':'')+
+          '</div>';
+        }).join('')+(p.purchases.length>2?'<span style="color:var(--tx3);font-size:10px">+'+( p.purchases.length-2)+' autre(s)</span>':'');
+      })()+'</td>'+
       '<td><button class="btn btn-b btn-sm" onclick="approProd(\''+p.id+'\')" title="Approvisionner ce produit">📦 Approvisionner</button></td>'+
     '</tr>';
   }).join('');
@@ -2528,6 +2690,7 @@ function renderClients(){
       '<img src="'+clientAvatar(c)+'" alt="" onerror="this.src=\'https://ui-avatars.com/api/?name='+encodeURIComponent(c.name)+'&background=C9A84C&color=0A0A0A&size=128\'" style="border:2px solid var(--gold)">'+
       '<div class="cl-info"><p>'+c.name+'</p><span class="ph">'+c.phone+'</span>'+
       '<div style="font-size:12px;color:var(--gold);margin-top:2px">📍 '+c.city+', '+c.region+'</div>'+
+      (c.sector?'<div style="font-size:11px;color:var(--blu);margin-top:1px">🏘️ '+c.sector+'</div>':'')+
       (c.address?'<div style="font-size:11px;color:var(--tx3);margin-top:1px">'+c.address+'</div>':'')+
       '<div style="display:flex;gap:5px;margin-top:5px;align-items:center;flex-wrap:wrap">'+gpsLink+'<span style="font-size:10px;color:var(--tx3)">@'+c.username+'</span></div>'+
       '<div class="cl-acts">'+
@@ -2552,6 +2715,12 @@ function openEditCl(id){
   pv.src=clientAvatar(c);pv.style.display='block';
   document.getElementById('ec-user').value=c.username||'';
   document.getElementById('ec-pw').value='';
+  // Populate secteur
+  updateSecteurList('ec-sector','ec-city');
+  setTimeout(function(){
+    var secSel=document.getElementById('ec-sector');
+    if(secSel&&c.sector){secSel.value=c.sector;}
+  },50);
   updateLocBadge('ec');openMd('edit-cl');
 }
 function saveAdminCreds(){
@@ -2595,6 +2764,8 @@ function updateClient(){
     CLIENTS[i].phone=phone;
     CLIENTS[i].city=document.getElementById('ec-city').value;
     CLIENTS[i].region=document.getElementById('ec-reg').value;
+    var ecSec=document.getElementById('ec-sector');
+    if(ecSec){var sv=ecSec.value;if(sv==='__autre__'){sv=prompt('Entrez le secteur/quartier :','')||'';}CLIENTS[i].sector=sv;}
     CLIENTS[i].email=emailEC;
     CLIENTS[i].lat=lat!==''?parseFloat(lat):null;
     CLIENTS[i].lng=lng!==''?parseFloat(lng):null;
@@ -2631,7 +2802,9 @@ function saveClient(){
   if(CLIENTS.find(function(c){return c.username===user;})){showErr('nc-user','Identifiant déjà utilisé');return;}
   var latV=parseFloat(document.getElementById('nc-lat').value)||null;
   var lngV=parseFloat(document.getElementById('nc-lng').value)||null;
-  CLIENTS.push({id:'C'+(100+CLIENTS.length),name:name,phone:document.getElementById('nc-ph').value,city:document.getElementById('nc-city').value,region:document.getElementById('nc-reg').value,address:document.getElementById('nc-addr').value,lat:latV,lng:lngV,username:user,password:pw,email:document.getElementById('nc-email').value,photo:document.getElementById('nc-photo').value||'https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128'});
+  var ncSector=document.getElementById('nc-sector');var ncSectorVal=ncSector?ncSector.value:'';
+  if(ncSectorVal==='__autre__'){var customSec=prompt('Entrez le nom du secteur/quartier :','');ncSectorVal=customSec||'';}
+  CLIENTS.push({id:'C'+(100+CLIENTS.length),name:name,phone:document.getElementById('nc-ph').value,city:document.getElementById('nc-city').value,region:document.getElementById('nc-reg').value,sector:ncSectorVal,address:document.getElementById('nc-addr').value,lat:latV,lng:lngV,username:user,password:pw,email:document.getElementById('nc-email').value,photo:document.getElementById('nc-photo').value||'https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128'});
   save();closeAllMd();initClientFilters();renderClients();toast('Client ajouté ✓');
 }
 function delCl(id){CLIENTS=CLIENTS.filter(function(c){return c.id!==id;});save();initClientFilters();renderClients();toast('Client supprimé');}
@@ -2891,25 +3064,38 @@ function initClient(){
 function saveClCreds(){
   var curpw=document.getElementById('cur-pw').value;
   var nuser=document.getElementById('new-user').value.trim();
+  var nemail=(document.getElementById('new-email-cl')?document.getElementById('new-email-cl').value.trim():'');
   var npw=document.getElementById('new-pw').value;
   var cpw=document.getElementById('conf-pw').value;
   var i=CLIENTS.findIndex(function(c){return c.id===SESSION.id;});
   if(i<0){toast('Erreur',true);return;}
+  clearErr('cur-pw');clearErr('new-user');clearErr('new-email-cl');clearErr('new-pw');clearErr('conf-pw');
   if(!curpw){showErr('cur-pw','Mot de passe actuel obligatoire');return;}
   if(CLIENTS[i].password!==curpw){showErr('cur-pw','Mot de passe actuel incorrect');return;}
+  if(!npw&&!nuser&&!nemail){toast('Aucun changement effectué',true);return;}
+  // Vérifier identifiant unique
+  if(nuser&&nuser!==CLIENTS[i].username){
+    if(CLIENTS.find(function(c,j){return j!==i&&c.username===nuser;})){
+      showErr('new-user','⚠️ Cet identifiant est déjà utilisé par un autre compte');return;
+    }
+  }
+  // Vérifier email unique
+  if(nemail&&nemail!==CLIENTS[i].email){
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(nemail)){showErr('new-email-cl','Format email invalide');return;}
+    if(CLIENTS.find(function(c,j){return j!==i&&c.email&&c.email.toLowerCase()===nemail.toLowerCase();})){
+      showErr('new-email-cl','⚠️ Cet email est déjà utilisé par un autre compte');return;
+    }
+  }
   if(npw){
     if(!validatePassword(npw,'new-pw')) return;
     if(npw!==cpw){showErr('conf-pw','Les mots de passe ne correspondent pas');return;}
   }
-  if(nuser&&nuser!==CLIENTS[i].username){
-    if(CLIENTS.find(function(c,j){return j!==i&&c.username===nuser;})){showErr('new-user','Identifiant déjà utilisé');return;}
-    CLIENTS[i].username=nuser;
-    SESSION.username=nuser;
-  }
+  if(nuser&&nuser!==CLIENTS[i].username){CLIENTS[i].username=nuser;SESSION.username=nuser;}
+  if(nemail) CLIENTS[i].email=nemail;
   if(npw) CLIENTS[i].password=npw;
   save();
   if(window.saveToCloud) window.saveToCloud();
-  closeAllMd();toast('Identifiants mis à jour ✓');
+  closeAllMd();toast('✅ Identifiants mis à jour avec succès !');
 }
 function setCat(c){activeCat=c;clRenderProds();}
 function addCart(id){var p=PRODUCTS.find(function(x){return x.id===id;});if(!p||p.stock===0){toast('Épuisé',true);return;}var q=cart[id]||0;if(q>=p.stock){toast('Stock max atteint',true);return;}cart[id]=(cart[id]||0)+1;updCartUI();clRenderProds();refreshCart();}
@@ -3363,6 +3549,8 @@ function renderCredits(){
       '<div class="cl-acts" style="margin-top:6px">'+
         '<button class="btn btn-b btn-sm" onclick="openSetCredit(\''+c.id+'\')">⚙️ Paramétrer</button>'+
         (used>0?'<button class="btn btn-gn btn-sm" onclick="quickPayCredit(\''+c.id+'\')">💳 Encaisser</button>':'')+
+        (PENDING_PAYMENTS.filter(function(p){return p.clientId===c.id&&p.status==='pending';}).length>0?
+          '<button class="btn btn-o btn-sm" onclick="openConfirmPendingPayments(\''+c.id+'\')" style="position:relative">✅ Confirmer paiement <span style="background:var(--red);color:#fff;border-radius:50%;font-size:9px;font-weight:700;padding:1px 4px;margin-left:4px">'+PENDING_PAYMENTS.filter(function(p){return p.clientId===c.id&&p.status==='pending';}).length+'</span></button>':'')+
       '</div></div></div>';
   }).join('');
 }
@@ -3422,6 +3610,39 @@ function saveCreditSettings(){
   if(window.saveToCloud) window.saveToCloud();
   closeAllMd();renderCredits();toast('✅ Crédit mis à jour');
 }
+function openConfirmPendingPayments(cid){
+  var c=getC(cid);
+  var pending=PENDING_PAYMENTS.filter(function(p){return p.clientId===cid&&p.status==='pending';});
+  if(!pending.length){toast('Aucun paiement en attente pour '+c.name);return;}
+  var html='<div style="padding:16px">'+
+    '<h3 style="color:var(--gold);margin-bottom:12px">✅ Confirmer paiement — '+c.name+'</h3>'+
+    '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">'+pending.length+' paiement(s) en attente de confirmation :</div>'+
+    pending.map(function(p){
+      return '<div style="display:flex;justify-content:space-between;align-items:center;background:var(--dk3);border-radius:8px;padding:10px 14px;margin-bottom:8px">'+
+        '<div>'+
+          '<div style="font-size:14px;font-weight:600;color:var(--grn)">'+fm(p.amount)+'</div>'+
+          '<div style="font-size:11px;color:var(--tx3)">'+p.methodLabel+' · '+p.date+'</div>'+
+          (p.note?'<div style="font-size:11px;color:var(--tx3)">'+p.note+'</div>':'')+
+        '</div>'+
+        '<div style="display:flex;gap:5px">'+
+          '<button class="btn btn-gn btn-sm" onclick="confirmCreditPayment(\''+p.id+'\')">✅ Confirmer</button>'+
+          '<button class="btn btn-r btn-sm" onclick="rejectCreditPayment(\''+p.id+'\')">✕ Rejeter</button>'+
+        '</div>'+
+      '</div>';
+    }).join('')+
+  '</div>';
+  document.getElementById('mo-bg').className='mo on';
+  document.querySelectorAll('.md').forEach(function(m){m.style.display='none';});
+  var md=document.getElementById('md-generic')||document.createElement('div');
+  if(!document.getElementById('md-generic')){
+    md.id='md-generic';md.className='md';md.style.maxWidth='520px';
+    md.innerHTML='<button class="md-x" onclick="closeAllMd()">✕</button><div id="md-generic-content"></div>';
+    document.querySelector('.mods').appendChild(md);
+  }
+  document.getElementById('md-generic-content').innerHTML=html;
+  md.style.display='block';
+}
+
 function confirmCreditPayment(pid){
   var p=PENDING_PAYMENTS.find(function(x){return x.id===pid;});
   if(!p) return;
@@ -3604,7 +3825,40 @@ function renderRegional(){
         '<td><div style="display:flex;align-items:center;gap:6px"><div style="width:60px;height:5px;background:var(--dk5);border-radius:2px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+colors[ri%colors.length]+'"></div></div>'+pct+'%</div></td>'+
         '<td style="color:var(--gold)">'+fm(ca)+'</td></tr>';
     });
-    html+='</tbody></table></div></div>';
+    html+='</tbody></table></div>';
+    // Ajout classement par secteur
+    var sectorData={};
+    ORDERS.forEach(function(o){
+      var c=getC(o.clientId);
+      var oKey=_regView==='city'?(c.city||'Inconnu')+' ('+(c.region||'')+')': (c.region||'Inconnu');
+      if(oKey!==zone) return;
+      var sec=c.sector||'Non défini';
+      if(!sectorData[sec]) sectorData[sec]={qty:0,ca:0,clients:{}};
+      o.items.forEach(function(it){
+        if(filterProd&&it.productId!==filterProd) return;
+        sectorData[sec].qty+=it.quantity;
+        sectorData[sec].ca+=getP(it.productId).price*it.quantity;
+      });
+      sectorData[sec].clients[o.clientId]=true;
+    });
+    var sectors=Object.keys(sectorData).filter(function(s){return sectorData[s].qty>0;});
+    sectors.sort(function(a,b){return sectorData[b].qty-sectorData[a].qty;});
+    if(sectors.length>1){
+      html+='<div style="margin-top:8px;padding:8px 12px;background:rgba(255,255,255,0.02);border-radius:0 0 10px 10px">'+
+        '<div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">📍 Ventes par secteur/quartier</div>'+
+        '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
+        sectors.map(function(s,si){
+          var sd=sectorData[s];
+          var pct=totalQty>0?Math.round(sd.qty/totalQty*100):0;
+          return '<div style="background:var(--dk3);border:1px solid var(--bo2);border-radius:8px;padding:5px 10px;font-size:11px">'+
+            '<span style="color:var(--gold);font-weight:500">'+s+'</span>'+
+            '<span style="color:var(--tx3);margin-left:6px">'+sd.qty+' u · '+pct+'% · '+fm(sd.ca)+'</span>'+
+            '<span style="color:var(--tx3);margin-left:5px;font-size:10px">('+Object.keys(sd.clients).length+' client(s))</span>'+
+          '</div>';
+        }).join('')+
+        '</div></div>';
+    }
+    html+='</div>';
   });
   document.getElementById('regional-content').innerHTML=html;
 }
@@ -3630,7 +3884,10 @@ function openClComplaint(){
 function submitComplaint(){
   var type=document.getElementById('cmp-type').value;
   var msg=document.getElementById('cmp-msg').value.trim();
-  if(!msg){toast('Décrivez votre problème',true);return;}
+  clearErr('cmp-type');clearErr('cmp-msg');
+  if(!type){showErr('cmp-type','Type de réclamation obligatoire');return;}
+  if(!msg){showErr('cmp-msg','Message obligatoire — décrivez votre problème');return;}
+  if(msg.length<10){showErr('cmp-msg','Message trop court — minimum 10 caractères');return;}
   var ordId=document.getElementById('cmp-order').value;
   COMPLAINTS.push({id:'CMP'+(1000+COMPLAINTS.length),clientId:SESSION.id,type:type,message:msg,orderId:ordId,date:new Date().toISOString().split('T')[0],status:'pending',reply:''});
   try{ localStorage.setItem('al_complaints', JSON.stringify(COMPLAINTS)); }catch(e){}
@@ -4867,8 +5124,10 @@ try{ var _cm = localStorage.getItem('al_contact'); if(_cm) CONTACT_MSGS = JSON.p
 function sendContactMsg(){
   var subj = (document.getElementById('contact-subj').value || '').trim();
   var msg = (document.getElementById('contact-msg').value || '').trim();
-  if(!validateField(subj, 'Sujet')) return;
-  if(!validateField(msg, 'Message')) return;
+  clearErr('contact-subj'); clearErr('contact-msg');
+  if(!subj){showErr('contact-subj','⚠️ Sujet obligatoire');return;}
+  if(!msg){showErr('contact-msg','⚠️ Message obligatoire');return;}
+  if(msg.length<5){showErr('contact-msg','⚠️ Message trop court (min. 5 caractères)');return;}
   var sendBtn = document.querySelector('#cl-pg-contact .btn-g');
   if(sendBtn){sendBtn.disabled=true;sendBtn.textContent='⏳ Envoi...';}
   var newMsg={id:'MSG'+(100+CONTACT_MSGS.length), clientId:SESSION.id, clientName:SESSION.name, subject:subj, message:msg, date:new Date().toISOString().split('T')[0], status:'new', reply:''};
