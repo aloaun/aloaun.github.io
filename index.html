@@ -1203,14 +1203,14 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   <h2>✏️ Modifier fournisseur</h2>
   <input type="hidden" id="es-id">
   <div class="fr2">
-   <div class="fg"><label>Nom</label><input id="es-name"></div>
-   <div class="fg"><label>Téléphone</label><input id="es-phone"></div>
+   <div class="fg"><label>Nom <span style="color:var(--red)">★</span></label><input id="es-name" placeholder="Nom du fournisseur"></div>
+   <div class="fg"><label>Téléphone</label><input id="es-phone" placeholder="0522..."></div>
   </div>
   <div class="fr2">
-   <div class="fg"><label>Ville</label><input id="es-city"></div>
-   <div class="fg"><label>Email</label><input id="es-email" type="email"></div>
+   <div class="fg"><label>Ville</label><input id="es-city" placeholder="Casablanca"></div>
+   <div class="fg"><label>Email</label><input id="es-email" type="email" placeholder="contact@fourni.ma"></div>
   </div>
-  <div class="fg"><label>Dette (MAD)</label><input id="es-debt" type="number" min="0"></div>
+  <div class="fg"><label>Dette (MAD)</label><input id="es-debt" type="number" min="0" placeholder="0"></div>
   <div class="fg"><label>Notes</label><textarea id="es-notes"></textarea></div>
   <button class="btn btn-g" style="width:100%" onclick="updateSupplier()">Enregistrer</button>
  </div>
@@ -2349,12 +2349,19 @@ function saveProduct(){
   var payMethod=document.getElementById('np-paymethod')?document.getElementById('np-paymethod').value:'';
   var initStock=+(document.getElementById('np-stock').value)||0;
   var initBuy=+(document.getElementById('np-buy').value)||0;
-  if(!supId){toast('⚠️ Fournisseur obligatoire',true);return;}
-  if(!payMethod){toast('⚠️ Moyen de paiement obligatoire',true);return;}
-  if(initBuy<=0){toast('⚠️ Prix d\'achat obligatoire',true);return;}
+  var initSell=+(document.getElementById('np-sell').value)||0;
+  // Validation complète avec messages inline
+  var fok=validateForm([
+    {id:'np-buy',  label:'Prix d\'achat', type:'number', min:0.01},
+    {id:'np-sell', label:'Prix de vente', type:'number', min:0.01}
+  ]);
+  if(!fok) return;
+  if(!supId){showErr('np-sup','⚠️ Fournisseur obligatoire — sélectionnez un fournisseur');return;}
+  if(!payMethod){showErr('np-paymethod','⚠️ Mode de paiement obligatoire');return;}
+  if(initSell<initBuy){showErr('np-sell','⚠️ Prix de vente doit être ≥ au prix d\'achat ('+initBuy+' MAD)');return;}
   var payLabels={cash:'💵 Espèces',transfer:'🏦 Virement',cheque:'📋 Chèque',credit:'🔄 À crédit'};
   var newProd={id:'P'+(100+PRODUCTS.length),name:name,category:finalCat,
-    buyPrice:initBuy,price:+(document.getElementById('np-sell').value)||0,
+    buyPrice:initBuy,price:initSell,
     unit:document.getElementById('np-unit').value,stock:initStock,
     threshold:+(document.getElementById('np-thr').value)||10,
     image:document.getElementById('np-img').value,purchases:[]};
@@ -2377,7 +2384,7 @@ function saveProduct(){
   PRODUCTS.push(newProd);
   save();
   if(window.saveToCloud) window.saveToCloud();
-  closeAllMd();initProdFilters();renderProds();toast('Produit ajouté ✓');
+  closeAllMd();initProdFilters();renderProds();toast('✅ Produit ajouté avec succès !');
 }
 function delProd(id){PRODUCTS=PRODUCTS.filter(function(p){return p.id!==id;});save();renderProds();toast('Produit supprimé');}
 
@@ -2458,11 +2465,11 @@ function doAddStock(){
   var supId=supSel?supSel.value:'';
   var payMethodSel=document.getElementById('stk-add-paymethod');
   var payMethod=payMethodSel?payMethodSel.value:'';
-  if(!pid){toast('⚠️ Sélectionnez un produit',true);return;}
-  if(qty<=0){showErr('stk-add-qty','Quantité doit être supérieure à 0');return;}
-  if(!supId||supId==='__new__'){toast('⚠️ Fournisseur obligatoire',true);return;}
-  if(!payMethod){toast('⚠️ Moyen de paiement obligatoire',true);return;}
-  if(isNaN(newBuy)||newBuy<=0){showErr('stk-add-price','Prix d\'achat obligatoire et doit être > 0');return;}
+  if(!pid){toast('⚠️ Sélectionnez un produit dans la liste',true);return;}
+  if(qty<=0||isNaN(qty)){showErr('stk-add-qty','⚠️ Quantité obligatoire — saisissez un nombre > 0 (pas de lettres)');return;}
+  if(isNaN(newBuy)||newBuy<=0){showErr('stk-add-price','⚠️ Prix achat obligatoire — saisissez un nombre > 0 (pas de lettres)');return;}
+  if(!supId||supId==='__new__'){showErr('stk-add-sup','⚠️ Fournisseur obligatoire — sélectionnez ou créez un fournisseur');return;}
+  if(!payMethod){showErr('stk-add-paymethod','⚠️ Mode de paiement obligatoire');return;}
   var i=PRODUCTS.findIndex(function(p){return p.id===pid;});
   if(i>-1){
     var p=PRODUCTS[i];
@@ -2626,51 +2633,7 @@ function setPriceSell(id){var v=+(document.getElementById('ss-'+id).value);if(is
 function adjStk(id,d){var i=PRODUCTS.findIndex(function(p){return p.id===id;});if(i>-1){PRODUCTS[i].stock=Math.max(0,PRODUCTS[i].stock+d);save();renderStock();toast('Stock : '+PRODUCTS[i].stock);}}
 
 // ═══════════ REGIONAL PRODUCTS ═══════════
-function renderRegional(){
-  // Build map: region → { productId → qty }
-  var regionProd={};
-  ORDERS.forEach(function(o){
-    var c=getC(o.clientId);
-    var reg=c.region||'Inconnu';
-    if(!regionProd[reg])regionProd[reg]={};
-    o.items.forEach(function(it){
-      regionProd[reg][it.productId]=(regionProd[reg][it.productId]||0)+it.quantity;
-    });
-  });
-  var colors=['#C9A84C','#4A9EE8','#52C97A','#9B6BDB','#E05252','#E8834A','#4ECDC4','#FF6B6B'];
-  var html='';
-  var regions=Object.keys(regionProd).sort();
-  if(!regions.length){html='<div style="text-align:center;padding:40px;color:var(--tx3)">Aucune donnée de vente disponible</div>';}
-  regions.forEach(function(reg,ri){
-    var prods=Object.entries(regionProd[reg]).sort(function(a,b){return b[1]-a[1];});
-    var totalQty=prods.reduce(function(s,e){return s+e[1];},0);
-    var totalCA=prods.reduce(function(s,e){return s+getP(e[0]).price*e[1];},0);
-    html+='<div class="region-section">'+
-      '<div class="region-hdr"><div class="region-rank">'+String.fromCharCode(65+ri)+'</div>'+
-      '<h4>'+reg+'</h4>'+
-      '<span style="font-size:11px;color:var(--tx3);margin-left:auto">'+totalQty+' unités · '+fm(totalCA)+'</span></div>'+
-      '<div class="tc" style="border-radius:0 0 10px 10px;margin-bottom:0">'+
-      '<table style="min-width:400px"><thead><tr>'+
-        '<th>#</th><th>Produit</th><th>Catégorie</th><th>Qté vendue</th><th>% du total région</th><th>CA généré</th>'+
-      '</tr></thead><tbody>';
-    prods.forEach(function(e,idx){
-      var p=getP(e[0]);
-      var pct=totalQty>0?Math.round(e[1]/totalQty*100):0;
-      var ca=p.price*e[1];
-      var bar='<div style="display:flex;align-items:center;gap:7px"><div style="width:70px;height:5px;background:var(--dk5);border-radius:3px;overflow:hidden"><div style="width:'+pct+'%;height:100%;background:'+colors[ri%colors.length]+';border-radius:3px"></div></div><span>'+pct+'%</span></div>';
-      html+='<tr class="rank-row">'+
-        '<td style="color:'+colors[ri%colors.length]+';font-size:13px;font-weight:700">'+(idx+1)+'</td>'+
-        '<td><div style="display:flex;align-items:center;gap:7px"><img src="'+p.image+'" style="width:28px;height:28px;border-radius:6px;object-fit:cover" onerror="this.style.display=\'none\'">'+p.name+'</div></td>'+
-        '<td style="color:var(--tx3)">'+p.category+'</td>'+
-        '<td><strong>'+e[1]+' unités</strong></td>'+
-        '<td>'+bar+'</td>'+
-        '<td style="color:var(--gold)">'+fm(ca)+'</td>'+
-      '</tr>';
-    });
-    html+='</tbody></table></div></div>';
-  });
-  document.getElementById('regional-content').innerHTML=html;
-}
+// [old renderRegional removed]
 
 // ═══════════ CLIENTS ═══════════
 function renderClients(){
@@ -2750,62 +2713,94 @@ function updateClient(){
   var name=document.getElementById('ec-name').value.trim();
   var phone=document.getElementById('ec-ph').value.trim();
   var emailEC=(document.getElementById('ec-email').value||'').trim();
+  var city=document.getElementById('ec-city').value.trim();
+  var addr=document.getElementById('ec-addr').value.trim();
   var lat=document.getElementById('ec-lat').value;
   var lng=document.getElementById('ec-lng').value;
-  if(!name){showErr('ec-name','Nom obligatoire');return;}
-  if(!phone){showErr('ec-ph','Téléphone obligatoire');return;}
-  if(phone && !/^[\d\s\+\-\.]{6,15}$/.test(phone)){showErr('ec-ph','Numéro invalide (chiffres uniquement)');return;}
-  if(!emailEC||!emailEC.includes('@')){showErr('ec-email','Email valide obligatoire');return;}
-  if(lat && isNaN(parseFloat(lat))){showErr('ec-lat','Latitude doit être un nombre');return;}
-  if(lng && isNaN(parseFloat(lng))){showErr('ec-lng','Longitude doit être un nombre');return;}
   var i=CLIENTS.findIndex(function(x){return x.id===id;});
-  if(i>-1){
-    CLIENTS[i].name=name;
-    CLIENTS[i].phone=phone;
-    CLIENTS[i].city=document.getElementById('ec-city').value;
-    CLIENTS[i].region=document.getElementById('ec-reg').value;
-    var ecSec=document.getElementById('ec-sector');
-    if(ecSec){var sv=ecSec.value;if(sv==='__autre__'){sv=prompt('Entrez le secteur/quartier :','')||'';}CLIENTS[i].sector=sv;}
-    CLIENTS[i].email=emailEC;
-    CLIENTS[i].lat=lat!==''?parseFloat(lat):null;
-    CLIENTS[i].lng=lng!==''?parseFloat(lng):null;
-    CLIENTS[i].address=document.getElementById('ec-addr').value;
-    var ph=document.getElementById('ec-photo').value.trim();
-    CLIENTS[i].photo=ph||('https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128');
-    var nu=document.getElementById('ec-user').value.trim();
-    if(nu&&nu!==CLIENTS[i].username){
-      if(CLIENTS.find(function(c,j){return j!==i&&c.username===nu;})){showErr('ec-user','Identifiant déjà utilisé');return;}
-      CLIENTS[i].username=nu;
+  if(i<0) return;
+  // Validation complète
+  var ok=validateForm([
+    {id:'ec-name',  label:'Nom complet'},
+    {id:'ec-ph',    label:'Téléphone', type:'phone'},
+    {id:'ec-city',  label:'Ville'},
+    {id:'ec-addr',  label:'Adresse'}
+  ]);
+  if(!ok) return;
+  if(emailEC && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailEC)){showErr('ec-email','⚠️ Format email invalide');return;}
+  if(lat && isNaN(parseFloat(lat))){showErr('ec-lat','⚠️ Latitude : nombre requis (ex: 33.5731)');return;}
+  if(lng && isNaN(parseFloat(lng))){showErr('ec-lng','⚠️ Longitude : nombre requis (ex: -7.5898)');return;}
+  // Vérifier email unique
+  if(emailEC && emailEC!==CLIENTS[i].email){
+    if(CLIENTS.find(function(c,j){return j!==i&&c.email&&c.email.toLowerCase()===emailEC.toLowerCase();})){
+      showErr('ec-email','⚠️ Cet email est déjà associé à un autre compte');return;
     }
-    var np2=document.getElementById('ec-pw').value;
-    if(np2){
-      if(!validatePassword(np2,'ec-pw')) return;
-      CLIENTS[i].password=np2;
-    }
-    save();
-    if(window.saveToCloud) window.saveToCloud();
-    closeAllMd();initClientFilters();renderClients();toast('Client mis à jour ✓');
   }
+  // Vérifier identifiant unique
+  var nu=document.getElementById('ec-user').value.trim();
+  if(nu && nu!==CLIENTS[i].username){
+    if(CLIENTS.find(function(c,j){return j!==i&&c.username.toLowerCase()===nu.toLowerCase();})){
+      showErr('ec-user','⚠️ Cet identifiant est déjà utilisé — choisissez-en un autre');return;
+    }
+    CLIENTS[i].username=nu;
+  }
+  CLIENTS[i].name=name;
+  CLIENTS[i].phone=phone;
+  CLIENTS[i].city=city;
+  CLIENTS[i].region=document.getElementById('ec-reg').value;
+  var ecSec=document.getElementById('ec-sector');
+  if(ecSec){var sv=ecSec.value;if(sv==='__autre__'){sv=prompt('Entrez le secteur/quartier :','')||'';}CLIENTS[i].sector=sv;}
+  CLIENTS[i].email=emailEC;
+  CLIENTS[i].lat=lat!==''?parseFloat(lat):null;
+  CLIENTS[i].lng=lng!==''?parseFloat(lng):null;
+  CLIENTS[i].address=addr;
+  var ph=document.getElementById('ec-photo').value.trim();
+  CLIENTS[i].photo=ph||('https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128');
+  var np2=document.getElementById('ec-pw').value;
+  if(np2){
+    if(!validatePassword(np2,'ec-pw')) return;
+    CLIENTS[i].password=np2;
+  }
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();initClientFilters();renderClients();toast('✅ Client mis à jour avec succès !');
 }
 function saveClient(){
-  if(!validateForm([
-    {id:'nc-name',label:'Nom complet'},
-    {id:'nc-ph',label:'Téléphone'},
-    {id:'nc-city',label:'Ville'},
-    {id:'nc-user',label:'Identifiant'},
-    {id:'nc-pw',label:'Mot de passe'}
-  ])) return;
+  // Validation complète avec messages inline rouges
+  var ok=validateForm([
+    {id:'nc-name', label:'Nom complet'},
+    {id:'nc-ph',   label:'Téléphone', type:'phone'},
+    {id:'nc-city', label:'Ville'},
+    {id:'nc-user', label:'Identifiant'},
+    {id:'nc-pw',   label:'Mot de passe'},
+    {id:'nc-addr', label:'Adresse'}
+  ]);
+  if(!ok) return;
   var name=document.getElementById('nc-name').value.trim();
   var user=document.getElementById('nc-user').value.trim();
   var pw=document.getElementById('nc-pw').value;
+  var email=(document.getElementById('nc-email').value||'').trim();
+  // Valider mot de passe fort
   if(!validatePassword(pw,'nc-pw')) return;
-  if(CLIENTS.find(function(c){return c.username===user;})){showErr('nc-user','Identifiant déjà utilisé');return;}
+  // Vérifier identifiant unique
+  if(CLIENTS.find(function(c){return c.username.toLowerCase()===user.toLowerCase();})){
+    showErr('nc-user','⚠️ Cet identifiant est déjà utilisé — choisissez-en un autre');return;
+  }
+  // Vérifier email unique si renseigné
+  if(email){
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('nc-email','⚠️ Format email invalide (ex: nom@domaine.com)');return;}
+    if(CLIENTS.find(function(c){return c.email&&c.email.toLowerCase()===email.toLowerCase();})){
+      showErr('nc-email','⚠️ Cet email est déjà associé à un autre compte');return;
+    }
+  }
   var latV=parseFloat(document.getElementById('nc-lat').value)||null;
   var lngV=parseFloat(document.getElementById('nc-lng').value)||null;
   var ncSector=document.getElementById('nc-sector');var ncSectorVal=ncSector?ncSector.value:'';
   if(ncSectorVal==='__autre__'){var customSec=prompt('Entrez le nom du secteur/quartier :','');ncSectorVal=customSec||'';}
-  CLIENTS.push({id:'C'+(100+CLIENTS.length),name:name,phone:document.getElementById('nc-ph').value,city:document.getElementById('nc-city').value,region:document.getElementById('nc-reg').value,sector:ncSectorVal,address:document.getElementById('nc-addr').value,lat:latV,lng:lngV,username:user,password:pw,email:document.getElementById('nc-email').value,photo:document.getElementById('nc-photo').value||'https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128'});
-  save();closeAllMd();initClientFilters();renderClients();toast('Client ajouté ✓');
+  CLIENTS.push({id:'C'+(100+CLIENTS.length),name:name,phone:document.getElementById('nc-ph').value,city:document.getElementById('nc-city').value,region:document.getElementById('nc-reg').value,sector:ncSectorVal,address:document.getElementById('nc-addr').value,lat:latV,lng:lngV,username:user,password:pw,email:email,photo:document.getElementById('nc-photo').value||'https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128'});
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();initClientFilters();renderClients();toast('✅ Client ajouté avec succès !');
 }
 function delCl(id){CLIENTS=CLIENTS.filter(function(c){return c.id!==id;});save();initClientFilters();renderClients();toast('Client supprimé');}
 
@@ -3462,15 +3457,24 @@ function openEditSupplier(id){
 function updateSupplier(){
   var id=document.getElementById('es-id').value;
   var i=SUPPLIERS.findIndex(function(x){return x.id===id;});
-  if(i>-1){
-    SUPPLIERS[i].name=document.getElementById('es-name').value;
-    SUPPLIERS[i].phone=document.getElementById('es-phone').value;
-    SUPPLIERS[i].city=document.getElementById('es-city').value;
-    SUPPLIERS[i].email=document.getElementById('es-email').value;
-    SUPPLIERS[i].debt=+(document.getElementById('es-debt').value)||0;
-    SUPPLIERS[i].notes=document.getElementById('es-notes').value;
-    save();closeAllMd();renderSuppliers();toast('Fournisseur mis à jour ✓');
-  }
+  if(i<0) return;
+  var name=document.getElementById('es-name').value.trim();
+  var phone=document.getElementById('es-phone').value.trim();
+  var email=document.getElementById('es-email').value.trim();
+  var debt=document.getElementById('es-debt').value;
+  if(!name){showErr('es-name','⚠️ Nom du fournisseur obligatoire');return;}
+  if(phone && !/^[\d\s\+\-\.]{6,15}$/.test(phone)){showErr('es-phone','⚠️ Numéro invalide (chiffres uniquement)');return;}
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('es-email','⚠️ Format email invalide');return;}
+  if(debt && (isNaN(parseFloat(debt))||parseFloat(debt)<0)){showErr('es-debt','⚠️ La dette doit être un nombre positif');return;}
+  SUPPLIERS[i].name=name;
+  SUPPLIERS[i].phone=phone;
+  SUPPLIERS[i].city=document.getElementById('es-city').value;
+  SUPPLIERS[i].email=email;
+  SUPPLIERS[i].debt=+(debt)||0;
+  SUPPLIERS[i].notes=document.getElementById('es-notes').value;
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();renderSuppliers();toast('Fournisseur mis à jour ✓');
 }
 function paySupplierDebt(id){
   var s=SUPPLIERS.find(function(x){return x.id===id;});
@@ -4170,17 +4174,7 @@ goSec=function(n,el){
 };
 
 // ═══════════ FIX clPage FOR NEW PAGES ═══════════
-function clPage(name,el){
-  ['cat','orders','profile','complaints','credit'].forEach(function(p){
-    var el2=document.getElementById('cl-pg-'+p);if(el2)el2.style.display='none';
-  });
-  var pg=document.getElementById('cl-pg-'+name);if(pg)pg.style.display='block';
-  document.querySelectorAll('.bt').forEach(function(b){b.className='bt';});
-  if(el)el.className='bt on';
-  if(name==='orders')renderClOrds();
-  if(name==='complaints')renderClComplaints();
-  if(name==='credit')renderClCreditInfo();
-}
+// [old clPage removed]
 
 // ═══════════ UPDATE initClient ═══════════
 var _origInitClient=initClient;
@@ -4346,16 +4340,21 @@ function saveNewAdmin(){
     {id:'na-pw',label:'Mot de passe'},
     {id:'na-email',label:'Email'}
   ])) return;
-  if(!email.includes('@')){showErr('na-email','Adresse email invalide');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('na-email','⚠️ Format email invalide (ex: nom@domaine.com)');return;}
   if(!validatePassword(pw,'na-pw')) return;
-  if(user===ADMIN.username||ADMINS.find(function(a){return a.username===user;})){
-    showErr('na-user','Identifiant déjà utilisé');return;
+  // Vérifier identifiant unique
+  if(user===ADMIN.username||ADMINS.find(function(a){return a.username.toLowerCase()===user.toLowerCase();})){
+    showErr('na-user','⚠️ Cet identifiant est déjà utilisé — choisissez-en un autre');return;
+  }
+  // Vérifier email unique
+  if(email.toLowerCase()===(ADMIN.email||'').toLowerCase()||(ADMINS.find(function(a){return a.email&&a.email.toLowerCase()===email.toLowerCase();}))){
+    showErr('na-email','⚠️ Cet email est déjà associé à un autre compte admin');return;
   }
   ADMINS.push({name:name,username:user,password:pw,email:email});
   save();
   if(window.saveToCloud) window.saveToCloud();
   closeAllMd();renderAdmins();
-  toast(name+' ajouté comme admin');
+  toast('✅ '+name+' ajouté comme admin');
 }
 function delAdmin(idx){
   if(!confirm('Supprimer cet administrateur ?'))return;
@@ -4634,21 +4633,68 @@ function validateField(val, label, opts){
 // Helper: validate and highlight multiple fields at once
 function validateForm(fields){
   var ok=true;
+  // First clear all errors for these fields
+  fields.forEach(function(f){
+    var el=document.getElementById(f.id);
+    if(!el) return;
+    el.classList.remove('field-err');
+    var errEl=el.parentNode?el.parentNode.querySelector('.field-err-msg'):null;
+    if(errEl) errEl.classList.remove('show');
+  });
+
   fields.forEach(function(f){
     var el=document.getElementById(f.id);
     if(!el) return;
     var val=(el.value||'').trim();
-    if(!val){
+    // Get or create error element
+    var errEl=el.parentNode?el.parentNode.querySelector('.field-err-msg'):null;
+    if(!errEl){
+      errEl=document.createElement('div');
+      errEl.className='field-err-msg';
+      errEl.style.cssText='color:var(--red);font-size:11px;margin-top:4px;display:none';
+      if(el.parentNode) el.parentNode.appendChild(errEl);
+    }
+
+    var errMsg='';
+    if(f.required!==false && !val){
+      errMsg='⚠️ '+f.label+' est obligatoire';
+    } else if(val){
+      if(f.type==='email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)){
+        errMsg='⚠️ '+f.label+' : format email invalide (ex: nom@domaine.com)';
+      } else if(f.type==='phone' && !/^[\d\s\+\-\.]{6,15}$/.test(val)){
+        errMsg='⚠️ '+f.label+' : numéro invalide (chiffres uniquement, ex: 0661234567)';
+      } else if((f.type==='number' || el.type==='number') && val){
+        var num=parseFloat(val);
+        if(isNaN(num)){errMsg='⚠️ '+f.label+' : valeur numérique requise (pas de lettres)';}
+        else if(f.min!==undefined && num<f.min){errMsg='⚠️ '+f.label+' : valeur minimum '+f.min;}
+        else if(f.max!==undefined && num>f.max){errMsg='⚠️ '+f.label+' : valeur maximum '+f.max;}
+        else if(f.positive && num<=0){errMsg='⚠️ '+f.label+' : doit être supérieur à 0';}
+      }
+    }
+    if(errMsg){
       el.classList.add('field-err');
-      var errEl=el.parentNode.querySelector('.field-err-msg');
-      if(!errEl){errEl=document.createElement('div');errEl.className='field-err-msg';el.parentNode.appendChild(errEl);}
-      errEl.textContent='⚠️ '+f.label+' est obligatoire';
+      errEl.textContent=errMsg;
+      errEl.style.display='block';
       errEl.classList.add('show');
-      el.addEventListener('input',function(){el.classList.remove('field-err');errEl.classList.remove('show');},{once:true});
+      el.scrollIntoView({behavior:'smooth',block:'nearest'});
+      function clearOnInput(){
+        el.classList.remove('field-err');
+        errEl.style.display='none';
+        errEl.classList.remove('show');
+        el.removeEventListener('input',clearOnInput);
+        el.removeEventListener('change',clearOnInput);
+      }
+      el.addEventListener('input',clearOnInput);
+      el.addEventListener('change',clearOnInput);
       ok=false;
     }
   });
-  if(!ok) toast('⚠️ Veuillez remplir tous les champs obligatoires (★)',true);
+  if(!ok){
+    toast('⚠️ Remplissez les champs obligatoires (★) marqués en rouge',true);
+    // Scroll to first error
+    var firstErr=document.querySelector('.field-err');
+    if(firstErr) firstErr.scrollIntoView({behavior:'smooth',block:'center'});
+  }
   return ok;
 }
 
