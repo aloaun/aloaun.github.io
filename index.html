@@ -686,12 +686,15 @@ tr:hover td{background:rgba(255,255,255,0.018)}
     <div class="sec" id="sec-regional">
      <div style="margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px">
       <div><h3 style="font-size:13px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">Ventes par région &amp; ville</h3>
-      <p style="font-size:12px;color:var(--tx3)">Classement produits par quantité vendue — région puis ville</p></div>
+      <p style="font-size:12px;color:var(--tx3)">Classement produits par quantité vendue — région puis ville puis secteur</p></div>
       <div style="display:flex;gap:7px;flex-wrap:wrap">
        <button class="btn btn-o btn-sm" id="reg-view-reg" onclick="setRegView('region')" style="border-color:var(--gold);color:var(--gold)">Par région</button>
        <button class="btn btn-o btn-sm" id="reg-view-city" onclick="setRegView('city')">Par ville</button>
        <select id="reg-filter-prod" onchange="renderRegional()" style="background:var(--dk4);border:1px solid var(--bo2);border-radius:8px;padding:6px 10px;color:var(--tx);font-size:12px;outline:none">
          <option value="">Tous produits</option>
+       </select>
+       <select id="reg-filter-sector" onchange="renderRegional()" style="background:var(--dk4);border:1px solid var(--bo2);border-radius:8px;padding:6px 10px;color:var(--tx);font-size:12px;outline:none">
+         <option value="">Tous secteurs</option>
        </select>
        <select id="reg-sort" onchange="renderRegional()" style="background:var(--dk4);border:1px solid var(--bo2);border-radius:8px;padding:6px 10px;color:var(--tx);font-size:12px;outline:none">
          <option value="qty-desc">Qté vendue ↓</option>
@@ -807,6 +810,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
       <select id="inv-sel" onchange="renderInvoice()" style="flex:1;min-width:280px"><option value="">— Sélectionner une commande —</option></select>
       <button class="btn btn-g no-print" onclick="window.print()">🖨️ Imprimer</button>
       <button class="btn btn-o no-print" onclick="downloadInvoicePDF()" id="btn-dl-pdf">📄 PDF</button>
+      <button class="btn btn-r no-print" onclick="downloadAvoirPDF()" id="btn-dl-avoir" style="display:none">📄 Avoir PDF</button>
       <button class="btn btn-b no-print" onclick="sendInvoiceByEmail()" id="btn-email-inv">📧 Email</button>
       <button class="btn btn-gn no-print" onclick="sendInvoiceWhatsApp()" id="btn-wa-inv">📱 WhatsApp</button>
      </div>
@@ -820,6 +824,12 @@ tr:hover td{background:rgba(255,255,255,0.018)}
 
 <!-- MODALS -->
 <div class="mo" id="mo-bg" onclick="if(event.target===this)closeAllMd()">
+
+ <!-- Confirm Pending Payments Modal -->
+ <div class="md" id="md-confirm-pay" style="display:none;max-width:520px">
+  <button class="md-x" onclick="closeAllMd()">✕</button>
+  <div id="md-confirm-pay-content"></div>
+ </div>
 
  <!-- Add Client -->
  <div class="md" id="md-add-cl" style="display:none">
@@ -1270,7 +1280,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
     <option value="other">Autre</option>
    </select>
   </div>
-  <div class="fg"><label>Commande concernée</label><select id="cmp-order"><option value="">— Aucune commande spécifique —</option></select></div>
+  <div class="fg"><label>Commande concernée <span style="color:var(--red)">★</span></label><select id="cmp-order"><option value="">— Sélectionner une commande —</option></select></div>
   <div class="fg"><label>Message <span style="color:var(--red)">★</span></label><textarea id="cmp-msg" placeholder="Décrivez votre problème..." style="min-height:90px"></textarea></div>
   <button class="btn btn-g" style="width:100%" onclick="submitComplaint()">Envoyer la réclamation</button>
  </div>
@@ -2561,8 +2571,8 @@ function renderStock(){
       '<td style="color:var(--tx3)">'+p.category+'</td>'+
       '<td><span style="font-size:15px;font-weight:700;color:'+stkColor+'">'+p.stock+'</span><span style="font-size:10px;color:var(--tx3);margin-left:4px">unités</span></td>'+
       '<td><input type="number" id="st-'+p.id+'" value="'+(p.threshold||10)+'" min="0" style="width:55px;background:var(--dk4);border:1px solid var(--bo2);border-radius:6px;padding:5px 7px;color:var(--tx);font-family:\'DM Sans\',sans-serif;font-size:12px;outline:none;text-align:center" onchange="setThreshold(\''+p.id+'\')"></td>'+
-      '<td><input type="number" id="sb-'+p.id+'" value="'+b+'" min="0" style="width:75px;background:var(--dk4);border:1px solid rgba(82,201,122,0.2);border-radius:6px;padding:5px 7px;color:var(--grn);font-family:\'DM Sans\',sans-serif;font-size:12px;outline:none;text-align:center" onchange="setPriceBuy(\''+p.id+'\')"></td>'+
-      '<td><input type="number" id="ss-'+p.id+'" value="'+p.price+'" min="0" style="width:75px;background:var(--dk4);border:1px solid rgba(201,168,76,0.2);border-radius:6px;padding:5px 7px;color:var(--gold);font-family:\'DM Sans\',sans-serif;font-size:12px;outline:none;text-align:center" onchange="setPriceSell(\''+p.id+'\')"></td>'+
+      '<td><span style="font-size:13px;font-weight:600;color:var(--grn)">'+fm(b)+'</span></td>'+
+      '<td><span style="font-size:13px;font-weight:600;color:var(--gold)">'+fm(p.price)+'</span></td>'+
       '<td style="color:var(--grn)">+'+fm(m)+'</td>'+
       '<td><span style="color:var(--pur)">'+mp+'%</span></td>'+
       '<td>'+(p.stock===0?'<span class="sb sx">Rupture</span>':p.stock<=(p.threshold||10)?'<span class="sb sp">Bas</span>':'<span class="sb sd">OK</span>')+'</td>'+
@@ -2744,18 +2754,19 @@ function updateClient(){
     }
     CLIENTS[i].username=nu;
   }
-  CLIENTS[i].name=name;
-  CLIENTS[i].phone=phone;
-  CLIENTS[i].city=city;
-  CLIENTS[i].region=document.getElementById('ec-reg').value;
+  // Ne modifier que les champs remplis — sinon garder l'ancienne valeur
+  if(name) CLIENTS[i].name=name;
+  if(phone) CLIENTS[i].phone=phone;
+  if(city) CLIENTS[i].city=city;
+  CLIENTS[i].region=document.getElementById('ec-reg').value||CLIENTS[i].region;
   var ecSec=document.getElementById('ec-sector');
-  if(ecSec){var sv=ecSec.value;if(sv==='__autre__'){sv=prompt('Entrez le secteur/quartier :','')||'';}CLIENTS[i].sector=sv;}
-  CLIENTS[i].email=emailEC;
-  CLIENTS[i].lat=lat!==''?parseFloat(lat):null;
-  CLIENTS[i].lng=lng!==''?parseFloat(lng):null;
-  CLIENTS[i].address=addr;
+  if(ecSec&&ecSec.value){var sv=ecSec.value;if(sv==='__autre__'){sv=prompt('Entrez le secteur/quartier :','')||'';}if(sv) CLIENTS[i].sector=sv;}
+  if(emailEC) CLIENTS[i].email=emailEC;
+  if(lat!=='') CLIENTS[i].lat=parseFloat(lat)||null;
+  if(lng!=='') CLIENTS[i].lng=parseFloat(lng)||null;
+  if(addr) CLIENTS[i].address=addr;
   var ph=document.getElementById('ec-photo').value.trim();
-  CLIENTS[i].photo=ph||('https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128');
+  if(ph) CLIENTS[i].photo=ph;
   var np2=document.getElementById('ec-pw').value;
   if(np2){
     if(!validatePassword(np2,'ec-pw')) return;
@@ -2950,6 +2961,9 @@ function renderInvoice(){
   var id=document.getElementById('inv-sel').value;
   if(!id){document.getElementById('inv-box').innerHTML='';return;}
   var o=ORDERS.find(function(x){return x.id===id;});var c=getC(o.clientId);
+  // Show/hide avoir button
+  var avoirBtn=document.getElementById('btn-dl-avoir');
+  if(avoirBtn) avoirBtn.style.display=(o.status==='returned'||o.status==='partial_return')?'inline-flex':'none';
   var tva=Math.round(o.total*0.20);var ht=o.total-tva;
   var sName=SL[o.status]||o.status;
   var sBadge=o.status==='delivered'?'inv-b-delivered':'inv-b-pending';
@@ -3165,7 +3179,11 @@ function renderClOrds(){
   var my=ORDERS.filter(function(o){return o.clientId===SESSION.id;});
   if(activeOF==='paid')my=my.filter(function(o){return o.payStatus==='paid';});
   else if(activeOF)my=my.filter(function(o){return o.status===activeOF;});
-  document.getElementById('cl-ords').innerHTML=my.length?my.map(function(o){
+  document.getElementById('cl-ords').innerHTML=my.length?my.slice().reverse().map(function(o){
+    var retInfo='';
+    if(o.returnDate) retInfo+='<div style="font-size:11px;color:var(--ora);margin-top:3px">↩ Retour : '+o.returnDate+(o.returnItems?(' — '+o.returnItems.map(function(r){var p=PRODUCTS.find(function(x){return x.id===r.productId;})||{name:r.productId};return p.name+' ×'+r.quantity;}).join(', ')):'')+'</div>';
+    if(o.cancelDate) retInfo+='<div style="font-size:11px;color:var(--red);margin-top:3px">✕ Annulé : '+o.cancelDate+'</div>';
+    if(o.deliveryDate) retInfo+='<div style="font-size:11px;color:var(--grn);margin-top:3px">✅ Livré : '+o.deliveryDate+'</div>';
     return'<div class="ord-c">'+
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
         '<span style="color:var(--gold);font-weight:600;font-size:13px">'+o.id+'</span>'+
@@ -3173,9 +3191,11 @@ function renderClOrds(){
       '</div>'+
       '<div style="font-size:12px;color:var(--tx2);margin-bottom:6px">'+o.items.map(function(it){var p=PRODUCTS.find(function(x){return x.id===it.productId;})||{name:it.productId};return p.name+' ×'+it.quantity;}).join(' · ')+'</div>'+
       '<div style="display:flex;justify-content:space-between;align-items:center">'+
-        '<span style="font-size:12px;color:var(--tx3)">'+o.date+'</span>'+
+        '<span style="font-size:12px;color:var(--tx3)">📅 '+o.date+'</span>'+
         '<strong style="color:var(--gold)">'+fm(o.total)+'</strong>'+
-      '</div></div>';
+      '</div>'+
+      retInfo+
+    '</div>';
   }).join(''):'<div style="text-align:center;padding:50px 16px;color:var(--tx3)"><div style="font-size:36px;margin-bottom:10px">📭</div>Aucune commande'+(activeOF?' dans ce statut':'')+'</div>';
 }
 function clPage(name,el){
@@ -3618,9 +3638,8 @@ function openConfirmPendingPayments(cid){
   var c=getC(cid);
   var pending=PENDING_PAYMENTS.filter(function(p){return p.clientId===cid&&p.status==='pending';});
   if(!pending.length){toast('Aucun paiement en attente pour '+c.name);return;}
-  var html='<div style="padding:16px">'+
-    '<h3 style="color:var(--gold);margin-bottom:12px">✅ Confirmer paiement — '+c.name+'</h3>'+
-    '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">'+pending.length+' paiement(s) en attente de confirmation :</div>'+
+  var html='<h3 style="color:var(--gold);margin-bottom:12px">✅ Confirmer paiement — '+c.name+'</h3>'+
+    '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">'+pending.length+' paiement(s) en attente :</div>'+
     pending.map(function(p){
       return '<div style="display:flex;justify-content:space-between;align-items:center;background:var(--dk3);border-radius:8px;padding:10px 14px;margin-bottom:8px">'+
         '<div>'+
@@ -3633,18 +3652,13 @@ function openConfirmPendingPayments(cid){
           '<button class="btn btn-r btn-sm" onclick="rejectCreditPayment(\''+p.id+'\')">✕ Rejeter</button>'+
         '</div>'+
       '</div>';
-    }).join('')+
-  '</div>';
+    }).join('');
+  var content=document.getElementById('md-confirm-pay-content');
+  if(content) content.innerHTML=html;
   document.getElementById('mo-bg').className='mo on';
   document.querySelectorAll('.md').forEach(function(m){m.style.display='none';});
-  var md=document.getElementById('md-generic')||document.createElement('div');
-  if(!document.getElementById('md-generic')){
-    md.id='md-generic';md.className='md';md.style.maxWidth='520px';
-    md.innerHTML='<button class="md-x" onclick="closeAllMd()">✕</button><div id="md-generic-content"></div>';
-    document.querySelector('.mods').appendChild(md);
-  }
-  document.getElementById('md-generic-content').innerHTML=html;
-  md.style.display='block';
+  var md=document.getElementById('md-confirm-pay');
+  if(md) md.style.display='block';
 }
 
 function confirmCreditPayment(pid){
@@ -3779,11 +3793,24 @@ function renderRegional(){
       PRODUCTS.map(function(p){return'<option value="'+p.id+'"'+(p.id===cur?' selected':'')+'>'+p.name+'</option>';}).join('');
     prodSel.value=cur;
   }
+  // Populate sector filter
+  var secSel=document.getElementById('reg-filter-sector');
+  if(secSel){
+    var curSec=secSel.value;
+    var allSectors=[...new Set(CLIENTS.map(function(c){return c.sector||'';}).filter(Boolean))].sort();
+    secSel.innerHTML='<option value="">Tous secteurs</option>'+
+      allSectors.map(function(s){return'<option value="'+s+'"'+(s===curSec?' selected':'')+'>'+s+'</option>';}).join('');
+    secSel.value=curSec;
+  }
   var filterProd=prodSel?prodSel.value:'';
+  var filterSector=secSel?secSel.value:'';
   var sortMode=(document.getElementById('reg-sort')?document.getElementById('reg-sort').value:'qty-desc');
   var groupKey=_regView==='city'?function(o){var c=getC(o.clientId);return(c.city||'Inconnu')+' ('+(c.region||'')+')';}:function(o){var c=getC(o.clientId);return c.region||'Inconnu';};
   var regionProd={};
   ORDERS.forEach(function(o){
+    var c=getC(o.clientId);
+    // Filter by sector if active
+    if(filterSector && (c.sector||'')!==filterSector) return;
     var key=groupKey(o);
     if(!regionProd[key])regionProd[key]={};
     o.items.forEach(function(it){
@@ -3888,11 +3915,12 @@ function openClComplaint(){
 function submitComplaint(){
   var type=document.getElementById('cmp-type').value;
   var msg=document.getElementById('cmp-msg').value.trim();
-  clearErr('cmp-type');clearErr('cmp-msg');
-  if(!type){showErr('cmp-type','Type de réclamation obligatoire');return;}
-  if(!msg){showErr('cmp-msg','Message obligatoire — décrivez votre problème');return;}
-  if(msg.length<10){showErr('cmp-msg','Message trop court — minimum 10 caractères');return;}
   var ordId=document.getElementById('cmp-order').value;
+  clearErr('cmp-type');clearErr('cmp-msg');clearErr('cmp-order');
+  if(!type){showErr('cmp-type','⚠️ Type de réclamation obligatoire');return;}
+  if(!ordId){showErr('cmp-order','⚠️ Sélectionnez la commande concernée');return;}
+  if(!msg){showErr('cmp-msg','⚠️ Message obligatoire — décrivez votre problème');return;}
+  if(msg.length<10){showErr('cmp-msg','⚠️ Message trop court — minimum 10 caractères');return;}
   COMPLAINTS.push({id:'CMP'+(1000+COMPLAINTS.length),clientId:SESSION.id,type:type,message:msg,orderId:ordId,date:new Date().toISOString().split('T')[0],status:'pending',reply:''});
   try{ localStorage.setItem('al_complaints', JSON.stringify(COMPLAINTS)); }catch(e){}
   if(window._origSave) window._origSave();
@@ -4083,6 +4111,89 @@ function downloadInvoicePDF(){
   toast('✅ PDF téléchargé — Facture '+id);
 }
 
+function generateAvoirPDF(id){
+  var o=ORDERS.find(function(x){return x.id===id;});
+  if(!o){toast('Commande introuvable',true);return null;}
+  if(typeof jspdf==='undefined'||!jspdf.jsPDF){toast('⚠️ jsPDF non disponible',true);return null;}
+  var c=getC(o.clientId);
+  var retItems=o.returnItems||o.items;
+  var doc=new jspdf.jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
+  // Header
+  doc.setFillColor(17,17,17);
+  doc.rect(0,0,210,40,'F');
+  doc.setTextColor(224,82,82);
+  doc.setFontSize(22);doc.setFont('helvetica','bold');
+  doc.text(COMPANY.name||'ALITOS', 14, 18);
+  doc.setFontSize(10);doc.setTextColor(255,255,255);
+  doc.text('NOTE DE CRÉDIT / AVOIR', 14, 26);
+  doc.text((COMPANY.address||'Maroc'), 14, 32);
+  doc.setFontSize(16);doc.setTextColor(224,82,82);
+  doc.text('AVOIR', 160, 18);
+  doc.setFontSize(10);doc.setTextColor(255,255,255);
+  doc.text('Réf: AV-'+id, 155, 26);
+  doc.text('Date : '+(o.returnDate||new Date().toISOString().split('T')[0]), 155, 32);
+  // Divider
+  doc.setDrawColor(224,82,82);doc.setLineWidth(0.5);
+  doc.line(0,42,210,42);
+  // Client + order info
+  var y=50;
+  doc.setFillColor(240,240,240);
+  doc.roundedRect(14,y-5,85,22,2,2,'F');
+  doc.setTextColor(100,100,100);doc.setFontSize(8);doc.setFont('helvetica','bold');
+  doc.text('CLIENT',18,y+1);
+  doc.setTextColor(30,30,30);doc.setFontSize(11);
+  doc.text(c.name,18,y+8);
+  doc.setFontSize(9);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
+  doc.text(c.city+(c.phone?' · Tél: '+c.phone:''),18,y+14);
+  doc.setFillColor(240,240,240);
+  doc.roundedRect(110,y-5,86,22,2,2,'F');
+  doc.setTextColor(100,100,100);doc.setFontSize(8);doc.setFont('helvetica','bold');
+  doc.text('COMMANDE ORIGINE',114,y+1);
+  doc.setTextColor(30,30,30);doc.setFontSize(9);doc.setFont('helvetica','normal');
+  doc.text('N° '+id+' du '+o.date,114,y+8);
+  doc.text('Retour le : '+(o.returnDate||'—'),114,y+14);
+  // Table
+  var rows=retItems.map(function(it){
+    var p=getP(it.productId);
+    return [p.name,it.quantity,fm(it.price||p.price),fm((it.price||p.price)*it.quantity)];
+  });
+  doc.autoTable({
+    startY:y+30,
+    head:[['Produit retourné','Qté','Prix unit.','Montant remboursé']],
+    body:rows,
+    styles:{fontSize:10,cellPadding:4},
+    headStyles:{fillColor:[224,82,82],textColor:[255,255,255],fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[248,248,248]},
+    margin:{left:14,right:14}
+  });
+  var totalAvoir=retItems.reduce(function(s,it){var p=getP(it.productId);return s+(it.price||p.price)*it.quantity;},0);
+  var finalY=doc.lastAutoTable.finalY+8;
+  doc.setDrawColor(224,82,82);doc.setLineWidth(0.7);
+  doc.line(120,finalY,196,finalY);finalY+=7;
+  doc.setFontSize(13);doc.setFont('helvetica','bold');doc.setTextColor(224,82,82);
+  doc.text('TOTAL AVOIR :',120,finalY);
+  doc.text(fm(totalAvoir),196,finalY,{align:'right'});
+  finalY+=10;
+  doc.setFontSize(10);doc.setFont('helvetica','normal');doc.setTextColor(80,80,80);
+  doc.text('Ce document atteste du remboursement/avoir suite au retour de marchandises.',14,finalY);
+  // Footer
+  var pageH=doc.internal.pageSize.height;
+  doc.setFillColor(17,17,17);doc.rect(0,pageH-18,210,18,'F');
+  doc.setFontSize(8);doc.setTextColor(150,150,150);
+  doc.text((COMPANY.name||'Alitos')+' — '+(COMPANY.address||'Maroc'),105,pageH-5,{align:'center'});
+  return doc;
+}
+
+function downloadAvoirPDF(){
+  var id=document.getElementById('inv-sel').value;
+  if(!id){toast('Sélectionnez une commande retournée',true);return;}
+  var doc=generateAvoirPDF(id);
+  if(!doc) return;
+  doc.save('Avoir_'+id+'_'+(COMPANY.name||'Alitos')+'.pdf');
+  toast('✅ Facture Avoir PDF téléchargée');
+}
+
+
 function sendInvoiceWhatsApp(){
   var id=document.getElementById('inv-sel').value;
   if(!id){toast('Sélectionnez une commande',true);return;}
@@ -4110,8 +4221,9 @@ function sendInvoiceByEmail(){
     toast('Ce client n\'a pas d\'email enregistré — utilisez WhatsApp 📱',true);
     return;
   }
-  // Générer le PDF
-  var doc=generateInvoicePDF(id);
+  var isAvoir=(o.status==='returned'||o.status==='partial_return');
+  // Générer le PDF facture ou avoir
+  var doc=isAvoir?generateAvoirPDF(id):generateInvoicePDF(id);
   if(!doc) return;
   var pdfBase64=doc.output('datauristring').split(',')[1];
   var items=o.items.map(function(it){var p=getP(it.productId);return p.name+' ×'+it.quantity+' = '+fm(it.price*it.quantity);}).join('<br>');
@@ -4124,18 +4236,18 @@ function sendInvoiceByEmail(){
       to_email:email,
       to_name:c.name,
       otp_code:'INVOICE',
-      subject:'Facture '+o.id+' — '+(COMPANY.name||'Alitos'),
+      subject:(isAvoir?'Note de crédit / Avoir':'Facture')+' '+o.id+' — '+(COMPANY.name||'Alitos'),
       pdf_base64:pdfBase64,
-      pdf_name:'Facture_'+o.id+'.pdf',
+      pdf_name:(isAvoir?'Avoir_':'Facture_')+o.id+'.pdf',
       html:'<div style="font-family:sans-serif;max-width:600px;margin:auto;padding:20px">'+
         '<div style="background:#111;color:#F5F0E8;padding:20px;border-radius:12px;margin-bottom:16px">'+
-        '<h2 style="color:#C9A84C;margin:0 0 6px">'+(COMPANY.name||'ALITOS')+'</h2>'+
+        '<h2 style="color:'+(isAvoir?'#E05252':'#C9A84C')+';margin:0 0 6px">'+(COMPANY.name||'ALITOS')+(isAvoir?' — NOTE DE CRÉDIT':'')+'</h2>'+
         '<p style="color:#888;font-size:11px;margin:0">'+(COMPANY.address||'')+' — '+(COMPANY.phone||'')+'</p>'+
         '</div>'+
         '<p>Bonjour <strong>'+c.name+'</strong>,</p>'+
-        '<p>Veuillez trouver en pièce jointe votre <strong>Facture N° '+o.id+'</strong> du <strong>'+o.date+'</strong>.</p>'+
-        '<div style="background:#f9f9f9;border-left:4px solid #C9A84C;padding:14px;border-radius:4px;margin:16px 0">'+items+'</div>'+
-        '<p style="font-size:20px;font-weight:bold;color:#C9A84C">Total TTC : '+fm(o.total)+'</p>'+
+        (isAvoir?'<p>Suite au retour de votre commande N° <strong>'+o.id+'</strong>, veuillez trouver en pièce jointe votre <strong>Note de Crédit / Avoir</strong>.</p>':'<p>Veuillez trouver en pièce jointe votre <strong>Facture N° '+o.id+'</strong> du <strong>'+o.date+'</strong>.</p>')+
+        '<div style="background:#f9f9f9;border-left:4px solid '+(isAvoir?'#E05252':'#C9A84C')+';padding:14px;border-radius:4px;margin:16px 0">'+items+'</div>'+
+        '<p style="font-size:20px;font-weight:bold;color:'+(isAvoir?'#E05252':'#C9A84C')+'">'+(isAvoir?'Montant à rembourser :':'Total TTC :')+'  '+fm(o.total)+'</p>'+
         '<hr style="border:1px solid #eee"><p style="color:#aaa;font-size:11px">'+
         (COMPANY.name||'Alitos')+' · '+(COMPANY.phone||'')+' · '+(COMPANY.email||'')+'</p></div>'
     })
@@ -4983,15 +5095,20 @@ function deleteMyComplaint(id){
   if(idx > -1){
     COMPLAINTS.splice(idx, 1);
     try{ localStorage.setItem('al_complaints', JSON.stringify(COMPLAINTS)); }catch(e){}
-    // Sync immédiate Firebase — source de vérité
+    // Force sync immédiate Firebase — tous les appareils seront mis à jour via SSE
+    save();
     if(window.saveToCloud){
       window.saveToCloud().then(function(){
         renderClComplaints();
+        toast('✅ Réclamation supprimée sur tous les appareils');
+      }).catch(function(){
+        renderClComplaints();
+        toast('Réclamation supprimée (hors-ligne)');
       });
     } else {
       renderClComplaints();
+      toast('Réclamation supprimée ✓');
     }
-    toast('Réclamation supprimée ✓');
   }
 }
 
@@ -5060,14 +5177,16 @@ function adminDelComplaint(id){
   if(idx > -1){
     COMPLAINTS.splice(idx,1);
     try{ localStorage.setItem('al_complaints', JSON.stringify(COMPLAINTS)); }catch(e){}
+    save();
     if(window.saveToCloud){
       window.saveToCloud().then(function(){
         renderComplaints();
+        toast('✅ Réclamation supprimée sur tous les appareils');
       });
     } else {
       renderComplaints();
+      toast('Réclamation supprimée ✓');
     }
-    toast('Réclamation supprimée ✓');
   }
 }
 var _cmpSelectMode = false;
@@ -5277,10 +5396,20 @@ function clientDelContactMsg(id){
   if(idx > -1){
     CONTACT_MSGS.splice(idx, 1);
     try{localStorage.setItem('al_contact', JSON.stringify(CONTACT_MSGS));}catch(e){}
-    if(window._origSave) window._origSave();
-    if(window.saveToCloud) window.saveToCloud();
-    renderContactMsgs();
-    toast('Message supprimé ✓');
+    // Force sync immédiate Firebase — tous les appareils seront mis à jour via SSE
+    save();
+    if(window.saveToCloud){
+      window.saveToCloud().then(function(){
+        renderContactMsgs();
+        toast('✅ Message supprimé sur tous les appareils');
+      }).catch(function(){
+        renderContactMsgs();
+        toast('Message supprimé (hors-ligne)');
+      });
+    } else {
+      renderContactMsgs();
+      toast('Message supprimé ✓');
+    }
   }
 }
 
