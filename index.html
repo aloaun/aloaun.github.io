@@ -1967,7 +1967,14 @@ function renderDashboard(){
   dC('ch-ca');CH['ch-ca']=new Chart(document.getElementById('ch-ca'),{type:'line',data:{labels:days,datasets:[{label:'CA',data:caD,borderColor:'#C9A84C',backgroundColor:'rgba(201,168,76,0.06)',fill:true,tension:.4,pointRadius:0},{label:'Profit',data:prD,borderColor:'#52C97A',backgroundColor:'rgba(82,201,122,0.06)',fill:true,tension:.4,pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#B0A898',font:{size:10},padding:8}}},scales:{x:{ticks:{maxTicksLimit:7,color:'#6B6560'},grid:{display:false}},y:{ticks:{callback:function(v){return v>=1000?Math.round(v/1000)+'k':v;},color:'#6B6560'},grid:{color:'rgba(255,255,255,0.04)'}}}}});
   var rCA={};O.forEach(function(o){var c=CLIENTS.find(function(x){return x.id===o.clientId;});if(c)rCA[c.region]=(rCA[c.region]||0)+o.total;});
   dC('ch-reg');CH['ch-reg']=new Chart(document.getElementById('ch-reg'),{type:'doughnut',data:{labels:Object.keys(rCA),datasets:[{data:Object.values(rCA),backgroundColor:['#C9A84C','#4A9EE8','#52C97A','#9B6BDB','#E05252','#E8834A'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#B0A898',font:{size:10},padding:5}}}}});
-  var pQ={};O.forEach(function(o){o.items.forEach(function(it){pQ[it.productId]=(pQ[it.productId]||0)+it.quantity;});});
+  var pQ={};
+  O.filter(function(o){return o.status!=='cancelled';}).forEach(function(o){
+    o.items.forEach(function(it){
+      var netQty=it.quantity;
+      if(o.returnItems){var ret=o.returnItems.find(function(r){return r.productId===it.productId;});if(ret) netQty=Math.max(0,netQty-ret.quantity);}
+      if(netQty>0) pQ[it.productId]=(pQ[it.productId]||0)+netQty;
+    });
+  });
   var sp=Object.entries(pQ).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
   dC('ch-prod');CH['ch-prod']=new Chart(document.getElementById('ch-prod'),{type:'bar',data:{labels:sp.map(function(x){return getP(x[0]).name.substring(0,13);}),datasets:[{data:sp.map(function(x){return x[1];}),backgroundColor:'#C9A84C',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6B6560'},grid:{display:false}},y:{ticks:{color:'#6B6560'},grid:{color:'rgba(255,255,255,0.04)'}}}}});
   var cnt={pending:0,confirmed:0,shipped:0,delivered:0};O.forEach(function(o){if(cnt[o.status]!==undefined)cnt[o.status]++;});
@@ -2153,14 +2160,29 @@ function confirmReturn(id){
   var o=ORDERS.find(function(x){return x.id===id;});
   if(!o) return;
   var retItems=[];
+  var hasError=false;
   o.items.forEach(function(it){
     var inp=document.getElementById('ret-'+it.productId);
     if(!inp) return;
-    var maxQ=it.quantity;
-    var qty=Math.min(parseInt(inp.value)||0, maxQ);
-    if(qty>0) retItems.push({productId:it.productId,quantity:qty});
+    var val=inp.value.trim();
+    var qty=parseInt(val)||0;
+    var alreadyRet=o.returnItems?o.returnItems.reduce(function(s,r){return r.productId===it.productId?s+r.quantity:s;},0):0;
+    var maxRet=it.quantity-alreadyRet;
+    if(qty<0){
+      inp.style.borderColor='var(--red)';
+      toast('⚠️ Quantité négative non autorisée pour '+getP(it.productId).name,true);
+      hasError=true;
+    } else if(qty>maxRet){
+      inp.style.borderColor='var(--red)';
+      toast('⚠️ Quantité retour ('+qty+') dépasse le max retournable ('+maxRet+') pour '+getP(it.productId).name,true);
+      hasError=true;
+    } else {
+      inp.style.borderColor='';
+      if(qty>0) retItems.push({productId:it.productId,quantity:qty,price:it.price,date:new Date().toISOString().split('T')[0]});
+    }
   });
-  if(!retItems.length){toast('Aucune quantité saisie',true);return;}
+  if(hasError) return;
+  if(!retItems.length){toast('⚠️ Saisissez au moins une quantité à retourner',true);return;}
   // Restore stock
   retItems.forEach(function(it){
     var p=PRODUCTS.find(function(x){return x.id===it.productId;});
@@ -2177,27 +2199,32 @@ function confirmReturn(id){
   var totalOrd=o.items.reduce(function(s,it){return s+it.quantity;},0);
   var totalRet=o.returnItems.reduce(function(s,it){return s+it.quantity;},0);
   o.status=totalRet>=totalOrd?'returned':'partial_return';
-  // Si commande crédit → réduire le crédit proportionnellement
-  if(o.payMethod==='credit'||o.payStatus==='partial'){
-    var retTotal=retItems.reduce(function(s,it){
-      var item=o.items.find(function(x){return x.productId===it.productId;});
-      return s+(item?item.price*it.quantity:0);
-    },0);
+  var today=new Date().toISOString().split('T')[0];
+  o.returnDate=today;
+  var retTotal=retItems.reduce(function(s,it){
+    var item=o.items.find(function(x){return x.productId===it.productId;});
+    return s+(item?(it.price||item.price)*it.quantity:0);
+  },0);
+  var cr=getClientCredit(o.clientId);
+  if(!cr.transactions) cr.transactions=[];
+  if(o.payStatus==='paid' && o.payMethod!=='credit'){
+    // Commande payée cash/CMI/virement → ne pas toucher au crédit, juste noter l'avoir
+    cr.transactions.push({date:today,type:'return_paid',amount:retTotal,note:'Retour commande '+id+' (payée) — avoir '+fm(retTotal)});
+  } else if(o.payMethod==='credit'||o.payStatus==='partial'||o.payStatus==='credit'){
+    // Commande à crédit → réduire le solde crédit
     if(retTotal>0){
-      var cr=getClientCredit(o.clientId);
-      cr.balance=Math.max(0,cr.balance-retTotal);
-      if(!cr.transactions) cr.transactions=[];
-      cr.transactions.push({date:new Date().toISOString().split('T')[0],
-        type:'return',amount:retTotal,note:'Retour commande '+id});
-      try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
+      cr.balance=Math.max(0,(cr.balance||0)-retTotal);
+      cr.transactions.push({date:today,type:'return',amount:retTotal,note:'Retour marchandise cmd '+id+' — crédit réduit de '+fm(retTotal)});
     }
   }
+  try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
   save();
   if(window.saveToCloud) window.saveToCloud();
   closeAllMd();
   renderOrders();
   renderDashboard();
-  toast('↩ Retour enregistré — stock'+((o.payMethod==='credit'?' et crédit':'')+' mis à jour ✓'));
+  var creditMsg=(o.payMethod==='credit'||o.payStatus==='partial')?' · Crédit -'+fm(retTotal):'';
+  toast('↩ Retour '+today+' — '+fm(retTotal)+creditMsg+' ✓');
 }
 
 function viewOrd(id){
@@ -3587,24 +3614,9 @@ function openSetCredit(cid){
   document.getElementById('sc-payment').value='';
   document.getElementById('sc-pay-method').value='';
   document.getElementById('sc-payment-preview').style.display='none';
-  // Afficher demandes de paiement en attente
-  var pending=PENDING_PAYMENTS.filter(function(p){return p.clientId===cid&&p.status==='pending';});
+  // Bouton confirmation disponible directement sur la liste crédits (pas dans paramètres)
   var pp=document.getElementById('sc-pending-payments');
-  if(pp){
-    pp.innerHTML=pending.length?
-      '<div style="background:rgba(201,168,76,0.08);border:1px solid var(--bo);border-radius:10px;padding:10px;margin-bottom:10px">'+
-      '<div style="font-size:11px;color:var(--gold);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">⏳ Demandes de paiement en attente</div>'+
-      pending.map(function(p){
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--bo2)">'+
-          '<div><div style="font-size:13px;font-weight:600;color:var(--tx)">'+fm(p.amount)+'</div>'+
-          '<div style="font-size:11px;color:var(--tx3)">'+p.methodLabel+' · '+p.date+'</div></div>'+
-          '<div style="display:flex;gap:5px">'+
-          '<button class="btn btn-gn btn-sm" onclick="confirmCreditPayment(\''+p.id+'\')">✅ Confirmer</button>'+
-          '<button class="btn btn-r btn-sm" onclick="rejectCreditPayment(\''+p.id+'\')">✕</button>'+
-          '</div></div>';
-      }).join('')+
-      '</div>':'';
-  }
+  if(pp) pp.innerHTML='';
   openMd('set-credit');
 }
 function calcCreditPayment(){
@@ -5646,17 +5658,20 @@ function openClientPayRequest(){
   if(bal<=0){toast('Aucun solde à régler',true);return;}
   var html='<div style="padding:16px">'+
     '<h3 style="color:var(--gold);margin-bottom:14px">💳 Déclarer un paiement</h3>'+
-    '<div style="font-size:13px;color:var(--tx2);margin-bottom:14px">Solde actuel : <strong style="color:var(--red)">'+fm(bal)+'</strong></div>'+
-    '<div class="fg"><label>Montant (MAD)</label><input type="number" id="cpr-amount" min="1" max="'+bal+'" placeholder="Montant à payer" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-size:13px;outline:none"></div>'+
-    '<div class="fg"><label>Moyen de paiement</label>'+
+    '<div style="font-size:13px;color:var(--tx2);margin-bottom:6px">Solde actuel : <strong style="color:var(--red)">'+fm(bal)+'</strong></div>'+
+    '<div style="font-size:11px;color:var(--tx3);margin-bottom:14px">Le montant ne peut pas dépasser votre solde dû</div>'+
+    '<div class="fg"><label>Montant (MAD) <span style="color:var(--red)">★</span></label>'+
+    '<input type="number" id="cpr-amount" min="1" max="'+bal+'" placeholder="Ex: '+Math.round(bal)+'" inputmode="numeric" pattern="[0-9]*" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-size:13px;outline:none">'+
+    '</div>'+
+    '<div class="fg"><label>Moyen de paiement <span style="color:var(--red)">★</span></label>'+
     '<select id="cpr-method" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-size:13px;outline:none">'+
-    '<option value="">— Sélectionner —</option>'+
+    '<option value="">— Sélectionner obligatoirement —</option>'+
     '<option value="cash">💵 Espèces</option>'+
     '<option value="transfer">🏦 Virement bancaire</option>'+
     '<option value="cmi">💳 CMI / Carte</option>'+
     '<option value="cheque">📋 Chèque</option>'+
     '</select></div>'+
-    '<div class="fg"><label>Note (optionnel)</label><input type="text" id="cpr-note" placeholder="Référence, remarque..." style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-size:13px;outline:none"></div>'+
+    '<div class="fg"><label>Référence / Note (optionnel)</label><input type="text" id="cpr-note" placeholder="N° virement, référence..." style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-size:13px;outline:none"></div>'+
     '<button class="btn btn-g" style="width:100%" onclick="submitClientPayRequest()">📤 Envoyer la demande</button>'+
     '</div>';
   document.getElementById('ord-content').innerHTML=html;
@@ -5664,12 +5679,18 @@ function openClientPayRequest(){
 }
 
 function submitClientPayRequest(){
-  var amt=parseFloat(document.getElementById('cpr-amount').value)||0;
-  var method=document.getElementById('cpr-method').value;
-  var note=(document.getElementById('cpr-note').value||'').trim();
+  var cr=getClientCredit(SESSION.id);
+  var bal=cr.balance||0;
+  var amtEl=document.getElementById('cpr-amount');
+  var methodEl=document.getElementById('cpr-method');
+  var amt=parseFloat(amtEl?amtEl.value:0)||0;
+  var method=methodEl?methodEl.value:'';
+  var note=(document.getElementById('cpr-note')?document.getElementById('cpr-note').value:'').trim();
   var methodLabels={cash:'💵 Espèces',transfer:'🏦 Virement',cmi:'💳 CMI',cheque:'📋 Chèque'};
-  if(amt<=0){toast('Montant invalide',true);return;}
-  if(!method){toast('Choisissez un moyen de paiement',true);return;}
+  if(!amtEl||!amtEl.value.trim()){showErr('cpr-amount','⚠️ Montant obligatoire');return;}
+  if(isNaN(amt)||amt<=0){showErr('cpr-amount','⚠️ Montant invalide — saisissez un nombre > 0');return;}
+  if(amt>bal){showErr('cpr-amount','⚠️ Le montant ('+fm(amt)+') dépasse votre solde dû ('+fm(bal)+')');return;}
+  if(!method){showErr('cpr-method','⚠️ Sélectionnez un moyen de paiement');return;}
   var req={
     id:'PAY'+Date.now(),
     clientId:SESSION.id,
@@ -6313,6 +6334,38 @@ function startRealtimeSync(){
 window.addEventListener('DOMContentLoaded', async function(){
   await loadFromCloud();
   startRealtimeSync();
+
+  // ── Désactiver clavier alphabétique sur champs numériques ──
+  document.querySelectorAll('input[type="number"]').forEach(function(el){
+    el.setAttribute('inputmode','numeric');
+    el.setAttribute('pattern','[0-9]*');
+  });
+  var numObs=new MutationObserver(function(muts){
+    muts.forEach(function(m){
+      m.addedNodes.forEach(function(node){
+        if(node.querySelectorAll) node.querySelectorAll('input[type="number"]').forEach(function(el){
+          el.setAttribute('inputmode','numeric');el.setAttribute('pattern','[0-9]*');
+        });
+      });
+    });
+  });
+  numObs.observe(document.body,{childList:true,subtree:true});
+  document.addEventListener('keypress',function(e){
+    var el=e.target;
+    if(!el||el.type!=='number') return;
+    var char=String.fromCharCode(e.which||e.keyCode);
+    if(!/[\d\.\,\-]/.test(char)&&e.which!==8&&e.which!==0){
+      e.preventDefault();
+      var errId=el.id+'-key-err';
+      var errDiv=document.getElementById(errId);
+      if(!errDiv){errDiv=document.createElement('div');errDiv.id=errId;errDiv.style.cssText='color:var(--red);font-size:11px;margin-top:3px;position:absolute;z-index:99;background:var(--dk3);border:1px solid var(--red);border-radius:6px;padding:4px 8px';if(el.parentNode){el.parentNode.style.position='relative';el.parentNode.appendChild(errDiv);}}
+      errDiv.textContent='⚠️ Chiffres uniquement — les lettres ne sont pas acceptées';
+      errDiv.style.display='block';
+      el.classList.add('field-err');
+      setTimeout(function(){if(errDiv)errDiv.style.display='none';el.classList.remove('field-err');},2500);
+    }
+  });
+
   // Validation globale des champs numériques
   document.addEventListener('input', function(e){
     var el=e.target;
@@ -6370,6 +6423,59 @@ window._fbSave = saveToCloud;
 window._fbLoad = loadFromCloud;
 window._fbRefresh = refreshUI;
 console.log('🔥 Firebase Realtime DB — sync temps réel');
+
+// ── Validation blur sur champs obligatoires ─────────────────────
+// Informe l'utilisateur dès qu'il quitte un champ vide
+(function setupBlurValidation(){
+  // Champs obligatoires du formulaire nouveau client
+  var clientRequiredFields = [
+    {id:'nc-name', label:'Nom complet'},
+    {id:'nc-ph', label:'Téléphone', type:'phone'},
+    {id:'nc-city', label:'Ville'},
+    {id:'nc-user', label:'Identifiant'},
+    {id:'nc-addr', label:'Adresse'}
+  ];
+  // Champs obligatoires réclamation
+  var complaintRequiredFields = [
+    {id:'cmp-type', label:'Type de réclamation'},
+    {id:'cmp-order', label:'Commande concernée'},
+    {id:'cmp-msg', label:'Message'}
+  ];
+  // Champs obligatoires contact
+  var contactRequiredFields = [
+    {id:'contact-subj', label:'Sujet'},
+    {id:'contact-msg', label:'Message'}
+  ];
+
+  function attachBlurToField(f){
+    var el = document.getElementById(f.id);
+    if(!el || el._blurAttached) return;
+    el._blurAttached = true;
+    el.addEventListener('blur', function(){
+      var val = (el.value||'').trim();
+      if(!val){
+        showErr(f.id, '⚠️ ' + f.label + ' est obligatoire');
+      } else if(f.type==='phone' && !/^[\d\s\+\-\.]{6,15}$/.test(val)){
+        showErr(f.id, '⚠️ ' + f.label + ' : numéro invalide (chiffres uniquement)');
+      } else {
+        clearErr(f.id);
+      }
+    });
+  }
+
+  function attachAll(){
+    clientRequiredFields.forEach(attachBlurToField);
+    complaintRequiredFields.forEach(attachBlurToField);
+    contactRequiredFields.forEach(attachBlurToField);
+  }
+
+  // Observer les changements DOM pour attacher aux nouveaux éléments
+  var blurObs = new MutationObserver(function(){
+    attachAll();
+  });
+  blurObs.observe(document.body, {childList:true, subtree:true});
+  attachAll();
+})();
 </script>
 </body>
 </html>
