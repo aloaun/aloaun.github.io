@@ -848,7 +848,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
    <div id="nc-loc-badge" class="map-coords-badge" style="margin-top:7px"></div>
   </div>
   <div class="fr2"><div class="fg"><label>Identifiant <span style="color:var(--red)">★</span></label><input id="nc-user" placeholder="client1"></div><div class="fg"><label>Mot de passe <span style="color:var(--red)">★</span></label><input type="password" id="nc-pw" placeholder="Min. 8 car., Maj., min., chiffre, spécial" oninput="validatePassword(this.value,'nc-pw')"></div></div>
-  <div class="fg"><label>Email <span style="color:var(--red)">★ Obligatoire</span></label><input id="nc-email" type="email" placeholder="client@email.com" required></div>
+  <div class="fg"><label>Email</label><input id="nc-email" type="email" placeholder="client@email.com" required></div>
   <div class="fg">
    <label>Photo du client</label>
    <div class="photo-field-wrap">
@@ -1196,10 +1196,10 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   <h2>🏭 Nouveau fournisseur</h2>
   <div class="fr2">
    <div class="fg"><label>Nom <span style="color:var(--red)">★</span></label><input id="ns-name" placeholder="Fournisseur Bio"></div>
-   <div class="fg"><label>Téléphone</label><input id="ns-phone" placeholder="0522..."></div>
+   <div class="fg"><label>Téléphone <span style="color:var(--red)">★</span></label><input id="ns-phone" placeholder="0522..."></div>
   </div>
   <div class="fr2">
-   <div class="fg"><label>Ville</label><input id="ns-city" placeholder="Casablanca"></div>
+   <div class="fg"><label>Ville <span style="color:var(--red)">★</span></label><input id="ns-city" placeholder="Casablanca"></div>
    <div class="fg"><label>Email</label><input id="ns-email" type="email" placeholder="contact@..."></div>
   </div>
   <div class="fg"><label>Dette actuelle (MAD)</label><input id="ns-debt" type="number" min="0" placeholder="0"></div>
@@ -2207,13 +2207,33 @@ function confirmReturn(id){
   },0);
   var cr=getClientCredit(o.clientId);
   if(!cr.transactions) cr.transactions=[];
+  if(!cr.coupons) cr.coupons=[];
+  var couponGenerated=0; var creditReduced=0;
   if(o.payStatus==='paid' && o.payMethod!=='credit'){
-    // Commande payée cash/CMI/virement → ne pas toucher au crédit, juste noter l'avoir
-    cr.transactions.push({date:today,type:'return_paid',amount:retTotal,note:'Retour commande '+id+' (payée) — avoir '+fm(retTotal)});
+    // Commande payée cash/CMI/virement → coupon avoir avec compensation crédit
+    var existingBalance=cr.balance||0;
+    if(existingBalance>0){
+      var reduction=Math.min(existingBalance,retTotal);
+      cr.balance=Math.max(0,existingBalance-reduction);
+      creditReduced=reduction;
+      cr.transactions.push({date:today,type:'return_credit_reduce',amount:reduction,note:'Retour cmd '+id+' — solde crédit réduit de '+fm(reduction)});
+      var restAvoir=retTotal-reduction;
+      if(restAvoir>0){
+        var couponCode='AV-'+id+'-'+Math.random().toString(36).substr(2,4).toUpperCase();
+        cr.coupons.push({code:couponCode,amount:restAvoir,date:today,orderId:id,used:false,reason:'Avoir retour marchandise'});
+        couponGenerated=restAvoir;
+        cr.transactions.push({date:today,type:'coupon',amount:restAvoir,note:'Coupon avoir '+couponCode+' — '+fm(restAvoir)});
+      }
+    } else {
+      var couponCode2='AV-'+id+'-'+Math.random().toString(36).substr(2,4).toUpperCase();
+      cr.coupons.push({code:couponCode2,amount:retTotal,date:today,orderId:id,used:false,reason:'Avoir retour marchandise'});
+      couponGenerated=retTotal;
+      cr.transactions.push({date:today,type:'coupon',amount:retTotal,note:'Coupon avoir '+couponCode2+' — '+fm(retTotal)});
+    }
   } else if(o.payMethod==='credit'||o.payStatus==='partial'||o.payStatus==='credit'){
-    // Commande à crédit → réduire le solde crédit
     if(retTotal>0){
       cr.balance=Math.max(0,(cr.balance||0)-retTotal);
+      creditReduced=retTotal;
       cr.transactions.push({date:today,type:'return',amount:retTotal,note:'Retour marchandise cmd '+id+' — crédit réduit de '+fm(retTotal)});
     }
   }
@@ -2223,8 +2243,9 @@ function confirmReturn(id){
   closeAllMd();
   renderOrders();
   renderDashboard();
-  var creditMsg=(o.payMethod==='credit'||o.payStatus==='partial')?' · Crédit -'+fm(retTotal):'';
-  toast('↩ Retour '+today+' — '+fm(retTotal)+creditMsg+' ✓');
+  var creditMsg=creditReduced>0?' · Crédit -'+fm(creditReduced):'';
+  var couponMsg=couponGenerated>0?' · 🎟️ Coupon avoir '+fm(couponGenerated):'';
+  toast('↩ Retour '+today+' — '+fm(retTotal)+creditMsg+couponMsg+' ✓');
 }
 
 function viewOrd(id){
@@ -3479,16 +3500,19 @@ function renderSuppliers(){
 function saveSupplier(){
   var name=document.getElementById('ns-name').value.trim();
   var phone=document.getElementById('ns-phone').value.trim();
+  var city=document.getElementById('ns-city').value.trim();
   var email=document.getElementById('ns-email').value.trim();
   var debt=document.getElementById('ns-debt').value;
-  if(!name){showErr('ns-name','Nom du fournisseur obligatoire');return;}
-  if(phone && !/^[\d\s\+\-\.]{6,15}$/.test(phone)){showErr('ns-phone','Numéro de téléphone invalide (chiffres uniquement)');return;}
-  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('ns-email','Adresse email invalide');return;}
-  if(debt && isNaN(parseFloat(debt))){showErr('ns-debt','La dette doit être un nombre');return;}
-  SUPPLIERS.push({id:'S'+(100+SUPPLIERS.length),name:name,phone:phone,city:document.getElementById('ns-city').value,email:email,debt:+(debt)||0,notes:document.getElementById('ns-notes').value});
+  if(!name){showErr('ns-name','⚠️ Nom du fournisseur obligatoire');return;}
+  if(!phone){showErr('ns-phone','⚠️ Téléphone obligatoire');return;}
+  if(!/^[\d\s\+\-\.]{6,15}$/.test(phone)){showErr('ns-phone','⚠️ Numéro invalide — chiffres uniquement (ex: 0522123456)');return;}
+  if(!city){showErr('ns-city','⚠️ Ville obligatoire');return;}
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){showErr('ns-email','⚠️ Format email invalide');return;}
+  if(debt && isNaN(parseFloat(debt))){showErr('ns-debt','⚠️ La dette doit être un nombre');return;}
+  SUPPLIERS.push({id:'S'+(100+SUPPLIERS.length),name:name,phone:phone,city:city,email:email,debt:+(debt)||0,notes:document.getElementById('ns-notes').value});
   save();
   if(window.saveToCloud) window.saveToCloud();
-  closeAllMd();fillStkAddProd();renderSuppliers();toast('Fournisseur ajouté');
+  closeAllMd();fillStkAddProd();renderSuppliers();toast('Fournisseur ajouté ✓');
 }
 function openEditSupplier(id){
   var s=SUPPLIERS.find(function(x){return x.id===id;});if(!s)return;
@@ -3969,13 +3993,35 @@ function renderClCreditInfo(){
   var pct=lim>0?Math.min(100,Math.round(bal/lim*100)):0;
   var barColor=pct>=100?'var(--red)':pct>=75?'var(--ora)':'var(--grn)';
   var status=lim===0?'Aucun plafond défini':pct>=100?'🔒 Plafond atteint — crédit bloqué':'Crédit disponible';
+  // Coupons actifs
+  var activeCoupons=(cr.coupons||[]).filter(function(c){return !c.used;});
+  var couponHtml='';
+  if(activeCoupons.length){
+    couponHtml='<div style="margin-top:12px;background:rgba(201,168,76,0.1);border:1px solid var(--gold);border-radius:10px;padding:12px">'+
+      '<div style="font-size:11px;color:var(--gold);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">🎟️ Vos coupons avoir</div>'+
+      activeCoupons.map(function(c){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(201,168,76,0.2)">'+
+          '<div>'+
+            '<div style="font-size:12px;font-weight:600;color:var(--gold)">'+c.code+'</div>'+
+            '<div style="font-size:10px;color:var(--tx3)">'+c.reason+' · '+c.date+'</div>'+
+          '</div>'+
+          '<div style="font-size:14px;font-weight:700;color:var(--grn)">'+fm(c.amount)+'</div>'+
+        '</div>';
+      }).join('')+
+      '<div style="font-size:11px;color:var(--tx3);margin-top:8px">Utilisez ce code lors de votre prochaine commande</div>'+
+    '</div>';
+  }
   el.innerHTML='<div class="cc" style="margin-bottom:12px">'+
     '<div style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">Solde dû</div>'+
     '<div style="font-size:28px;font-weight:700;color:var(--red);margin-bottom:8px">'+fm(bal)+'</div>'+
     (lim>0?'<div style="display:flex;justify-content:space-between;font-size:11px;color:var(--tx3);margin-bottom:4px"><span>Plafond</span><span>'+fm(lim)+'</span></div>'+
     '<div style="height:8px;background:var(--dk5);border-radius:4px;overflow:hidden;margin-bottom:10px"><div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:4px;transition:.3s"></div></div>':'')+'<div style="font-size:12px;color:'+(pct>=100?'var(--red)':'var(--grn)')+'">'+status+'</div>'+
+    couponHtml+
     (cr.transactions&&cr.transactions.length?'<div style="margin-top:12px;border-top:1px solid var(--bo2);padding-top:10px"><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:7px">Derniers mouvements</div>'+
-    cr.transactions.slice(-5).reverse().map(function(t){return'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:12px"><span style="color:var(--tx2)">'+t.date+' · '+t.note+'</span><span style="color:var(--grn)">-'+fm(t.amount)+'</span></div>';}).join('')+'</div>':'')+'</div>';
+    cr.transactions.slice(-5).reverse().map(function(t){
+      var color=t.type==='coupon'?'var(--gold)':t.type==='payment'?'var(--grn)':'var(--ora)';
+      return'<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:12px"><span style="color:var(--tx2)">'+t.date+' · '+t.note+'</span><span style="color:'+color+'">'+fm(t.amount)+'</span></div>';
+    }).join('')+'</div>':'')+'</div>';
 }
 
 // ═══════════ INVOICE WITH PAYMENT METHOD ═══════════
@@ -5217,26 +5263,28 @@ function toggleAllCmpChecks(checked){
   document.querySelectorAll('.cmp-chk').forEach(function(c){c.checked=checked;});
 }
 function deleteSelectedComplaints(){
+  if(!COMPLAINTS.length){toast('ℹ️ Aucune réclamation à supprimer',false);return;}
   var ids=[];
   document.querySelectorAll('.cmp-chk:checked').forEach(function(c){ids.push(c.value);});
-  if(!ids.length){toast('Aucune sélection',true);return;}
+  if(!ids.length){toast('⚠️ Aucune réclamation sélectionnée',true);return;}
   if(!confirm('Supprimer '+ids.length+' réclamation(s) ?')) return;
   COMPLAINTS = COMPLAINTS.filter(function(c){return ids.indexOf(c.id)<0;});
   try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(e){}
-  if(window._origSave) window._origSave();
-  if(window.saveToCloud) window.saveToCloud();
+  save();
+  if(window.saveToCloud){
+    window.saveToCloud().then(function(){renderComplaints();toast('✅ '+ids.length+' réclamation(s) supprimée(s) sur tous les appareils');});
+  } else {renderComplaints();toast('✅ '+ids.length+' réclamation(s) supprimée(s)');}
   _cmpSelectMode=false;
-  renderComplaints();
-  toast('✅ '+ids.length+' réclamation(s) supprimée(s)');
 }
 function deleteAllComplaints(){
+  if(!COMPLAINTS.length){toast('ℹ️ Aucune réclamation à supprimer',false);return;}
   if(!confirm('Supprimer TOUTES les réclamations ?')) return;
   COMPLAINTS=[];
   try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(e){}
-  if(window._origSave) window._origSave();
-  if(window.saveToCloud) window.saveToCloud();
-  renderComplaints();
-  toast('✅ Toutes les réclamations supprimées');
+  save();
+  if(window.saveToCloud){
+    window.saveToCloud().then(function(){renderComplaints();toast('✅ Toutes les réclamations supprimées sur tous les appareils');});
+  } else {renderComplaints();toast('✅ Toutes les réclamations supprimées');}
 }
 function resetCmpFilters(){
   ['cmpf-client','cmpf-status','cmpf-from','cmpf-to'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -5480,26 +5528,28 @@ function toggleAllMsgChecks(checked){
   document.querySelectorAll('.msg-chk').forEach(function(c){c.checked=checked;});
 }
 function deleteSelectedMsgs(){
+  if(!CONTACT_MSGS.length){toast('ℹ️ Aucun message de contact à supprimer',false);return;}
   var ids=[];
   document.querySelectorAll('.msg-chk:checked').forEach(function(c){ids.push(c.value);});
-  if(!ids.length){toast('Aucune sélection',true);return;}
+  if(!ids.length){toast('⚠️ Aucun message sélectionné',true);return;}
   if(!confirm('Supprimer '+ids.length+' message(s) ?')) return;
   CONTACT_MSGS = CONTACT_MSGS.filter(function(m){return ids.indexOf(m.id)<0;});
   try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(e){}
-  if(window._origSave) window._origSave();
-  if(window.saveToCloud) window.saveToCloud();
+  save();
+  if(window.saveToCloud){
+    window.saveToCloud().then(function(){renderAdminContactMsgs();toast('✅ '+ids.length+' message(s) supprimé(s) sur tous les appareils');});
+  } else {renderAdminContactMsgs();toast('✅ '+ids.length+' message(s) supprimé(s)');}
   _msgSelectMode=false;
-  renderAdminContactMsgs();
-  toast('✅ '+ids.length+' message(s) supprimé(s)');
 }
 function deleteAllMsgs(){
+  if(!CONTACT_MSGS.length){toast('ℹ️ Aucun message de contact à supprimer',false);return;}
   if(!confirm('Supprimer TOUS les messages de contact ?')) return;
   CONTACT_MSGS=[];
   try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(e){}
-  if(window._origSave) window._origSave();
-  if(window.saveToCloud) window.saveToCloud();
-  renderAdminContactMsgs();
-  toast('✅ Tous les messages supprimés');
+  save();
+  if(window.saveToCloud){
+    window.saveToCloud().then(function(){renderAdminContactMsgs();toast('✅ Tous les messages supprimés sur tous les appareils');});
+  } else {renderAdminContactMsgs();toast('✅ Tous les messages supprimés');}
 }
 
 function replyContactMsg(id){
@@ -6256,17 +6306,28 @@ function startRealtimeSync(){
       try{
         var msg = JSON.parse(e.data);
         var d = msg.data;
-        // Ignorer si c'est notre propre sauvegarde (moins de 3s)
-        if(Date.now() - _lastSaveTime < 3000) return;
+        // Ignorer si c'est notre propre sauvegarde (moins de 2s) - réduit de 3s à 2s
+        var isSelf = (Date.now() - _lastSaveTime < 2000);
         if(!d) return;
         // Firebase est source de vérité pour TOUT — accepter toujours
+        var complaintsChanged = false;
+        var contactChanged = false;
         if(d.complaints !== undefined){
-          COMPLAINTS = Array.isArray(d.complaints) ? d.complaints : [];
-          try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(ex){}
+          var newComp = Array.isArray(d.complaints) ? d.complaints : [];
+          // Mettre à jour même si c'est nous qui avons sauvegardé — les autres appareils aussi reçoivent
+          if(!isSelf || JSON.stringify(newComp) !== JSON.stringify(COMPLAINTS)){
+            COMPLAINTS = newComp;
+            try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(ex){}
+            complaintsChanged = true;
+          }
         }
         if(d.contact !== undefined){
-          CONTACT_MSGS = Array.isArray(d.contact) ? d.contact : [];
-          try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(ex){}
+          var newContact = Array.isArray(d.contact) ? d.contact : [];
+          if(!isSelf || JSON.stringify(newContact) !== JSON.stringify(CONTACT_MSGS)){
+            CONTACT_MSGS = newContact;
+            try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(ex){}
+            contactChanged = true;
+          }
         }
         if(d.pending_pay !== undefined){
           PENDING_PAYMENTS = Array.isArray(d.pending_pay) ? d.pending_pay : [];
@@ -6288,8 +6349,18 @@ function startRealtimeSync(){
           SUPPLIERS = d.suppliers;
           try{localStorage.setItem('al_sup',JSON.stringify(SUPPLIERS));}catch(ex){}
         }
+        // Toujours rafraîchir UI — même si c'est notre propre save
         injectData(d);
-        refreshUI();
+        // Rafraîchir les réclamations/contact sur TOUS les appareils immédiatement
+        if(complaintsChanged){
+          if(window.SESSION && window.SESSION.role==='client' && window.renderClComplaints) window.renderClComplaints();
+          if(window.SESSION && window.SESSION.role==='admin' && window.renderComplaints) window.renderComplaints();
+        }
+        if(contactChanged){
+          if(window.renderContactMsgs) window.renderContactMsgs();
+          if(window.renderAdminContactMsgs) window.renderAdminContactMsgs();
+        }
+        if(!isSelf) refreshUI();
         fbShow('synced','🔄 Mis à jour');
       }catch(err){ console.warn('SSE put:',err.message); }
     });
@@ -6297,14 +6368,26 @@ function startRealtimeSync(){
     _sseSource.addEventListener('patch', function(e){
       try{
         var msg = JSON.parse(e.data);
-        if(msg.data && Date.now()-_lastSaveTime > 2000){
+        if(msg.data){
           var d=msg.data;
-          // Sync critiques même en patch
-          if(d.complaints !== undefined){ COMPLAINTS=Array.isArray(d.complaints)?d.complaints:[]; try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(ex){} }
-          if(d.contact !== undefined){ CONTACT_MSGS=Array.isArray(d.contact)?d.contact:[]; try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(ex){} }
+          var isSelf2=(Date.now()-_lastSaveTime<2000);
+          if(d.complaints !== undefined){
+            COMPLAINTS=Array.isArray(d.complaints)?d.complaints:[];
+            try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(ex){}
+            if(window.SESSION){
+              if(window.SESSION.role==='client'&&window.renderClComplaints) window.renderClComplaints();
+              if(window.SESSION.role==='admin'&&window.renderComplaints) window.renderComplaints();
+            }
+          }
+          if(d.contact !== undefined){
+            CONTACT_MSGS=Array.isArray(d.contact)?d.contact:[];
+            try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(ex){}
+            if(window.renderContactMsgs) window.renderContactMsgs();
+            if(window.renderAdminContactMsgs) window.renderAdminContactMsgs();
+          }
           if(d.credits !== undefined && typeof d.credits==='object'){ CREDITS=d.credits; try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(ex){} }
           injectData(d);
-          refreshUI();
+          if(!isSelf2) refreshUI();
         }
       }catch(err){ console.warn('SSE patch:',err.message); }
     });
