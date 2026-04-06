@@ -14,6 +14,20 @@
 <script>
 var WORKER_URL = 'https://alitos-email.ait-azgar.workers.dev';
 
+// ── Validation téléphone — chiffres uniquement ────────────────────
+function validatePhoneInput(el){
+  var val = el.value;
+  // Supprimer toutes les lettres et caractères non autorisés
+  var cleaned = val.replace(/[^0-9\s\+\-\.]/g,'');
+  if(cleaned !== val){
+    el.value = cleaned;
+    // Afficher message d'erreur
+    showErr(el.id, '⚠️ Le numéro de téléphone doit contenir uniquement des chiffres');
+  } else {
+    clearErr(el.id);
+  }
+}
+
 // ── Données secteurs/quartiers par ville ──────────────────
 var SECTEURS_VILLES = {
   'casablanca': ['Ain Chock','Ain Sebaa','Anfa','Ben M\'Sick','Bernoussi','Hay Hassani','Hay Mohammadi','Maarif','Mers Sultan','Moulay Rachid','Sidi Belyout','Sidi Bernoussi','Sidi Moumen','Sidi Othmane','Ain Diab','Bourgogne','CIL','Derb Ghallef','Derb Soltane','Oulfa','Roches Noires','Sbata','2 Mars','Hay Moulay Abdellah','Salmia','Nassim','Rachida','Bournazel','Cité Portugaise','Hay Hassani Est','Hay Inara','Hay Lala','Hay Moulay Idriss'],
@@ -835,7 +849,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
  <div class="md" id="md-add-cl" style="display:none">
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <h2>Nouveau client</h2>
-  <div class="fr2"><div class="fg"><label>Nom complet <span style="color:var(--red)">★</span></label><input id="nc-name" placeholder="Hassan Benali"></div><div class="fg"><label>Téléphone <span style="color:var(--red)">★</span></label><input id="nc-ph" placeholder="0661234567"></div></div>
+  <div class="fr2"><div class="fg"><label>Nom complet <span style="color:var(--red)">★</span></label><input id="nc-name" placeholder="Hassan Benali"></div><div class="fg"><label>Téléphone <span style="color:var(--red)">★</span></label><input id="nc-ph" oninput="validatePhoneInput(this)" inputmode="numeric" pattern="[0-9+\-\. ]*" placeholder="0661234567"></div></div>
   <div class="fr2"><div class="fg"><label>Ville <span style="color:var(--red)">★</span></label><input id="nc-city" placeholder="Casablanca" oninput="updateSecteurList('nc-sector','nc-city')"></div><div class="fg"><label>Région</label><select id="nc-reg"><option>Grand Casablanca</option><option>Rabat-Salé</option><option>Marrakech-Safi</option><option>Fès-Meknès</option><option>Tanger-Tétouan</option><option>Souss-Massa</option><option>Oriental</option><option>Béni Mellal</option><option>Drâa-Tafilalet</option></select></div></div>
   <div class="fr2"><div class="fg"><label>Secteur / Quartier <span style="color:var(--red)">★</span></label><select id="nc-sector"><option value="">— Choisir ville d'abord —</option></select></div><div class="fg"><label>Adresse <span style="color:var(--red)">★</span></label><input id="nc-addr" placeholder="123 Rue Mohammed V..."></div></div>
   <div class="fg">
@@ -850,9 +864,9 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   <div class="fr2"><div class="fg"><label>Identifiant <span style="color:var(--red)">★</span></label><input id="nc-user" placeholder="client1"></div><div class="fg"><label>Mot de passe <span style="color:var(--red)">★</span></label><input type="password" id="nc-pw" placeholder="Min. 8 car., Maj., min., chiffre, spécial" oninput="validatePassword(this.value,'nc-pw')"></div></div>
   <div class="fg"><label>Email</label><input id="nc-email" type="email" placeholder="client@email.com" required></div>
   <div class="fg">
-   <label>Photo du client</label>
+   <label>Photo du client (URL) <span style="color:var(--red)">★</span></label>
    <div class="photo-field-wrap">
-    <input id="nc-photo" placeholder="https://... ou utiliser 📁" oninput="previewPhoto('nc-photo','nc-photo-prev')">
+    <input id="nc-photo" placeholder="https://..."  placeholder="https://... ou utiliser 📁" oninput="previewPhoto('nc-photo','nc-photo-prev')">
     <button type="button" class="photo-upload-btn" onclick="openPhotoUpload('nc-photo','nc-photo-prev','add-cl')">📁</button>
    </div>
    <img id="nc-photo-prev" class="photo-preview" src="" alt="">
@@ -865,7 +879,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <h2>Modifier le client</h2>
   <input type="hidden" id="ec-id">
-  <div class="fr2"><div class="fg"><label>Nom <span style="color:var(--red)">★</span></label><input id="ec-name"></div><div class="fg"><label>Téléphone <span style="color:var(--red)">★</span></label><input id="ec-ph"></div></div>
+  <div class="fr2"><div class="fg"><label>Nom <span style="color:var(--red)">★</span></label><input id="ec-name"></div><div class="fg"><label>Téléphone <span style="color:var(--red)">★</span></label><input id="ec-ph" oninput="validatePhoneInput(this)" inputmode="numeric" pattern="[0-9+\-\. ]*"></div></div>
   <div class="fr2"><div class="fg"><label>Ville <span style="color:var(--red)">★</span></label><input id="ec-city" oninput="updateSecteurList('ec-sector','ec-city')"></div><div class="fg"><label>Région</label><select id="ec-reg"><option>Grand Casablanca</option><option>Rabat-Salé</option><option>Marrakech-Safi</option><option>Fès-Meknès</option><option>Tanger-Tétouan</option><option>Souss-Massa</option><option>Oriental</option><option>Béni Mellal</option><option>Drâa-Tafilalet</option></select></div></div>
   <div class="fr2"><div class="fg"><label>Secteur / Quartier</label><select id="ec-sector"><option value="">— Sélectionner —</option></select></div><div class="fg"><label>Adresse <span style="color:var(--red)">★</span></label><input id="ec-addr"></div></div>
   <div class="fg">
@@ -936,9 +950,9 @@ tr:hover td{background:rgba(255,255,255,0.018)}
    </div>
   </div>
   <div class="fg">
-   <label>Image produit</label>
+   <label>Image produit (URL) <span style="color:var(--red)">★</span></label>
    <div class="photo-field-wrap">
-    <input id="np-img" placeholder="https://... ou utiliser 📁" oninput="previewPhoto('np-img','np-img-prev')">
+    <input id="np-img" placeholder="https://images.exemple.com/produit.jpg" placeholder="https://... ou utiliser 📁" oninput="previewPhoto('np-img','np-img-prev')">
     <button type="button" class="photo-upload-btn" onclick="openPhotoUpload('np-img','np-img-prev','add-prod')">📁</button>
    </div>
    <img id="np-img-prev" class="photo-preview" style="border-radius:8px;width:80px;height:60px" src="" alt="">
@@ -1196,7 +1210,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   <h2>🏭 Nouveau fournisseur</h2>
   <div class="fr2">
    <div class="fg"><label>Nom <span style="color:var(--red)">★</span></label><input id="ns-name" placeholder="Fournisseur Bio"></div>
-   <div class="fg"><label>Téléphone <span style="color:var(--red)">★</span></label><input id="ns-phone" placeholder="0522..."></div>
+   <div class="fg"><label>Téléphone <span style="color:var(--red)">★</span></label><input id="ns-phone" oninput="validatePhoneInput(this)" inputmode="numeric" pattern="[0-9+\-\. ]*" placeholder="0522..."></div>
   </div>
   <div class="fr2">
    <div class="fg"><label>Ville <span style="color:var(--red)">★</span></label><input id="ns-city" placeholder="Casablanca"></div>
@@ -1214,7 +1228,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   <input type="hidden" id="es-id">
   <div class="fr2">
    <div class="fg"><label>Nom <span style="color:var(--red)">★</span></label><input id="es-name" placeholder="Nom du fournisseur"></div>
-   <div class="fg"><label>Téléphone</label><input id="es-phone" placeholder="0522..."></div>
+   <div class="fg"><label>Téléphone</label><input id="es-phone" oninput="validatePhoneInput(this)" inputmode="numeric" pattern="[0-9+\-\. ]*" placeholder="0522..."></div>
   </div>
   <div class="fr2">
    <div class="fg"><label>Ville</label><input id="es-city" placeholder="Casablanca"></div>
@@ -2209,8 +2223,14 @@ function confirmReturn(id){
   if(!cr.transactions) cr.transactions=[];
   if(!cr.coupons) cr.coupons=[];
   var couponGenerated=0; var creditReduced=0;
-  if(o.payStatus==='paid' && o.payMethod!=='credit'){
-    // Commande payée cash/CMI/virement → coupon avoir avec compensation crédit
+  // Commandes payées en espèces, chèque ou virement uniquement → coupon avoir
+  var paidByCashOrCheque = (o.payStatus==='paid') &&
+    (o.payMethod==='cash' || o.payMethod==='cheque' || o.payMethod==='transfer');
+  // Commandes payées à crédit → réduire le solde crédit
+  var paidByCredit = (o.payMethod==='credit' || o.payStatus==='partial' || o.payStatus==='credit');
+
+  if(paidByCashOrCheque){
+    // Réduire d'abord le solde crédit existant, puis coupon pour le reste
     var existingBalance=cr.balance||0;
     if(existingBalance>0){
       var reduction=Math.min(existingBalance,retTotal);
@@ -2220,23 +2240,26 @@ function confirmReturn(id){
       var restAvoir=retTotal-reduction;
       if(restAvoir>0){
         var couponCode='AV-'+id+'-'+Math.random().toString(36).substr(2,4).toUpperCase();
-        cr.coupons.push({code:couponCode,amount:restAvoir,date:today,orderId:id,used:false,reason:'Avoir retour marchandise'});
+        cr.coupons.push({code:couponCode,amount:restAvoir,date:today,orderId:id,used:false,reason:'Avoir retour marchandise ('+o.payMethod+')'});
         couponGenerated=restAvoir;
         cr.transactions.push({date:today,type:'coupon',amount:restAvoir,note:'Coupon avoir '+couponCode+' — '+fm(restAvoir)});
       }
     } else {
+      // Pas de solde crédit → tout en coupon
       var couponCode2='AV-'+id+'-'+Math.random().toString(36).substr(2,4).toUpperCase();
-      cr.coupons.push({code:couponCode2,amount:retTotal,date:today,orderId:id,used:false,reason:'Avoir retour marchandise'});
+      cr.coupons.push({code:couponCode2,amount:retTotal,date:today,orderId:id,used:false,reason:'Avoir retour marchandise ('+o.payMethod+')'});
       couponGenerated=retTotal;
       cr.transactions.push({date:today,type:'coupon',amount:retTotal,note:'Coupon avoir '+couponCode2+' — '+fm(retTotal)});
     }
-  } else if(o.payMethod==='credit'||o.payStatus==='partial'||o.payStatus==='credit'){
+  } else if(paidByCredit){
+    // Commande à crédit → réduire le solde
     if(retTotal>0){
       cr.balance=Math.max(0,(cr.balance||0)-retTotal);
       creditReduced=retTotal;
       cr.transactions.push({date:today,type:'return',amount:retTotal,note:'Retour marchandise cmd '+id+' — crédit réduit de '+fm(retTotal)});
     }
   }
+  // Si CMI ou autre → aucune action crédit (remboursement géré hors app)
   try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
   save();
   if(window.saveToCloud) window.saveToCloud();
@@ -2417,6 +2440,9 @@ function saveProduct(){
   if(!supId){showErr('np-sup','⚠️ Fournisseur obligatoire — sélectionnez un fournisseur');return;}
   if(!payMethod){showErr('np-paymethod','⚠️ Mode de paiement obligatoire');return;}
   if(initSell<initBuy){showErr('np-sell','⚠️ Prix de vente doit être ≥ au prix d\'achat ('+initBuy+' MAD)');return;}
+  var img=document.getElementById('np-img').value.trim();
+  if(!img){showErr('np-img','⚠️ Image obligatoire — saisissez une URL d\'image (ex: https://...)');return;}
+  if(!img.startsWith('http')){showErr('np-img','⚠️ URL invalide — commencez par https://...');return;}
   var payLabels={cash:'💵 Espèces',transfer:'🏦 Virement',cheque:'📋 Chèque',credit:'🔄 À crédit'};
   var newProd={id:'P'+(100+PRODUCTS.length),name:name,category:finalCat,
     buyPrice:initBuy,price:initSell,
@@ -2523,7 +2549,7 @@ function doAddStock(){
   var supId=supSel?supSel.value:'';
   var payMethodSel=document.getElementById('stk-add-paymethod');
   var payMethod=payMethodSel?payMethodSel.value:'';
-  if(!pid){toast('⚠️ Sélectionnez un produit dans la liste',true);return;}
+  if(!pid){showErr('stk-add-prod','⚠️ Sélectionnez un produit dans la liste déroulante');toast('⚠️ Choisissez un produit dans la liste',true);return;}
   if(qty<=0||isNaN(qty)){showErr('stk-add-qty','⚠️ Quantité obligatoire — saisissez un nombre > 0 (pas de lettres)');return;}
   if(isNaN(newBuy)||newBuy<=0){showErr('stk-add-price','⚠️ Prix achat obligatoire — saisissez un nombre > 0 (pas de lettres)');return;}
   if(!supId||supId==='__new__'){showErr('stk-add-sup','⚠️ Fournisseur obligatoire — sélectionnez ou créez un fournisseur');return;}
@@ -2852,6 +2878,9 @@ function saveClient(){
       showErr('nc-email','⚠️ Cet email est déjà associé à un autre compte');return;
     }
   }
+  var photoUrl=document.getElementById('nc-photo').value.trim();
+  if(!photoUrl){showErr('nc-photo','⚠️ Photo obligatoire — saisissez une URL d\'image');return;}
+  if(!photoUrl.startsWith('http')){showErr('nc-photo','⚠️ URL invalide — commencez par https://...');return;}
   var latV=parseFloat(document.getElementById('nc-lat').value)||null;
   var lngV=parseFloat(document.getElementById('nc-lng').value)||null;
   var ncSector=document.getElementById('nc-sector');var ncSectorVal=ncSector?ncSector.value:'';
@@ -3072,18 +3101,40 @@ function openMd(name){
     var admCur=document.getElementById('adm-cur');
     if(admCur) admCur.value='';
   }
-  // When opening add-prod, build cat options
+  // Reset new client form on open
+  if(name==='add-cl'){
+    ['nc-name','nc-ph','nc-city','nc-addr','nc-user','nc-pw','nc-email','nc-lat','nc-lng','nc-photo','nc-newcat'].forEach(function(id){
+      var f=document.getElementById(id); if(f) f.value='';
+    });
+    var ncSec=document.getElementById('nc-sector'); if(ncSec) ncSec.innerHTML='<option value="">— Choisir ville d\'abord —</option>';
+    var ncReg=document.getElementById('nc-reg'); if(ncReg) ncReg.selectedIndex=0;
+    var ncPrev=document.getElementById('nc-photo-prev'); if(ncPrev) ncPrev.style.display='none';
+    var ncBadge=document.getElementById('nc-loc-badge'); if(ncBadge) ncBadge.innerHTML='';
+    document.querySelectorAll('#md-add-cl .field-err').forEach(function(el){el.classList.remove('field-err');});
+    document.querySelectorAll('#md-add-cl .field-err-msg').forEach(function(el){el.style.display='none';});
+  }
+  // When opening add-prod, build cat options and reset form
   if(name==='add-prod'){
     var sel=document.getElementById('np-cat');
     if(sel)sel.innerHTML=buildCatOptions('Cosmétiques','np');
     document.getElementById('np-newcat-wrap').style.display='none';
     document.getElementById('np-img-prev').style.display='none';
-    // Populate supplier select
+    // Reset all fields to empty
+    ['np-name','np-unit','np-buy','np-sell','np-stock','np-thr','np-img','np-newcat'].forEach(function(id){
+      var f=document.getElementById(id); if(f) f.value='';
+    });
     var npSup=document.getElementById('np-sup');
     if(npSup){
       npSup.innerHTML='<option value="">— Sélectionner —</option>'+
         SUPPLIERS.map(function(s){return'<option value="'+s.id+'">'+s.name+'</option>';}).join('');
     }
+    var npPay=document.getElementById('np-paymethod');
+    if(npPay) npPay.value='';
+    var npMargin=document.getElementById('np-margin');
+    if(npMargin) npMargin.innerHTML='';
+    // Clear any previous errors
+    document.querySelectorAll('#md-add-prod .field-err').forEach(function(el){el.classList.remove('field-err');});
+    document.querySelectorAll('#md-add-prod .field-err-msg').forEach(function(el){el.style.display='none';});
   }
 }
 function closeAllMd(){
@@ -3176,6 +3227,13 @@ function refreshCart(){
   cf.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--bo)"><span style="color:var(--tx2)">Total</span><strong style="font-size:17px;color:var(--gold)">'+fm(tot)+'</strong></div>'+
     '<textarea id="cl-note" style="width:100%;background:var(--dk4);border:1px solid var(--bo2);border-radius:10px;padding:9px;color:var(--tx);font-family:\'DM Sans\',sans-serif;font-size:13px;resize:none;outline:none;height:52px;display:block;margin-top:5px" placeholder="Note de livraison (optionnel)..."></textarea>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:9px">'+
+    (function(){
+      var cr2=SESSION?getClientCredit(SESSION.id):null;
+      var activeCoupons2=cr2?(cr2.coupons||[]).filter(function(c){return !c.used&&c.amount>0;}):[];
+      var couponBtn=activeCoupons2.length?
+        '<button class="btn-main" style="background:linear-gradient(135deg,#7d5a00,#C9A84C);color:#000;margin-top:0;padding:11px 6px;font-size:12px;grid-column:1/-1" onclick="openCouponPay('+tot+')">🎟️ Coupon avoir ('+activeCoupons2.reduce(function(s,c){return s+c.amount;},0).toFixed(0)+' MAD)</button>':'';
+      return couponBtn;
+    })()+
     '<button class="btn-main" style="background:linear-gradient(135deg,#c0392b,#e74c3c);color:#fff;margin-top:0;padding:11px 6px;font-size:12px" onclick="openCMI('+tot+')">💳 CMI</button>'+
     '<button class="btn-main" style="background:linear-gradient(135deg,#1a7a1a,#27ae60);color:#fff;margin-top:0;padding:11px 6px;font-size:12px" onclick="openAltPay(\'cash\','+tot+')">💵 Espèces</button>'+
     '<button class="btn-main" style="background:linear-gradient(135deg,#1a4a8a,#2980b9);color:#fff;margin-top:0;padding:11px 6px;font-size:12px" onclick="openAltPay(\'transfer\','+tot+')">🏦 Virement</button>'+
@@ -3294,6 +3352,72 @@ function addCatFromModal(){
 
 // ═══════════ ALT PAYMENT (CASH / TRANSFER) ═══════════
 var _altPayMode='';var _altPendingOrder=null;
+function openCouponPay(total){
+  var cr=getClientCredit(SESSION.id);
+  var coupons=(cr.coupons||[]).filter(function(c){return !c.used&&c.amount>0;});
+  if(!coupons.length){toast('⚠️ Aucun coupon disponible',true);return;}
+  var totalCoupons=coupons.reduce(function(s,c){return s+c.amount;},0);
+  var html='<h3 style="color:var(--gold);margin-bottom:12px">🎟️ Payer avec coupon avoir</h3>'+
+    '<div style="font-size:13px;color:var(--tx2);margin-bottom:10px">Total commande : <strong style="color:var(--gold)">'+fm(total)+'</strong></div>'+
+    '<div style="background:rgba(201,168,76,0.1);border:1px solid var(--gold);border-radius:8px;padding:10px;margin-bottom:12px">'+
+    '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px">Vos coupons disponibles :</div>'+
+    coupons.map(function(c){return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0"><span style="color:var(--gold)">'+c.code+'</span><span>'+fm(c.amount)+'</span></div>';}).join('')+
+    '<div style="border-top:1px solid rgba(201,168,76,0.3);margin-top:6px;padding-top:6px;font-size:13px;font-weight:600;color:var(--gold)">Total coupons : '+fm(totalCoupons)+'</div>'+
+    '</div>';
+  if(totalCoupons>=total){
+    html+='<div style="background:rgba(82,201,122,0.1);border-radius:8px;padding:10px;margin-bottom:12px;font-size:13px;color:var(--grn)">✅ Vos coupons couvrent la totalité — reste 0 MAD à payer</div>';
+    html+='<button class="btn btn-g" style="width:100%" onclick="confirmCouponPayment('+total+',0,\'\')">✅ Confirmer le paiement par coupon</button>';
+  } else {
+    var reste=total-totalCoupons;
+    html+='<div style="background:rgba(201,168,76,0.08);border-radius:8px;padding:10px;margin-bottom:12px;font-size:13px;color:var(--ora)">⚠️ Reste à payer : <strong>'+fm(reste)+'</strong></div>'+
+      '<div class="fg"><label>Compléter par :</label>'+
+      '<select id="coupon-complement-method" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:10px;color:var(--tx);font-size:13px;outline:none">'+
+      '<option value="">— Choisir le mode de paiement —</option>'+
+      '<option value="cash">💵 Espèces</option>'+
+      '<option value="transfer">🏦 Virement</option>'+
+      '<option value="cmi">💳 CMI</option>'+
+      '<option value="cheque">📋 Chèque</option>'+
+      '<option value="credit">🔄 À crédit</option>'+
+      '</select></div>'+
+      '<button class="btn btn-g" style="width:100%;margin-top:10px" onclick="confirmCouponPayment('+total+','+reste+',document.getElementById(\'coupon-complement-method\').value)">✅ Confirmer</button>';
+  }
+  document.getElementById('ord-content').innerHTML=html;
+  openMd('ord');
+}
+
+function confirmCouponPayment(total, reste, complementMethod){
+  if(reste>0 && !complementMethod){toast('⚠️ Choisissez un moyen de paiement pour compléter',true);return;}
+  var cr=getClientCredit(SESSION.id);
+  var coupons=(cr.coupons||[]).filter(function(c){return !c.used&&c.amount>0;});
+  var used=0; var today=new Date().toISOString().split('T')[0];
+  // Utiliser les coupons par ordre
+  coupons.forEach(function(c){
+    if(used<total){
+      var use=Math.min(c.amount,total-used);
+      c.amount-=use; used+=use;
+      if(c.amount<=0) c.used=true;
+    }
+  });
+  // Si crédit comme complément → ajouter au solde
+  if(reste>0 && complementMethod==='credit'){
+    cr.balance=(cr.balance||0)+reste;
+    if(!cr.transactions) cr.transactions=[];
+    cr.transactions.push({date:today,type:'credit',amount:reste,note:'Complément crédit pour commande (coupon+crédit)'});
+  }
+  try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
+  var items2=[]; for(var pid in cart){var p=PRODUCTS.find(function(x){return x.id===pid;});items2.push({productId:pid,quantity:cart[pid],price:p.price,buyPrice:p.buyPrice||0});}
+  var profit=items2.reduce(function(s,it){return s+(it.price-(it.buyPrice||0))*it.quantity;},0);
+  var o={id:'ORD'+(1000+ORDERS.length),clientId:SESSION.id,items:items2,total:total,profit:profit,
+    payStatus:reste>0&&complementMethod==='credit'?'partial':'paid',
+    payMethod:'coupon'+(reste>0?'+'+complementMethod:''),
+    status:'pending',date:today,couponUsed:used,complementMethod:complementMethod||''};
+  ORDERS.unshift(o);save();
+  if(window.saveToCloud) window.saveToCloud();
+  cart={};updCartUI();closeAllMd();
+  toast('✅ Paiement par coupon confirmé ! Coupon utilisé: '+fm(used)+(reste>0?' + '+fm(reste)+' par '+complementMethod:''));
+  clRenderProds();renderClOrds();
+}
+
 function openAltPay(mode,total){
   var items=Object.entries(cart);
   for(var j=0;j<items.length;j++){
@@ -3333,7 +3457,18 @@ function calcChange(){
   var total=_altPendingOrder?_altPendingOrder.total:0;
   var given=parseFloat(document.getElementById('pay-cash-given').value)||0;
   var box=document.getElementById('pay-change-box');
+  var min10=Math.ceil(total*0.1);
   if(given>0){
+    if(given>total){
+      box.innerHTML='⚠️ Le montant remis ('+fm(given)+') ne peut pas dépasser le total ('+fm(total)+')';
+      box.style.background='rgba(224,82,82,0.08)';box.style.borderColor='rgba(224,82,82,0.2)';box.style.color='var(--red)';
+      box.style.display='block';return;
+    }
+    if(given<min10){
+      box.innerHTML='⚠️ Montant minimum requis : <strong>'+fm(min10)+'</strong> (10% du total)';
+      box.style.background='rgba(224,82,82,0.08)';box.style.borderColor='rgba(224,82,82,0.2)';box.style.color='var(--red)';
+      box.style.display='block';return;
+    }
     var change=given-total;
     if(change>=0){
       box.innerHTML='💶 Monnaie à rendre : <strong>'+fm(change)+'</strong>';
@@ -3349,10 +3484,15 @@ function processAltPay(){
   if(!_altPendingOrder)return;
   if(_altPayMode==='cash'){
     var given=parseFloat(document.getElementById('pay-cash-given').value)||0;
-    if(given<_altPendingOrder.total){toast('Montant insuffisant',true);return;}
+    var total=_altPendingOrder.total;
+    var min10=Math.ceil(total*0.1);
+    if(!given||given<=0){toast('⚠️ Saisissez le montant remis',true);return;}
+    if(given>total){toast('⚠️ Le montant remis ('+fm(given)+') ne peut pas dépasser le total ('+fm(total)+')',true);return;}
+    if(given<min10){toast('⚠️ Montant minimum : '+fm(min10)+' (10% du total de '+fm(total)+')',true);return;}
+    if(given<total){toast('⚠️ Montant insuffisant — manque '+fm(total-given),true);return;}
   } else {
     var ref=document.getElementById('pay-transfer-ref').value.trim();
-    if(!ref){toast('Entrez la référence du virement',true);return;}
+    if(!ref){toast('⚠️ Entrez la référence du virement',true);return;}
   }
   var items2=[];
   for(var id in cart){
@@ -3364,10 +3504,12 @@ function processAltPay(){
   if(_altPayMode==='cash'){extra.cashGiven=parseFloat(document.getElementById('pay-cash-given').value)||0;extra.change=extra.cashGiven-_altPendingOrder.total;}
   if(_altPayMode==='transfer'){extra.bank=document.getElementById('pay-transfer-bank').value;extra.ref=document.getElementById('pay-transfer-ref').value.trim();}
   var o={id:'ORD'+(1000+ORDERS.length),clientId:SESSION.id,items:items2,total:_altPendingOrder.total,profit:profit,note:_altPendingOrder.note,payStatus:'paid',payMethod:_altPayMode,payExtra:extra,status:'pending',date:new Date().toISOString().split('T')[0]};
-  ORDERS.unshift(o);save();cart={};updCartUI();_altPendingOrder=null;
+  ORDERS.unshift(o);save();
+  if(window.saveToCloud) window.saveToCloud();
+  cart={};updCartUI();_altPendingOrder=null;
   closeAllMd();
   var msg=_altPayMode==='cash'?'✅ Paiement espèces confirmé !':'✅ Virement enregistré !';
-  toast(msg);clRenderProds();
+  toast(msg);clRenderProds();renderClOrds();
 }
 
 // ═══════════ COMPANY SETTINGS ═══════════
