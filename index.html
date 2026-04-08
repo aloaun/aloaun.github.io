@@ -2,7 +2,10 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0A0A0A">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>Alitos — Gestion des Ventes</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
@@ -115,17 +118,47 @@ function showErr(elId, msg){
   var el=document.getElementById(elId);
   if(!el) return;
   el.classList.add('field-err');
+  // Find closest .fg ancestor for error placement
+  var container=el.parentNode;
+  var walker=el;
+  for(var i=0;i<4;i++){
+    if(walker.parentNode&&walker.parentNode.classList&&walker.parentNode.classList.contains('fg')){container=walker.parentNode;break;}
+    if(walker.parentNode) walker=walker.parentNode;
+  }
   var errDiv=document.getElementById(elId+'-err');
-  if(!errDiv){errDiv=document.createElement('div');errDiv.id=elId+'-err';errDiv.style.cssText='color:var(--red);font-size:11px;margin-top:4px';el.parentNode.appendChild(errDiv);}
+  if(!errDiv){
+    errDiv=container.querySelector('.field-err-msg[id="'+elId+'-err"]')||container.querySelector('[id="'+elId+'-err"]');
+    if(!errDiv){
+      errDiv=document.createElement('div');
+      errDiv.id=elId+'-err';
+      errDiv.className='field-err-msg';
+      errDiv.style.cssText='color:var(--red);font-size:11px;margin-top:4px;display:block;font-weight:500';
+      container.appendChild(errDiv);
+    }
+  }
   errDiv.innerHTML='⚠️ '+msg;
   errDiv.style.display='block';
-  el.addEventListener('input',function(){el.classList.remove('field-err');errDiv.style.display='none';},{once:true});
+  errDiv.classList.add('show');
+  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  function clearFn(){
+    el.classList.remove('field-err');
+    if(errDiv){errDiv.style.display='none';errDiv.classList.remove('show');}
+    el.removeEventListener('input',clearFn);
+    el.removeEventListener('change',clearFn);
+  }
+  el.addEventListener('input',clearFn);
+  el.addEventListener('change',clearFn);
 }
 function clearErr(elId){
   var el=document.getElementById(elId);
   if(el) el.classList.remove('field-err');
   var errDiv=document.getElementById(elId+'-err');
-  if(errDiv) errDiv.style.display='none';
+  if(errDiv){errDiv.style.display='none';errDiv.classList.remove('show');}
+  // Also clear any .field-err-msg in parent
+  if(el&&el.parentNode){
+    var msg2=el.parentNode.querySelector('.field-err-msg');
+    if(msg2){msg2.style.display='none';msg2.classList.remove('show');}
+  }
 }
 </script>
 <style>
@@ -158,8 +191,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:var(--tx);min-h
 .fg input,.fg select,.fg textarea{width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:.2s}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold)}
 .fg input.field-err,.fg select.field-err,.fg textarea.field-err{border-color:var(--red)!important;animation:shake .3s ease}
-.field-err-msg{color:var(--red);font-size:11px;margin-top:3px;display:none}
-.field-err-msg.show{display:block}
+.field-err-msg{color:var(--red);font-size:11px;margin-top:4px;display:none;font-weight:500}
+.field-err-msg.show,.field-err-msg[style*='display:block']{display:block!important}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .fg textarea{resize:vertical;min-height:65px}
 .btn-main{width:100%;padding:13px;background:var(--gold);color:var(--dk);border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;margin-top:6px}
@@ -441,9 +474,20 @@ tr:hover td{background:rgba(255,255,255,0.018)}
 .fp-box{max-width:400px}
 
 /* Responsive */
+/* ══ RESPONSIVE — adaptatif tous appareils ══ */
+@media(max-width:1200px){
+  :root{--side-w:200px}
+  .kpis{grid-template-columns:repeat(3,1fr)}
+}
+@media(max-width:992px){
+  :root{--side-w:180px}
+  .kpis{grid-template-columns:repeat(2,1fr)}
+  .cg2{grid-template-columns:1fr}
+  .content{padding:16px 14px}
+}
 @media(max-width:768px){
   :root{--side-w:0px}
-  .side{transform:translateX(-225px);width:225px}
+  .side{transform:translateX(-225px);width:225px;z-index:100}
   .side.open{transform:translateX(0)}
   .side-overlay.on{display:block}
   .main{margin-left:0;width:100%}
@@ -451,16 +495,53 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   .cg2,.cg22,.fr2{grid-template-columns:1fr}
   .kpis{grid-template-columns:repeat(2,1fr)}
   .refresh-fab{bottom:72px}
-  .content{padding:14px 12px}
-  table{min-width:500px}
+  .content{padding:12px 10px}
+  table{min-width:420px}
   .inv-parties{grid-template-columns:1fr}
-  .inv-body{padding:18px}
-  .inv-header{padding:20px}
-  .topbar{padding:10px 14px}
+  .inv-body{padding:14px}
+  .inv-header{padding:16px}
+  .topbar{padding:9px 12px;gap:6px}
+  .topbar h2{font-size:14px}
+  .md{max-width:95vw!important;max-height:90vh;overflow-y:auto}
+  .stk-add-row{flex-direction:column}
+  .fb{flex-wrap:wrap;gap:6px}
+  .fb input,.fb select{min-width:120px}
+  .kpi .kv{font-size:17px}
+  .cl-c{padding:12px}
+  .cl-acts{gap:4px}
+  .btn-sm{padding:5px 8px;font-size:11px}
+  th,td{padding:7px 8px;font-size:12px}
 }
-@media(max-width:400px){
+@media(max-width:480px){
   .kpis{grid-template-columns:1fr}
-  .pg{grid-template-columns:repeat(auto-fill,minmax(160px,1fr))}
+  .pg{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+  .card{padding:22px 16px}
+  .logo-big h1{font-size:36px;letter-spacing:3px}
+  .tabs .tab{font-size:12px;padding:8px 6px}
+  .md{padding:14px!important}
+  .btn-main{font-size:13px;padding:11px}
+  .ord-c{padding:12px}
+  .ci-item{gap:8px}
+  .topbar{flex-direction:column;align-items:flex-start;gap:5px}
+}
+@media(max-width:360px){
+  .kpi .kv{font-size:15px}
+  .content{padding:8px}
+  .logo-big h1{font-size:30px}
+}
+/* Touch device improvements */
+@media(hover:none){
+  .btn,.btn-main,.ni{min-height:40px}
+  .btn-sm{min-height:34px}
+  td input[type=number]{min-height:36px}
+}
+/* Print styles */
+@media print{
+  .side,.topbar,.ham-btn,.refresh-fab,.no-print{display:none!important}
+  .main{margin-left:0!important;width:100%!important}
+  .content{padding:0!important}
+  body{background:#fff!important;color:#000!important}
+  .inv-wrap{box-shadow:none!important}
 }
 
 @media print{
@@ -594,8 +675,15 @@ tr:hover td{background:rgba(255,255,255,0.018)}
       <button class="btn btn-g btn-sm" onclick="exportOrdersCSV()" title="Exporter en CSV">📥 CSV</button>
      </div>
      <div class="tc">
-      <div class="tc-h"><h3>Commandes</h3><div style="display:flex;gap:6px;align-items:center"><button class="btn btn-gn btn-sm" onclick="bulkDeliver()" title="Livrer toutes les commandes expédiées">📬 Tout livrer</button><span id="o-cnt" style="font-size:12px;color:var(--tx3)"></span></div></div>
-      <table><thead><tr><th>N°</th><th>Client</th><th>Région</th><th>Produits</th><th>Retour</th><th>Montant</th><th>Profit</th><th>Date</th><th>Statut</th><th>Paiement</th><th>Actions</th></tr></thead><tbody id="ords-tb"></tbody></table>
+      <div class="tc-h"><h3>Commandes</h3><div style="display:flex;gap:6px;align-items:center"><button class="btn btn-gn btn-sm" onclick="bulkDeliver()" title="Livrer la sélection ou toutes les expédiées">📬 Livrer</button><span id="o-cnt" style="font-size:12px;color:var(--tx3)"></span></div></div>
+      <!-- Barre actions bulk -->
+      <div id="bulk-bar" style="display:none;align-items:center;gap:8px;background:rgba(201,168,76,0.1);border:1px solid var(--gold);border-radius:8px;padding:8px 12px;margin-bottom:10px;flex-wrap:wrap">
+       <span id="bulk-lbl" style="font-size:12px;color:var(--gold);font-weight:600"></span>
+       <button class="btn btn-gn btn-sm" onclick="bulkDeliver()">✅ Livrer sélection</button>
+       <button class="btn btn-b btn-sm" onclick="bulkConfirm()">✓ Confirmer sélection</button>
+       <button class="btn btn-o btn-sm" onclick="_selectedOrders.clear();document.querySelectorAll('.ord-chk').forEach(function(c){c.checked=false;});updateBulkBar()">✕ Désélectionner</button>
+      </div>
+      <table><thead><tr><th><input type="checkbox" onclick="toggleAllOrders()" title="Tout sélectionner" style="cursor:pointer"></th><th>N°</th><th>Client</th><th>Région</th><th>Produits</th><th>Retour</th><th>Montant</th><th>Profit</th><th>Date</th><th>Statut</th><th>Paiement</th><th>Actions</th></tr></thead><tbody id="ords-tb"></tbody></table>
      </div>
     </div>
 
@@ -1194,7 +1282,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   <div id="pay-alt-cash-wrap">
    <div class="cmi-field" style="margin-bottom:0">
     <label>Montant remis par le client (MAD)</label>
-    <input id="pay-cash-given" type="number" placeholder="0" oninput="calcChange()" style="width:100%;background:#fff;border:1.5px solid #ddd;border-radius:8px;padding:11px 13px;color:#111;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:8px">
+    <input id="pay-cash-given" type="number" placeholder="Montant exact (max = total commande)" min="0" oninput="calcChange();var tot=_altPendingOrder?_altPendingOrder.total:0;if(parseFloat(this.value)>tot){this.style.borderColor='#e05252';}else{this.style.borderColor='#ddd';}" style="width:100%;background:#fff;border:1.5px solid #ddd;border-radius:8px;padding:11px 13px;color:#111;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:8px;transition:.2s">
    </div>
    <div id="pay-change-box" style="display:none;background:rgba(82,201,122,0.1);border:1px solid rgba(82,201,122,0.2);border-radius:8px;padding:10px 13px;font-size:14px;color:var(--grn);font-weight:600;margin-bottom:12px"></div>
   </div>
@@ -2126,6 +2214,77 @@ function resetOF(){
   ['of-client','of-status','of-pay','of-region','of-sort'].forEach(function(id){var el=document.getElementById(id);if(el)el.selectedIndex=0;});
   renderOrders();
 }
+var _selectedOrders = new Set();
+function toggleOrderSelect(id){
+  if(_selectedOrders.has(id)) _selectedOrders.delete(id);
+  else _selectedOrders.add(id);
+  updateBulkBar();
+}
+function toggleAllOrders(){
+  var cbs=document.querySelectorAll('.ord-chk');
+  var allChecked=[...cbs].every(function(c){return c.checked;});
+  cbs.forEach(function(c){
+    var id=c.dataset.id;
+    if(allChecked){_selectedOrders.delete(id);c.checked=false;}
+    else{_selectedOrders.add(id);c.checked=true;}
+  });
+  updateBulkBar();
+}
+function updateBulkBar(){
+  var bar=document.getElementById('bulk-bar');
+  if(!bar) return;
+  var n=_selectedOrders.size;
+  bar.style.display=n>0?'flex':'none';
+  var lbl=document.getElementById('bulk-lbl');
+  if(lbl) lbl.textContent=n+' commande(s) sélectionnée(s)';
+}
+function bulkDeliver(){
+  if(_selectedOrders.size>0){
+    // Deliver selected
+    var ids=[..._selectedOrders];
+    var today=new Date().toISOString().split('T')[0];
+    var count=0;
+    ids.forEach(function(id){
+      var o=ORDERS.find(function(x){return x.id===id;});
+      if(o&&(o.status==='shipped'||o.status==='confirmed'||o.status==='pending')){
+        o.status='delivered';o.deliveryDate=today;count++;
+      }
+    });
+    if(!count){toast('Aucune commande à livrer parmi la sélection',true);return;}
+    _selectedOrders.clear();
+    save();if(window.saveToCloud)window.saveToCloud();
+    renderOrders();renderDashboard();
+    toast('✅ '+count+' commande(s) livrée(s)');
+  } else {
+    // Deliver all shipped
+    var shipped=ORDERS.filter(function(o){return o.status==='shipped';});
+    if(!shipped.length){toast('Aucune commande expédiée à livrer',true);return;}
+    if(!confirm('Livrer les '+shipped.length+' commandes expédiées ?')) return;
+    var today2=new Date().toISOString().split('T')[0];
+    shipped.forEach(function(o){o.status='delivered';o.deliveryDate=today2;});
+    save();if(window.saveToCloud)window.saveToCloud();
+    renderOrders();renderDashboard();
+    toast('✅ '+shipped.length+' commande(s) livrée(s)');
+  }
+}
+function bulkConfirm(){
+  var ids=[..._selectedOrders];
+  var today=new Date().toISOString().split('T')[0];
+  var count=0;
+  ids.forEach(function(id){
+    var o=ORDERS.find(function(x){return x.id===id;});
+    if(o&&o.status==='pending'){
+      o.status='confirmed';o.confirmedDate=today;
+      o.items.forEach(function(it){var p=PRODUCTS.find(function(x){return x.id===it.productId;});if(p)p.stock=Math.max(0,p.stock-it.quantity);});
+      count++;
+    }
+  });
+  if(!count){toast('Aucune commande en attente dans la sélection',true);return;}
+  _selectedOrders.clear();
+  save();if(window.saveToCloud)window.saveToCloud();
+  renderOrders();renderDashboard();updateCreditBadge();
+  toast('✅ '+count+' commande(s) confirmée(s)');
+}
 function exportOrdersCSV(){
   var O=ORDERS;
   var rows=[['ID','Client','Ville','Total','Profit','Date','Statut','Paiement']];
@@ -2168,7 +2327,10 @@ function renderOrders(){
   document.getElementById('o-cnt').textContent=O.length+' résultat(s)';
   document.getElementById('ords-tb').innerHTML=O.map(function(o){
     var c=getC(o.clientId);var pr=calcProfit(o);
-    return '<tr><td><strong style="color:var(--gold)">'+o.id+'</strong></td>'+
+    var isChecked=_selectedOrders.has(o.id);
+    return '<tr style="'+(isChecked?'background:rgba(201,168,76,0.06)':'')+'">'+
+      '<td><input type="checkbox" class="ord-chk" data-id="'+o.id+'" '+(isChecked?'checked':'')+' onclick="toggleOrderSelect(\''+o.id+'\')" style="cursor:pointer"></td>'+
+      '<td><strong style="color:var(--gold)">'+o.id+'</strong></td>'+
       '<td><div style="display:flex;align-items:center;gap:6px"><img src="'+clientAvatar(c)+'" style="width:24px;height:24px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'">'+c.name+'</div></td>'+
       '<td style="font-size:11px;color:var(--tx3)">'+c.region+'</td>'+
       '<td>'+o.items.map(function(it){return getP(it.productId).name.split(' ')[0]+' ×'+it.quantity;}).join(', ')+'</td>'+
@@ -5125,26 +5287,32 @@ function validateField(val, label, opts){
 // Helper: validate and highlight multiple fields at once
 function validateForm(fields){
   var ok=true;
-  // First clear all errors for these fields
+  // First clear all errors
   fields.forEach(function(f){
     var el=document.getElementById(f.id);
     if(!el) return;
     el.classList.remove('field-err');
-    var errEl=el.parentNode?el.parentNode.querySelector('.field-err-msg'):null;
-    if(errEl) errEl.classList.remove('show');
+    var errEl=document.getElementById(f.id+'-err')||
+              (el.parentNode?el.parentNode.querySelector('.field-err-msg'):null);
+    if(errEl){errEl.style.display='none';errEl.classList.remove('show');}
   });
 
+  var firstErrEl=null;
   fields.forEach(function(f){
     var el=document.getElementById(f.id);
     if(!el) return;
     var val=(el.value||'').trim();
-    // Get or create error element
-    var errEl=el.parentNode?el.parentNode.querySelector('.field-err-msg'):null;
+    // Get or create error element — always with consistent ID
+    var errEl=document.getElementById(f.id+'-err');
     if(!errEl){
-      errEl=document.createElement('div');
-      errEl.className='field-err-msg';
-      errEl.style.cssText='color:var(--red);font-size:11px;margin-top:4px;display:none';
-      if(el.parentNode) el.parentNode.appendChild(errEl);
+      errEl=el.parentNode?el.parentNode.querySelector('.field-err-msg'):null;
+      if(!errEl){
+        errEl=document.createElement('div');
+        errEl.className='field-err-msg';
+        errEl.style.cssText='color:var(--red);font-size:11px;margin-top:4px;display:none';
+        if(el.parentNode) el.parentNode.appendChild(errEl);
+      }
+      errEl.id=f.id+'-err'; // Assign consistent ID
     }
 
     var errMsg='';
@@ -5152,23 +5320,23 @@ function validateForm(fields){
       errMsg='⚠️ '+f.label+' est obligatoire';
     } else if(val){
       if(f.type==='email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)){
-        errMsg='⚠️ '+f.label+' : format email invalide (ex: nom@domaine.com)';
+        errMsg='⚠️ '+f.label+' : format email invalide';
       } else if(f.type==='phone' && !/^[\d\s\+\-\.]{6,15}$/.test(val)){
-        errMsg='⚠️ '+f.label+' : numéro invalide (chiffres uniquement, ex: 0661234567)';
-      } else if((f.type==='number' || el.type==='number') && val){
+        errMsg='⚠️ '+f.label+' : numéro invalide (chiffres uniquement)';
+      } else if((f.type==='number'||el.type==='number')&&val){
         var num=parseFloat(val);
-        if(isNaN(num)){errMsg='⚠️ '+f.label+' : valeur numérique requise (pas de lettres)';}
-        else if(f.min!==undefined && num<f.min){errMsg='⚠️ '+f.label+' : valeur minimum '+f.min;}
-        else if(f.max!==undefined && num>f.max){errMsg='⚠️ '+f.label+' : valeur maximum '+f.max;}
-        else if(f.positive && num<=0){errMsg='⚠️ '+f.label+' : doit être supérieur à 0';}
+        if(isNaN(num)){errMsg='⚠️ '+f.label+' : valeur numérique requise';}
+        else if(f.min!==undefined&&num<f.min){errMsg='⚠️ '+f.label+' : minimum '+f.min;}
+        else if(f.max!==undefined&&num>f.max){errMsg='⚠️ '+f.label+' : maximum '+f.max;}
+        else if(f.positive&&num<=0){errMsg='⚠️ '+f.label+' : doit être > 0';}
       }
     }
     if(errMsg){
       el.classList.add('field-err');
-      errEl.textContent=errMsg;
+      errEl.innerHTML='<span style="color:var(--red)">'+errMsg+'</span>';
       errEl.style.display='block';
       errEl.classList.add('show');
-      el.scrollIntoView({behavior:'smooth',block:'nearest'});
+      if(!firstErrEl) firstErrEl=el;
       function clearOnInput(){
         el.classList.remove('field-err');
         errEl.style.display='none';
@@ -5182,10 +5350,8 @@ function validateForm(fields){
     }
   });
   if(!ok){
+    if(firstErrEl) firstErrEl.scrollIntoView({behavior:'smooth',block:'center'});
     toast('⚠️ Remplissez les champs obligatoires (★) marqués en rouge',true);
-    // Scroll to first error
-    var firstErr=document.querySelector('.field-err');
-    if(firstErr) firstErr.scrollIntoView({behavior:'smooth',block:'center'});
   }
   return ok;
 }
@@ -5472,23 +5638,19 @@ renderClComplaints = function(){
 function deleteMyComplaint(id){
   if(!confirm('Supprimer cette réclamation ?')) return;
   var idx = COMPLAINTS.findIndex(function(x){return x.id === id;});
-  if(idx > -1){
-    COMPLAINTS.splice(idx, 1);
-    try{ localStorage.setItem('al_complaints', JSON.stringify(COMPLAINTS)); }catch(e){}
-    // Force sync immédiate Firebase — tous les appareils seront mis à jour via SSE
-    save();
-    if(window.saveToCloud){
-      window.saveToCloud().then(function(){
-        renderClComplaints();
-        toast('✅ Réclamation supprimée sur tous les appareils');
-      }).catch(function(){
-        renderClComplaints();
-        toast('Réclamation supprimée (hors-ligne)');
-      });
-    } else {
-      renderClComplaints();
-      toast('Réclamation supprimée ✓');
-    }
+  if(idx < 0) return;
+  COMPLAINTS.splice(idx, 1);
+  try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(e){}
+  renderClComplaints(); // immediate local update
+  // PATCH Firebase directly — bypasses debounce, syncs all devices instantly
+  var patch={complaints:COMPLAINTS};
+  if(window.patchFirebase){
+    window.patchFirebase(patch).then(function(ok){
+      toast(ok?'✅ Réclamation supprimée sur tous les appareils':'✅ Réclamation supprimée (sync en cours)');
+    });
+  } else {
+    save();if(window.saveToCloud)window.saveToCloud();
+    toast('✅ Réclamation supprimée');
   }
 }
 
@@ -5554,19 +5716,17 @@ renderComplaints = function(){
 function adminDelComplaint(id){
   if(!confirm('Supprimer cette réclamation ?')) return;
   var idx = COMPLAINTS.findIndex(function(x){return x.id===id;});
-  if(idx > -1){
-    COMPLAINTS.splice(idx,1);
-    try{ localStorage.setItem('al_complaints', JSON.stringify(COMPLAINTS)); }catch(e){}
-    save();
-    if(window.saveToCloud){
-      window.saveToCloud().then(function(){
-        renderComplaints();
-        toast('✅ Réclamation supprimée sur tous les appareils');
-      });
-    } else {
-      renderComplaints();
-      toast('Réclamation supprimée ✓');
-    }
+  if(idx < 0) return;
+  COMPLAINTS.splice(idx,1);
+  try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(e){}
+  renderComplaints(); // immediate local update
+  if(window.patchFirebase){
+    window.patchFirebase({complaints:COMPLAINTS}).then(function(ok){
+      toast(ok?'✅ Réclamation supprimée sur tous les appareils':'✅ Réclamation supprimée');
+    });
+  } else {
+    save();if(window.saveToCloud)window.saveToCloud();
+    toast('✅ Réclamation supprimée');
   }
 }
 var _cmpSelectMode = false;
@@ -5592,21 +5752,21 @@ function deleteSelectedComplaints(){
   if(!confirm('Supprimer '+ids.length+' réclamation(s) ?')) return;
   COMPLAINTS = COMPLAINTS.filter(function(c){return ids.indexOf(c.id)<0;});
   try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(e){}
-  save();
-  if(window.saveToCloud){
-    window.saveToCloud().then(function(){renderComplaints();toast('✅ '+ids.length+' réclamation(s) supprimée(s) sur tous les appareils');});
-  } else {renderComplaints();toast('✅ '+ids.length+' réclamation(s) supprimée(s)');}
   _cmpSelectMode=false;
+  renderComplaints();
+  if(window.patchFirebase){
+    window.patchFirebase({complaints:COMPLAINTS}).then(function(ok){toast(ok?'✅ '+ids.length+' réclamation(s) supprimée(s) sur tous les appareils':'✅ '+ids.length+' réclamation(s) supprimée(s)');});
+  } else {save();if(window.saveToCloud)window.saveToCloud();toast('✅ '+ids.length+' réclamation(s) supprimée(s)');}
 }
 function deleteAllComplaints(){
   if(!COMPLAINTS.length){toast('ℹ️ Aucune réclamation à supprimer',false);return;}
   if(!confirm('Supprimer TOUTES les réclamations ?')) return;
   COMPLAINTS=[];
   try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(e){}
-  save();
-  if(window.saveToCloud){
-    window.saveToCloud().then(function(){renderComplaints();toast('✅ Toutes les réclamations supprimées sur tous les appareils');});
-  } else {renderComplaints();toast('✅ Toutes les réclamations supprimées');}
+  renderComplaints();
+  if(window.patchFirebase){
+    window.patchFirebase({complaints:[]}).then(function(ok){toast(ok?'✅ Toutes les réclamations supprimées sur tous les appareils':'✅ Suppression effectuée');});
+  } else {save();if(window.saveToCloud)window.saveToCloud();toast('✅ Toutes les réclamations supprimées');}
 }
 function resetCmpFilters(){
   ['cmpf-client','cmpf-status','cmpf-from','cmpf-to'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
@@ -5775,23 +5935,17 @@ function renderContactMsgs(){
 function clientDelContactMsg(id){
   if(!confirm('Supprimer ce message ?')) return;
   var idx = CONTACT_MSGS.findIndex(function(x){return x.id===id;});
-  if(idx > -1){
-    CONTACT_MSGS.splice(idx, 1);
-    try{localStorage.setItem('al_contact', JSON.stringify(CONTACT_MSGS));}catch(e){}
-    // Force sync immédiate Firebase — tous les appareils seront mis à jour via SSE
-    save();
-    if(window.saveToCloud){
-      window.saveToCloud().then(function(){
-        renderContactMsgs();
-        toast('✅ Message supprimé sur tous les appareils');
-      }).catch(function(){
-        renderContactMsgs();
-        toast('Message supprimé (hors-ligne)');
-      });
-    } else {
-      renderContactMsgs();
-      toast('Message supprimé ✓');
-    }
+  if(idx < 0) return;
+  CONTACT_MSGS.splice(idx,1);
+  try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(e){}
+  renderContactMsgs(); // immediate local update
+  if(window.patchFirebase){
+    window.patchFirebase({contact:CONTACT_MSGS}).then(function(ok){
+      toast(ok?'✅ Message supprimé sur tous les appareils':'✅ Message supprimé');
+    });
+  } else {
+    save();if(window.saveToCloud)window.saveToCloud();
+    toast('✅ Message supprimé');
   }
 }
 
@@ -5857,21 +6011,21 @@ function deleteSelectedMsgs(){
   if(!confirm('Supprimer '+ids.length+' message(s) ?')) return;
   CONTACT_MSGS = CONTACT_MSGS.filter(function(m){return ids.indexOf(m.id)<0;});
   try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(e){}
-  save();
-  if(window.saveToCloud){
-    window.saveToCloud().then(function(){renderAdminContactMsgs();toast('✅ '+ids.length+' message(s) supprimé(s) sur tous les appareils');});
-  } else {renderAdminContactMsgs();toast('✅ '+ids.length+' message(s) supprimé(s)');}
   _msgSelectMode=false;
+  renderAdminContactMsgs();
+  if(window.patchFirebase){
+    window.patchFirebase({contact:CONTACT_MSGS}).then(function(ok){toast(ok?'✅ '+ids.length+' message(s) supprimé(s) sur tous les appareils':'✅ '+ids.length+' message(s) supprimé(s)');});
+  } else {save();if(window.saveToCloud)window.saveToCloud();toast('✅ '+ids.length+' message(s) supprimé(s)');}
 }
 function deleteAllMsgs(){
   if(!CONTACT_MSGS.length){toast('ℹ️ Aucun message de contact à supprimer',false);return;}
   if(!confirm('Supprimer TOUS les messages de contact ?')) return;
   CONTACT_MSGS=[];
   try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(e){}
-  save();
-  if(window.saveToCloud){
-    window.saveToCloud().then(function(){renderAdminContactMsgs();toast('✅ Tous les messages supprimés sur tous les appareils');});
-  } else {renderAdminContactMsgs();toast('✅ Tous les messages supprimés');}
+  renderAdminContactMsgs();
+  if(window.patchFirebase){
+    window.patchFirebase({contact:[]}).then(function(ok){toast(ok?'✅ Tous les messages supprimés sur tous les appareils':'✅ Suppression effectuée');});
+  } else {save();if(window.saveToCloud)window.saveToCloud();toast('✅ Tous les messages supprimés');}
 }
 
 function replyContactMsg(id){
@@ -6628,28 +6782,26 @@ function startRealtimeSync(){
       try{
         var msg = JSON.parse(e.data);
         var d = msg.data;
-        // Ignorer si c'est notre propre sauvegarde (moins de 2s) - réduit de 3s à 2s
-        var isSelf = (Date.now() - _lastSaveTime < 2000);
         if(!d) return;
-        // Firebase est source de vérité pour TOUT — accepter toujours
-        var complaintsChanged = false;
-        var contactChanged = false;
+        var isSelf = (Date.now() - _lastSaveTime < 1500);
+
+        // COMPLAINTS & CONTACT: always accept from Firebase — source de vérité absolue
+        // Ne jamais ignorer même si c'est notre propre sauvegarde
         if(d.complaints !== undefined){
           var newComp = Array.isArray(d.complaints) ? d.complaints : [];
-          // Mettre à jour même si c'est nous qui avons sauvegardé — les autres appareils aussi reçoivent
-          if(!isSelf || JSON.stringify(newComp) !== JSON.stringify(COMPLAINTS)){
-            COMPLAINTS = newComp;
-            try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(ex){}
-            complaintsChanged = true;
+          COMPLAINTS = newComp;
+          try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(ex){}
+          if(window.SESSION){
+            if(window.SESSION.role==='client' && window.renderClComplaints) window.renderClComplaints();
+            if(window.SESSION.role==='admin' && window.renderComplaints) window.renderComplaints();
           }
         }
         if(d.contact !== undefined){
           var newContact = Array.isArray(d.contact) ? d.contact : [];
-          if(!isSelf || JSON.stringify(newContact) !== JSON.stringify(CONTACT_MSGS)){
-            CONTACT_MSGS = newContact;
-            try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(ex){}
-            contactChanged = true;
-          }
+          CONTACT_MSGS = newContact;
+          try{localStorage.setItem('al_contact',JSON.stringify(CONTACT_MSGS));}catch(ex){}
+          if(window.renderContactMsgs) window.renderContactMsgs();
+          if(window.renderAdminContactMsgs) window.renderAdminContactMsgs();
         }
         if(d.pending_pay !== undefined){
           PENDING_PAYMENTS = Array.isArray(d.pending_pay) ? d.pending_pay : [];
@@ -6671,17 +6823,8 @@ function startRealtimeSync(){
           SUPPLIERS = d.suppliers;
           try{localStorage.setItem('al_sup',JSON.stringify(SUPPLIERS));}catch(ex){}
         }
-        // Toujours rafraîchir UI — même si c'est notre propre save
         injectData(d);
-        // Rafraîchir les réclamations/contact sur TOUS les appareils immédiatement
-        if(complaintsChanged){
-          if(window.SESSION && window.SESSION.role==='client' && window.renderClComplaints) window.renderClComplaints();
-          if(window.SESSION && window.SESSION.role==='admin' && window.renderComplaints) window.renderComplaints();
-        }
-        if(contactChanged){
-          if(window.renderContactMsgs) window.renderContactMsgs();
-          if(window.renderAdminContactMsgs) window.renderAdminContactMsgs();
-        }
+        if(window.updateCreditBadge) window.updateCreditBadge();
         if(!isSelf) refreshUI();
         fbShow('synced','🔄 Mis à jour');
       }catch(err){ console.warn('SSE put:',err.message); }
@@ -6692,7 +6835,7 @@ function startRealtimeSync(){
         var msg = JSON.parse(e.data);
         if(msg.data){
           var d=msg.data;
-          var isSelf2=(Date.now()-_lastSaveTime<2000);
+          // Always process complaints and contact changes
           if(d.complaints !== undefined){
             COMPLAINTS=Array.isArray(d.complaints)?d.complaints:[];
             try{localStorage.setItem('al_complaints',JSON.stringify(COMPLAINTS));}catch(ex){}
@@ -6709,10 +6852,27 @@ function startRealtimeSync(){
           }
           if(d.credits !== undefined && typeof d.credits==='object'){ CREDITS=d.credits; try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(ex){} }
           injectData(d);
-          if(!isSelf2) refreshUI();
+          refreshUI();
         }
       }catch(err){ console.warn('SSE patch:',err.message); }
     });
+
+    // Direct PATCH function for complaints/contact — bypasses debounce, propagates immediately
+    window.patchFirebase = async function(partialData){
+      try{
+        var FB_BASE = 'https://alitos-daf7e-default-rtdb.firebaseio.com/alitos.json';
+        var res = await fetch(FB_BASE, {
+          method:'PATCH',
+          headers:{'Content-Type':'application/json'},
+          body:JSON.stringify(partialData)
+        });
+        if(!res.ok) throw new Error('PATCH failed: '+res.status);
+        return true;
+      }catch(err){
+        console.warn('patchFirebase error:',err.message);
+        return false;
+      }
+    };
 
     _sseSource.onopen = function(){
       _sseRetry = 1000;
