@@ -222,7 +222,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:var(--tx);min-h
 .topbar h2{font-size:16px;font-weight:600}
 .datebadge{font-size:12px;color:var(--tx3);background:var(--dk4);padding:5px 11px;border-radius:7px;white-space:nowrap}
 .content{flex:1;padding:20px 22px}
-.sec{display:none}.sec.on{display:block;animation:secIn .2s ease both}@keyframes secIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.sec{display:none}.sec.on{display:block;animation:secIn .22s ease both}@keyframes secIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.sec.on .kpi{animation:fadeIn .3s ease both}.sec.on .kpi:nth-child(2){animation-delay:.05s}.sec.on .kpi:nth-child(3){animation-delay:.1s}.sec.on .kpi:nth-child(4){animation-delay:.15s}@keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
 
 /* hamburger for mobile */
 .ham-btn{display:none;background:none;border:none;color:var(--tx);font-size:22px;cursor:pointer;padding:4px}
@@ -247,10 +247,10 @@ table{width:100%;border-collapse:collapse;min-width:600px}
 th{text-align:left;padding:8px 10px;font-size:10px;color:var(--tx3);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--bo2);white-space:nowrap}
 td{padding:10px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.03);vertical-align:middle}
 tr:last-child td{border-bottom:none}
-tr:hover td{background:rgba(255,255,255,0.018)}
+tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
 
 /* Buttons */
-.btn{padding:7px 13px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:.15s}.btn:active{transform:scale(.96)}
+.btn{padding:7px 13px;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;border:none;transition:.15s;letter-spacing:.2px}.btn:active{transform:scale(.95)}.btn:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 .btn-g{background:var(--gold);color:var(--dk)}.btn-g:hover{background:var(--gl)}
 .btn-o{background:transparent;border:1px solid var(--bo2);color:var(--tx2)}.btn-o:hover{border-color:var(--gold);color:var(--gold)}
 .btn-sm{padding:4px 9px;font-size:11px}
@@ -529,6 +529,33 @@ tr:hover td{background:rgba(255,255,255,0.018)}
   .content{padding:8px}
   .logo-big h1{font-size:30px}
 }
+/* ── Client App Responsive ── */
+.cl-wrap{max-width:520px;margin:0 auto}
+.prod-grid{gap:10px}
+.p-c{border-radius:14px;transition:.2s}
+.p-c:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
+.cart-pn{border-radius:16px 16px 0 0}
+.ci-item{border-radius:10px;margin-bottom:6px;padding:10px}
+@media(max-width:420px){
+  .p-c img{height:130px}
+  .cl-wrap{padding:0 8px}
+  .bt{font-size:11px;padding:7px 10px}
+}
+@media(min-width:600px){
+  .prod-grid{grid-template-columns:repeat(3,1fr)!important}
+  .cl-wrap{max-width:680px}
+}
+@media(min-width:900px){
+  .prod-grid{grid-template-columns:repeat(4,1fr)!important}
+  .cl-wrap{max-width:900px;padding:0 24px}
+  #pg-client .cl-hd{max-width:900px;margin:0 auto}
+}
+/* ── Admin scrollable sidebar on medium screens ── */
+@media(max-height:700px){
+  .sidenav{font-size:12px}
+  .ni{padding:6px 11px}
+  .ns{padding:5px 8px 2px;margin-top:2px}
+}
 /* Touch device improvements */
 @media(hover:none){
   .btn,.btn-main,.ni{min-height:40px}
@@ -610,6 +637,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
     <div class="ni" id="ni-invoices" onclick="goSec('invoices',this)"><span>🧾</span>Factures</div>
     <div class="ns">Finance</div>
     <div class="ni" id="ni-credits" onclick="goSec('credits',this)"><span>💳</span>Crédits clients<span id="cred-badge" style="margin-left:auto;background:var(--red);color:#fff;border-radius:50%;font-size:9px;padding:1px 5px;display:none"></span></div>
+    <div class="ni" id="ni-coupons" onclick="goSec('coupons',this)"><span>🎟️</span>Coupons<span id="cpn-badge" style="margin-left:auto;background:var(--gold);color:#000;border-radius:10px;font-size:9px;padding:1px 6px;display:none"></span></div>
     <div class="ni" id="ni-suppliers" onclick="goSec('suppliers',this)"><span>🏭</span>Fournisseurs</div>
     <div class="ni" id="ni-purchases" onclick="goSec('purchases',this)"><span>🛒</span>Achats</div>
     <div class="ni" id="ni-complaints" onclick="goSec('complaints',this)"><span>📣</span>Réclamations</div>
@@ -811,12 +839,108 @@ tr:hover td{background:rgba(255,255,255,0.018)}
      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
       <h3 style="font-size:13px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px">Crédits &amp; Soldes clients</h3>
       <div style="display:flex;gap:7px;flex-wrap:wrap">
-       <button class="btn btn-o btn-sm" onclick="openCouponsManager()">🎟️ Gérer les coupons</button>
        <button class="btn btn-g btn-sm" onclick="renderCredits()">🔄</button>
       </div>
      </div>
      <div class="kpis" id="credit-kpis" style="margin-bottom:14px"></div>
      <div id="credits-grid"></div>
+    </div>
+
+    <!-- COUPONS -->
+    <div class="sec" id="sec-coupons">
+     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+      <div>
+       <h3 style="font-size:13px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">🎟️ Gestion des coupons</h3>
+       <p style="font-size:12px;color:var(--tx3)">Créer, distribuer, suivre et annuler les coupons clients</p>
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+       <button class="btn btn-g btn-sm" onclick="openAddCouponForm()">➕ Nouveau coupon</button>
+       <button class="btn btn-b btn-sm" onclick="openDistributeCoupons()">📤 Distribuer à tous</button>
+       <button class="btn btn-o btn-sm" onclick="renderCouponsSection()">🔄 Actualiser</button>
+      </div>
+     </div>
+     <!-- Stats coupons -->
+     <div class="kpis" id="cpn-sec-stats" style="margin-bottom:16px"></div>
+     <!-- Filtres -->
+     <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
+      <input type="text" id="cpn-search" placeholder="🔍 Rechercher code, client..." oninput="renderCouponsSection()" style="background:var(--dk4);border:1px solid var(--bo2);border-radius:8px;padding:7px 11px;color:var(--tx);font-size:12px;outline:none;flex:1;min-width:150px">
+      <select id="cpn-sec-filter-client" onchange="renderCouponsSection()" style="background:var(--dk4);border:1px solid var(--bo2);border-radius:8px;padding:7px 10px;color:var(--tx);font-size:12px;outline:none;min-width:140px">
+       <option value="">Tous les clients</option>
+      </select>
+      <select id="cpn-sec-filter-status" onchange="renderCouponsSection()" style="background:var(--dk4);border:1px solid var(--bo2);border-radius:8px;padding:7px 10px;color:var(--tx);font-size:12px;outline:none">
+       <option value="">Tous statuts</option>
+       <option value="active">✅ Actifs</option>
+       <option value="used">✔ Utilisés</option>
+       <option value="cancelled">❌ Annulés</option>
+      </select>
+      <select id="cpn-sec-filter-type" onchange="renderCouponsSection()" style="background:var(--dk4);border:1px solid var(--bo2);border-radius:8px;padding:7px 10px;color:var(--tx);font-size:12px;outline:none">
+       <option value="">Tous types</option>
+       <option value="avoir">📄 Avoir facture</option>
+       <option value="fidelite">⭐ Fidélité</option>
+       <option value="dedommagement">🤝 Dédommagement</option>
+       <option value="distribution">📤 Distribution</option>
+       <option value="manuel">✍️ Manuel admin</option>
+      </select>
+     </div>
+     <!-- Formulaire ajout rapide -->
+     <div id="cpn-add-form" style="display:none;background:rgba(201,168,76,0.06);border:1px solid var(--gold);border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;color:var(--gold);font-weight:700;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">➕ Créer un coupon</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+       <div class="fg" style="margin:0;flex:1;min-width:140px"><label style="font-size:10px">Client <span style="color:var(--red)">★</span></label>
+        <select id="cpn-new-client" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:12px;outline:none"><option value="">— Choisir —</option></select>
+       </div>
+       <div class="fg" style="margin:0;width:110px"><label style="font-size:10px">Montant (MAD) <span style="color:var(--red)">★</span></label>
+        <input type="number" id="cpn-new-amount" min="1" placeholder="100" inputmode="numeric" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:12px;outline:none">
+       </div>
+       <div class="fg" style="margin:0;min-width:130px"><label style="font-size:10px">Type <span style="color:var(--red)">★</span></label>
+        <select id="cpn-new-type" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:12px;outline:none">
+         <option value="fidelite">⭐ Fidélité</option>
+         <option value="dedommagement">🤝 Dédommagement retard/produit</option>
+         <option value="manuel">✍️ Geste commercial</option>
+        </select>
+       </div>
+       <div class="fg" style="margin:0;flex:1;min-width:160px"><label style="font-size:10px">Raison / Note</label>
+        <input type="text" id="cpn-new-reason" placeholder="Ex: Fidélité, retard livraison..." style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:12px;outline:none">
+       </div>
+       <div style="display:flex;gap:6px">
+        <button class="btn btn-g btn-sm" onclick="addManualCoupon()">✅ Créer</button>
+        <button class="btn btn-r btn-sm" onclick="document.getElementById('cpn-add-form').style.display='none'">✕</button>
+       </div>
+      </div>
+     </div>
+     <!-- Formulaire distribution -->
+     <div id="cpn-dist-form" style="display:none;background:rgba(74,158,232,0.06);border:1px solid rgba(74,158,232,0.3);border-radius:12px;padding:16px;margin-bottom:16px">
+      <div style="font-size:12px;color:#4A9EE8;font-weight:700;margin-bottom:12px;text-transform:uppercase;letter-spacing:1px">📤 Distribuer à plusieurs clients</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end">
+       <div class="fg" style="margin:0;width:110px"><label style="font-size:10px">Montant (MAD) <span style="color:var(--red)">★</span></label>
+        <input type="number" id="cpn-dist-amount" min="1" placeholder="100" inputmode="numeric" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:12px;outline:none">
+       </div>
+       <div class="fg" style="margin:0;min-width:130px"><label style="font-size:10px">Type</label>
+        <select id="cpn-dist-type" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:12px;outline:none">
+         <option value="fidelite">⭐ Fidélité</option>
+         <option value="dedommagement">🤝 Dédommagement</option>
+         <option value="distribution">📤 Promotion / Distribution</option>
+        </select>
+       </div>
+       <div class="fg" style="margin:0;flex:1;min-width:160px"><label style="font-size:10px">Raison</label>
+        <input type="text" id="cpn-dist-reason" placeholder="Promotion, anniversaire, événement..." style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:12px;outline:none">
+       </div>
+       <div class="fg" style="margin:0;min-width:130px"><label style="font-size:10px">Cibles</label>
+        <select id="cpn-dist-target" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:12px;outline:none">
+         <option value="all">Tous les clients</option>
+         <option value="credit">Clients avec crédit</option>
+         <option value="nocoupon">Sans coupon actif</option>
+         <option value="vip">Top 5 clients (CA)</option>
+        </select>
+       </div>
+       <div style="display:flex;gap:6px">
+        <button class="btn btn-b btn-sm" onclick="distributeCoupons()">📤 Distribuer</button>
+        <button class="btn btn-r btn-sm" onclick="document.getElementById('cpn-dist-form').style.display='none'">✕</button>
+       </div>
+      </div>
+     </div>
+     <!-- Liste -->
+     <div class="tc" style="margin:0"><div id="cpn-sec-list"></div></div>
     </div>
 
     <!-- SUPPLIERS -->
@@ -931,72 +1055,7 @@ tr:hover td{background:rgba(255,255,255,0.018)}
 
  <!-- Confirm Pending Payments Modal -->
 
- <!-- Coupons Manager Modal -->
- <div class="md" id="md-coupons" style="display:none;max-width:680px;max-height:85vh;overflow-y:auto">
-  <button class="md-x" onclick="closeAllMd()">✕</button>
-  <h2 style="color:var(--gold);margin-bottom:4px">🎟️ Gestion des coupons avoir</h2>
-  <p style="font-size:12px;color:var(--tx3);margin-bottom:16px">Distribuer, ajouter, annuler des coupons pour vos clients</p>
-  <!-- Filtres -->
-  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px">
-   <select id="cpn-filter-client" onchange="renderCouponsManager()" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:7px 10px;color:var(--tx);font-size:12px;outline:none;flex:1;min-width:140px">
-    <option value="">Tous les clients</option>
-   </select>
-   <select id="cpn-filter-status" onchange="renderCouponsManager()" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:7px 10px;color:var(--tx);font-size:12px;outline:none">
-    <option value="">Tous statuts</option>
-    <option value="active">✅ Actifs</option>
-    <option value="used">✔ Utilisés</option>
-    <option value="cancelled">❌ Annulés</option>
-   </select>
-   <button class="btn btn-g btn-sm" onclick="openAddCouponForm()">➕ Nouveau coupon</button>
-   <button class="btn btn-o btn-sm" onclick="openDistributeCoupons()">📤 Distribuer</button>
-  </div>
-  <!-- Formulaire ajout rapide (caché par défaut) -->
-  <div id="cpn-add-form" style="display:none;background:rgba(201,168,76,0.08);border:1px solid var(--gold);border-radius:10px;padding:14px;margin-bottom:14px">
-   <div style="font-size:12px;color:var(--gold);font-weight:600;margin-bottom:10px">➕ Ajouter un coupon manuel</div>
-   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-    <div class="fg" style="margin:0;flex:1;min-width:140px"><label style="font-size:11px">Client <span style="color:var(--red)">★</span></label>
-     <select id="cpn-new-client" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px;outline:none"><option value="">— Choisir —</option></select>
-    </div>
-    <div class="fg" style="margin:0;width:100px"><label style="font-size:11px">Montant (MAD) <span style="color:var(--red)">★</span></label>
-     <input type="number" id="cpn-new-amount" min="1" placeholder="Ex: 100" inputmode="numeric" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px;outline:none">
-    </div>
-    <div class="fg" style="margin:0;flex:1;min-width:140px"><label style="font-size:11px">Raison</label>
-     <input type="text" id="cpn-new-reason" placeholder="Geste commercial, fidélité..." style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px;outline:none">
-    </div>
-    <button class="btn btn-g btn-sm" onclick="addManualCoupon()">✅ Créer</button>
-    <button class="btn btn-r btn-sm" onclick="document.getElementById('cpn-add-form').style.display='none'">✕</button>
-   </div>
-  </div>
-  <!-- Formulaire distribution (caché par défaut) -->
-  <div id="cpn-dist-form" style="display:none;background:rgba(74,158,232,0.08);border:1px solid rgba(74,158,232,0.3);border-radius:10px;padding:14px;margin-bottom:14px">
-   <div style="font-size:12px;color:#4A9EE8;font-weight:600;margin-bottom:10px">📤 Distribuer des coupons à plusieurs clients</div>
-   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
-    <div class="fg" style="margin:0;width:100px"><label style="font-size:11px">Montant (MAD) <span style="color:var(--red)">★</span></label>
-     <input type="number" id="cpn-dist-amount" min="1" placeholder="100" inputmode="numeric" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px;outline:none">
-    </div>
-    <div class="fg" style="margin:0;flex:1;min-width:140px"><label style="font-size:11px">Raison</label>
-     <input type="text" id="cpn-dist-reason" placeholder="Promotion, événement..." style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px;outline:none">
-    </div>
-    <div class="fg" style="margin:0"><label style="font-size:11px">Clients cibles</label>
-     <select id="cpn-dist-target" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px;outline:none">
-      <option value="all">Tous les clients</option>
-      <option value="credit">Clients avec crédit</option>
-      <option value="nocoupon">Sans coupon actif</option>
-     </select>
-    </div>
-    <button class="btn btn-b btn-sm" onclick="distributeCoupons()">📤 Distribuer</button>
-    <button class="btn btn-r btn-sm" onclick="document.getElementById('cpn-dist-form').style.display='none'">✕</button>
-   </div>
-  </div>
-  <!-- Stats -->
-  <div id="cpn-stats" style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap"></div>
-  <!-- Liste coupons -->
-  <div id="cpn-list"></div>
- </div>
- <div class="md" id="md-confirm-pay" style="display:none;max-width:520px">
-  <button class="md-x" onclick="closeAllMd()">✕</button>
-  <div id="md-confirm-pay-content"></div>
- </div>
+
 
  <!-- Add Client -->
  <div class="md" id="md-add-cl" style="display:none">
@@ -2061,7 +2120,7 @@ function goSec(n,el){
   document.querySelectorAll('.ni').forEach(function(x){x.className='ni';});
   var s=document.getElementById('sec-'+n);if(s)s.className='sec on';
   if(el)el.className='ni on';
-  var T={dash:'Tableau de bord',orders:'Commandes',prods:'Produits',stock:'Stock & Prix',clients:'Clients',analytics:'Analytique',regional:'Ventes par région',invoices:'Factures',admins:'Admins',purchases:'Approvisionnements',suppliers:'Fournisseurs',credits:'Crédits',complaints:'Réclamations',company:'Entreprise'};
+  var T={dash:'Tableau de bord',orders:'Commandes',prods:'Produits',stock:'Stock & Prix',clients:'Clients',analytics:'Analytique',regional:'Ventes par région',invoices:'Factures',admins:'Admins',purchases:'Approvisionnements',suppliers:'Fournisseurs',credits:'Crédits',complaints:'Réclamations',company:'Entreprise',coupons:'Gestion des coupons'};
   document.getElementById('pg-ttl').textContent=T[n]||n;
   closeSide();
   if(n==='orders'){initOrderFilters();renderOrders();}
@@ -2076,6 +2135,7 @@ function goSec(n,el){
   if(n==='suppliers')renderSuppliers();
   if(n==='credits')renderCredits();
   if(n==='complaints')renderComplaints();
+  if(n==='coupons')renderCouponsSection();
 }
 
 // ═══════════ CATEGORIES ═══════════
@@ -2533,14 +2593,14 @@ function confirmReturn(id){
       var restAvoir=retTotal-reduction;
       if(restAvoir>0){
         var couponCode='AV-'+id+'-'+Math.random().toString(36).substr(2,4).toUpperCase();
-        cr.coupons.push({code:couponCode,amount:restAvoir,date:today,orderId:id,used:false,reason:'Avoir retour marchandise ('+o.payMethod+')'});
+        cr.coupons.push({code:couponCode,amount:restAvoir,originalAmount:restAvoir,date:today,orderId:id,used:false,cancelled:false,type:'avoir',reason:'Avoir retour commande '+id+' ('+o.payMethod+')'});
         couponGenerated=restAvoir;
         cr.transactions.push({date:today,type:'coupon',amount:restAvoir,note:'Coupon avoir '+couponCode+' — '+fm(restAvoir)});
       }
     } else {
       // Pas de solde crédit → tout en coupon
       var couponCode2='AV-'+id+'-'+Math.random().toString(36).substr(2,4).toUpperCase();
-      cr.coupons.push({code:couponCode2,amount:retTotal,date:today,orderId:id,used:false,reason:'Avoir retour marchandise ('+o.payMethod+')'});
+      cr.coupons.push({code:couponCode2,amount:retTotal,originalAmount:retTotal,date:today,orderId:id,used:false,cancelled:false,type:'avoir',reason:'Avoir retour commande '+id+' ('+o.payMethod+')'});
       couponGenerated=retTotal;
       cr.transactions.push({date:today,type:'coupon',amount:retTotal,note:'Coupon avoir '+couponCode2+' — '+fm(retTotal)});
     }
@@ -2709,18 +2769,36 @@ function updateProduct(){
 }
 function saveProduct(){
   // Validation complète AU CLIC — tous les champs obligatoires en rouge immédiatement
-  var allOk = validateForm([
-    {id:'np-name',  label:'Nom du produit'},
-    {id:'np-buy',   label:'Prix d\'achat', type:'number', min:0.01, positive:true},
-    {id:'np-sell',  label:'Prix de vente', type:'number', min:0.01, positive:true},
-    {id:'np-img',   label:'Image produit (URL)'}
-  ]);
-  // Vérifier aussi les selects obligatoires
-  var supId=document.getElementById('np-sup')?document.getElementById('np-sup').value:'';
-  var payMethod=document.getElementById('np-paymethod')?document.getElementById('np-paymethod').value:'';
-  if(!supId){showErr('np-sup','⚠️ Fournisseur obligatoire — sélectionnez dans la liste');allOk=false;}
-  if(!payMethod){showErr('np-paymethod','⚠️ Mode de paiement obligatoire');allOk=false;}
-  if(!allOk) return;
+  var errors = [];
+  function chk(id, label, val){
+    if(!val||val.trim()===''){
+      showErr(id,'⚠️ '+label+' est obligatoire — veuillez remplir ce champ');
+      errors.push(label);
+    }
+  }
+  var npName=(document.getElementById('np-name')||{}).value||'';
+  var npBuy=(document.getElementById('np-buy')||{}).value||'';
+  var npSell=(document.getElementById('np-sell')||{}).value||'';
+  var npImg=(document.getElementById('np-img')||{}).value||'';
+  var supId=(document.getElementById('np-sup')||{}).value||'';
+  var payMethod=(document.getElementById('np-paymethod')||{}).value||'';
+  chk('np-name','Nom du produit',npName);
+  chk('np-buy','Prix d\'achat',npBuy);
+  chk('np-sell','Prix de vente',npSell);
+  chk('np-img','Image du produit (URL https://...)',npImg);
+  if(!supId){showErr('np-sup','⚠️ Fournisseur obligatoire — sélectionnez un fournisseur dans la liste déroulante');errors.push('Fournisseur');}
+  if(!payMethod){showErr('np-paymethod','⚠️ Mode de paiement obligatoire — sélectionnez un mode dans la liste');errors.push('Mode paiement');}
+  if(errors.length){
+    toast('⚠️ '+errors.length+' champ(s) manquant(s) : '+errors.join(', '),true);
+    // Scroll to first error
+    var firstErr=document.querySelector('#md-add-prod .field-err');
+    if(firstErr) firstErr.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+  var allOk=true;
+  if(isNaN(parseFloat(npBuy))||parseFloat(npBuy)<=0){showErr('np-buy','⚠️ Prix d\'achat invalide — saisissez un nombre > 0');return;}
+  if(isNaN(parseFloat(npSell))||parseFloat(npSell)<=0){showErr('np-sell','⚠️ Prix de vente invalide — saisissez un nombre > 0');return;}
+  if(!npImg.startsWith('http')){showErr('np-img','⚠️ URL invalide — l\'image doit commencer par https://...');return;}
   var img=document.getElementById('np-img').value.trim();
   if(!img.startsWith('http')){showErr('np-img','⚠️ URL invalide — commencez par https://...');return;}
   var initBuy=+(document.getElementById('np-buy').value)||0;
@@ -3024,12 +3102,14 @@ function renderClients(){
   var reg=document.getElementById('clf-region').value;
   var city=document.getElementById('clf-city').value;
   var gps=document.getElementById('clf-gps').value;
+  var sectorF=document.getElementById('clf-sector')?document.getElementById('clf-sector').value:'';
   var F=CLIENTS.slice();
   if(q)F=F.filter(function(c){return c.name.toLowerCase().includes(q)||c.phone.includes(q)||(c.username&&c.username.toLowerCase().includes(q))||(c.address&&c.address.toLowerCase().includes(q));});
   if(reg)F=F.filter(function(c){return c.region===reg;});
   if(city)F=F.filter(function(c){return c.city===city;});
   if(gps==='yes')F=F.filter(function(c){return c.lat&&c.lng;});
   else if(gps==='no')F=F.filter(function(c){return !c.lat||!c.lng;});
+  if(typeof sectorF!=='undefined'&&sectorF)F=F.filter(function(c){return c.sector===sectorF;});
   document.getElementById('cl-grid').innerHTML=F.map(function(c){
     var gpsLink=c.lat&&c.lng?'<a href="https://www.openstreetmap.org/?mlat='+c.lat+'&mlon='+c.lng+'&zoom=15" target="_blank" style="font-size:11px;color:var(--gold);text-decoration:none;background:rgba(201,168,76,0.1);padding:2px 8px;border-radius:10px;border:1px solid rgba(201,168,76,0.2)">📍 Carte</a>':'';
     return '<div class="cl-c">'+
@@ -3152,19 +3232,29 @@ function updateClient(){
   closeAllMd();initClientFilters();renderClients();toast('✅ Client mis à jour avec succès !');
 }
 function saveClient(){
-  // Validation complète AU CLIC — tous les champs obligatoires immédiatement
-  var ok=validateForm([
-    {id:'nc-name',  label:'Nom complet'},
-    {id:'nc-ph',    label:'Téléphone', type:'phone'},
-    {id:'nc-city',  label:'Ville'},
-    {id:'nc-addr',  label:'Adresse'},
-    {id:'nc-user',  label:'Identifiant'},
-    {id:'nc-pw',    label:'Mot de passe'},
-    {id:'nc-photo', label:'Photo (URL image)'}
-  ]);
-  if(!ok) return;
+  // Validation complète AU CLIC avec messages explicatifs détaillés
+  var errors=[];
+  function chkCl(id,label,extraMsg){
+    var el=document.getElementById(id);
+    if(!el) return;
+    var val=(el.value||'').trim();
+    if(!val){showErr(id,'⚠️ '+label+' obligatoire'+(extraMsg?' — '+extraMsg:''));errors.push(label);}
+  }
+  chkCl('nc-name','Nom complet','saisissez le nom et prénom du client');
+  chkCl('nc-ph','Téléphone','ex: 0661234567');
+  chkCl('nc-city','Ville','ex: Casablanca');
+  chkCl('nc-addr','Adresse','ex: 12 Rue Mohammed V');
+  chkCl('nc-user','Identifiant','ex: client01 (sans espaces)');
+  chkCl('nc-pw','Mot de passe','min. 8 caractères avec Maj, min, chiffre et spécial');
+  chkCl('nc-photo','Photo (URL)','copiez l\'URL d\'une image https://...');
+  if(errors.length){
+    toast('⚠️ '+errors.length+' champ(s) manquant(s) : '+errors.join(', '),true);
+    var firstErr=document.querySelector('#md-add-cl .field-err');
+    if(firstErr) firstErr.scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
   var photoUrl=(document.getElementById('nc-photo').value||'').trim();
-  if(!photoUrl.startsWith('http')){showErr('nc-photo','⚠️ URL invalide — commencez par https://...');return;}
+  if(!photoUrl.startsWith('http')){showErr('nc-photo','⚠️ URL invalide — l\'URL doit commencer par https://...');return;}
   var name=document.getElementById('nc-name').value.trim();
   var user=document.getElementById('nc-user').value.trim();
   var pw=document.getElementById('nc-pw').value;
@@ -3541,9 +3631,10 @@ function refreshCart(){
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:9px">'+
     (function(){
       var cr2=SESSION?getClientCredit(SESSION.id):null;
-      var activeCoupons2=cr2?(cr2.coupons||[]).filter(function(c){return !c.used&&c.amount>0;}):[];
+      var activeCoupons2=cr2?(cr2.coupons||[]).filter(function(c){return !c.used&&!c.cancelled&&(c.amount||0)>0;}):[];
+      var totalCouponVal2=activeCoupons2.reduce(function(s,c){return s+c.amount;},0);
       var couponBtn=activeCoupons2.length?
-        '<button class="btn-main" style="background:linear-gradient(135deg,#7d5a00,#C9A84C);color:#000;margin-top:0;padding:11px 6px;font-size:12px;grid-column:1/-1" onclick="openCouponPay('+tot+')">🎟️ Coupon avoir ('+activeCoupons2.reduce(function(s,c){return s+c.amount;},0).toFixed(0)+' MAD)</button>':'';
+        '<button class="btn-main" style="background:linear-gradient(135deg,#7d5a00,#C9A84C);color:#000;margin-top:0;padding:11px 6px;font-size:12px;grid-column:1/-1;border:1px solid var(--gold)" onclick="openCouponPay('+tot+')">🎟️ Coupon avoir — '+fm(totalCouponVal2||activeCoupons2.reduce(function(s,c){return s+c.amount;},0))+'</button>':'';
       return couponBtn;
     })()+
     '<button class="btn-main" style="background:linear-gradient(135deg,#c0392b,#e74c3c);color:#fff;margin-top:0;padding:11px 6px;font-size:12px" onclick="openCMI('+tot+')">💳 CMI</button>'+
@@ -4047,6 +4138,10 @@ function clientCreditOk(cid,amount){
   return(cr.balance+amount)<=cr.limit;
 }
 function updateCreditBadge(){
+  // Coupon badge
+  var activeCpn=0;CLIENTS.forEach(function(c){activeCpn+=(getClientCredit(c.id).coupons||[]).filter(function(x){return !x.used&&!x.cancelled&&x.amount>0;}).length;});
+  var cpnBadge=document.getElementById('cpn-badge');
+  if(cpnBadge){cpnBadge.textContent=activeCpn;cpnBadge.style.display=activeCpn>0?'inline':'none';}
   var pending=PENDING_PAYMENTS.filter(function(p){return p.status==='pending';}).length;
   var badge=document.getElementById('cred-badge');
   if(badge){badge.textContent=pending;badge.style.display=pending>0?'inline':'none';}
@@ -4478,21 +4573,29 @@ function renderClCreditInfo(){
   var barColor=pct>=100?'var(--red)':pct>=75?'var(--ora)':'var(--grn)';
   var status=lim===0?'Aucun plafond défini':pct>=100?'🔒 Plafond atteint — crédit bloqué':'Crédit disponible';
   // Coupons actifs
-  var activeCoupons=(cr.coupons||[]).filter(function(c){return !c.used;});
+  var activeCoupons=(cr.coupons||[]).filter(function(c){return !c.used&&!c.cancelled&&c.amount>0;});
   var couponHtml='';
   if(activeCoupons.length){
-    couponHtml='<div style="margin-top:12px;background:rgba(201,168,76,0.1);border:1px solid var(--gold);border-radius:10px;padding:12px">'+
+    couponHtml='<div style="margin-top:12px;background:rgba(201,168,76,0.08);border:1px solid var(--gold);border-radius:12px;padding:14px;box-shadow:0 2px 12px rgba(201,168,76,0.1)">'+
       '<div style="font-size:11px;color:var(--gold);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">🎟️ Vos coupons avoir</div>'+
       activeCoupons.map(function(c){
-        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(201,168,76,0.2)">'+
-          '<div>'+
-            '<div style="font-size:12px;font-weight:600;color:var(--gold)">'+c.code+'</div>'+
-            '<div style="font-size:10px;color:var(--tx3)">'+c.reason+' · '+c.date+'</div>'+
+        var icon=typeIcons[c.type]||'🎟️';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid rgba(201,168,76,0.15)">'+
+          '<div style="flex:1">'+
+            '<div style="font-size:12px;font-weight:700;color:var(--gold);font-family:monospace">'+icon+' '+c.code+'</div>'+
+            '<div style="font-size:10px;color:var(--tx3);margin-top:2px">'+(c.reason||'Coupon')+'</div>'+
+            '<div style="font-size:10px;color:var(--tx3)">Créé le '+c.date+(c.originalAmount&&c.originalAmount!==c.amount?' · Utilisé: '+fm(c.originalAmount-c.amount):'')+'</div>'+
           '</div>'+
-          '<div style="font-size:14px;font-weight:700;color:var(--grn)">'+fm(c.amount)+'</div>'+
+          '<div style="text-align:right">'+
+            '<div style="font-size:16px;font-weight:700;color:var(--grn)">'+fm(c.amount)+'</div>'+
+            (c.originalAmount&&c.originalAmount>c.amount?'<div style="font-size:9px;color:var(--tx3)">/ '+fm(c.originalAmount)+'</div>':'')+
+          '</div>'+
         '</div>';
       }).join('')+
-      '<div style="font-size:11px;color:var(--tx3);margin-top:8px">Utilisez ce code lors de votre prochaine commande</div>'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:8px;border-top:1px solid rgba(201,168,76,0.2)">'+
+    '<span style="font-size:11px;color:var(--tx3)">Total disponible</span>'+
+    '<span style="font-size:14px;font-weight:700;color:var(--gold)">'+fm(activeCoupons.reduce(function(s,c){return s+c.amount;},0))+'</span>'+
+    '</div>'+
     '</div>';
   }
   el.innerHTML='<div class="cc" style="margin-bottom:12px">'+
@@ -6752,6 +6855,7 @@ function refreshUI(){
       else if(sec==='prods' && window.renderProds) window.renderProds();
       else if(sec==='stock' && window.renderStock) window.renderStock();
       else if(sec==='credits' && window.renderCredits) window.renderCredits();
+      else if(sec==='coupons' && window.renderCouponsSection) window.renderCouponsSection();
       else if(sec==='complaints'){
         if(window.renderComplaints) window.renderComplaints();
         if(window.renderAdminContactMsgs) setTimeout(window.renderAdminContactMsgs,100);
@@ -6915,6 +7019,9 @@ window.addEventListener('DOMContentLoaded', async function(){
     });
   });
   numObs.observe(document.body,{childList:true,subtree:true});
+  document.addEventListener('keydown',function(ev){
+    if(ev.key==='Escape'){var mo=document.getElementById('mo-bg');if(mo&&mo.classList.contains('on'))closeAllMd();}
+  });
   document.addEventListener('keypress',function(e){
     var el=e.target;
     if(!el||el.type!=='number') return;
@@ -6992,22 +7099,6 @@ console.log('🔥 Firebase Realtime DB — sync temps réel');
 // ════════════════════════════════════════════════════
 // 🎟️ GESTION DES COUPONS ADMIN
 // ════════════════════════════════════════════════════
-function openCouponsManager(){
-  // Peupler les filtres clients
-  var cf=document.getElementById('cpn-filter-client');
-  var nc=document.getElementById('cpn-new-client');
-  if(cf){
-    cf.innerHTML='<option value="">Tous les clients</option>'+
-      CLIENTS.map(function(c){return'<option value="'+c.id+'">'+c.name+'</option>';}).join('');
-  }
-  if(nc){
-    nc.innerHTML='<option value="">— Choisir —</option>'+
-      CLIENTS.map(function(c){return'<option value="'+c.id+'">'+c.name+'</option>';}).join('');
-  }
-  renderCouponsManager();
-  openMd('coupons');
-}
-
 function getAllCoupons(){
   var all=[];
   CLIENTS.forEach(function(c){
@@ -7019,67 +7110,92 @@ function getAllCoupons(){
   return all;
 }
 
-function renderCouponsManager(){
-  var filterClient=document.getElementById('cpn-filter-client')?document.getElementById('cpn-filter-client').value:'';
-  var filterStatus=document.getElementById('cpn-filter-status')?document.getElementById('cpn-filter-status').value:'';
+function renderCouponsSection(){
+  // Populate client filter
+  var cf=document.getElementById('cpn-sec-filter-client');
+  var nc=document.getElementById('cpn-new-client');
+  var cl2=document.getElementById('cpn-new-client');
+  [cf,nc,cl2].forEach(function(sel){
+    if(!sel) return;
+    var cur=sel.value;
+    sel.innerHTML='<option value="">'+( sel===cf?'Tous les clients':'— Choisir —')+'</option>'+
+      CLIENTS.map(function(c){return'<option value="'+c.id+'"'+(c.id===cur?' selected':'')+'>'+c.name+'</option>';}).join('');
+    sel.value=cur;
+  });
+
   var all=getAllCoupons();
-  // Stats
-  var active=all.filter(function(x){return !x.cpn.used&&!x.cpn.cancelled;});
+  var active=all.filter(function(x){return !x.cpn.used&&!x.cpn.cancelled&&x.cpn.amount>0;});
   var used=all.filter(function(x){return x.cpn.used;});
   var cancelled=all.filter(function(x){return x.cpn.cancelled;});
   var totalActive=active.reduce(function(s,x){return s+x.cpn.amount;},0);
-  var stats=document.getElementById('cpn-stats');
+
+  // Update sidebar badge
+  var badge=document.getElementById('cpn-badge');
+  if(badge){badge.textContent=active.length;badge.style.display=active.length>0?'inline':'none';}
+
+  // Stats
+  var stats=document.getElementById('cpn-sec-stats');
   if(stats) stats.innerHTML=[
-    {l:'Actifs',v:active.length,s:fm(totalActive),c:'var(--gold)'},
-    {l:'Utilisés',v:used.length,s:'',c:'var(--grn)'},
-    {l:'Annulés',v:cancelled.length,s:'',c:'var(--red)'}
+    {l:'Coupons actifs',v:active.length,s:fm(totalActive),c:'var(--gold)',i:'🎟️'},
+    {l:'Utilisés',v:used.length,s:'historique',c:'var(--grn)',i:'✔'},
+    {l:'Annulés',v:cancelled.length,s:'',c:'var(--red)',i:'❌'},
+    {l:'Total distribué',v:all.length,s:CLIENTS.length+' clients',c:'var(--blu)',i:'📊'}
   ].map(function(k){
-    return'<div style="background:var(--dk3);border-radius:8px;padding:8px 12px;flex:1;min-width:80px;text-align:center">'+
-      '<div style="font-size:18px;font-weight:700;color:'+k.c+'">'+k.v+'</div>'+
-      '<div style="font-size:10px;color:var(--tx3)">'+k.l+(k.s?' · '+k.s:'')+'</div>'+
-    '</div>';
+    return'<div class="kpi" style="--ac:'+k.c+'"><div class="ki">'+k.i+'</div><div class="kl">'+k.l+'</div><div class="kv" style="font-size:18px">'+k.v+'</div><div class="ks">'+k.s+'</div></div>';
   }).join('');
-  // Filtrer
+
+  // Filters
+  var search=(document.getElementById('cpn-search')?document.getElementById('cpn-search').value:'').toLowerCase();
+  var filterClient=cf?cf.value:'';
+  var filterStatus=document.getElementById('cpn-sec-filter-status')?document.getElementById('cpn-sec-filter-status').value:'';
+  var filterType=document.getElementById('cpn-sec-filter-type')?document.getElementById('cpn-sec-filter-type').value:'';
+
   var filtered=all.filter(function(x){
     if(filterClient && x.clientId!==filterClient) return false;
-    if(filterStatus==='active' && (x.cpn.used||x.cpn.cancelled)) return false;
+    if(filterStatus==='active' && (x.cpn.used||x.cpn.cancelled||!x.cpn.amount)) return false;
     if(filterStatus==='used' && !x.cpn.used) return false;
     if(filterStatus==='cancelled' && !x.cpn.cancelled) return false;
+    if(filterType && (x.cpn.type||'manuel')!==filterType) return false;
+    if(search && !x.cpn.code.toLowerCase().includes(search) && !x.clientName.toLowerCase().includes(search)) return false;
     return true;
   });
   filtered.sort(function(a,b){return (b.cpn.date||'').localeCompare(a.cpn.date||'');});
-  var list=document.getElementById('cpn-list');
+
+  var typeLabels={avoir:'📄 Avoir facture',fidelite:'⭐ Fidélité',dedommagement:'🤝 Dédommagement',distribution:'📤 Distribution',manuel:'✍️ Geste commercial'};
+  var list=document.getElementById('cpn-sec-list');
   if(!list) return;
   if(!filtered.length){
-    list.innerHTML='<div style="text-align:center;padding:30px;color:var(--tx3)">Aucun coupon trouvé</div>';
+    list.innerHTML='<div style="text-align:center;padding:40px;color:var(--tx3)"><div style="font-size:36px;margin-bottom:10px">🎟️</div>Aucun coupon trouvé</div>';
     return;
   }
-  list.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px">'+
-    '<thead><tr style="background:var(--dk3)">'+
-    '<th style="padding:8px;text-align:left">Code</th>'+
-    '<th style="padding:8px;text-align:left">Client</th>'+
-    '<th style="padding:8px;text-align:left">Montant</th>'+
-    '<th style="padding:8px;text-align:left">Date</th>'+
-    '<th style="padding:8px;text-align:left">Raison</th>'+
-    '<th style="padding:8px;text-align:left">Statut</th>'+
-    '<th style="padding:8px;text-align:center">Actions</th>'+
+  list.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:12px;min-width:600px">'+
+    '<thead><tr style="background:var(--dk4)">'+
+    '<th style="padding:9px;text-align:left">Code</th>'+
+    '<th style="padding:9px;text-align:left">Client</th>'+
+    '<th style="padding:9px;text-align:left">Montant</th>'+
+    '<th style="padding:9px;text-align:left">Type</th>'+
+    '<th style="padding:9px;text-align:left">Date</th>'+
+    '<th style="padding:9px;text-align:left">Raison / Référence</th>'+
+    '<th style="padding:9px;text-align:left">Statut</th>'+
+    '<th style="padding:9px;text-align:center">Actions</th>'+
     '</tr></thead><tbody>'+
     filtered.map(function(x){
       var cpn=x.cpn;
       var statusBadge=cpn.cancelled?
         '<span class="sb sx" style="font-size:10px">❌ Annulé</span>':
-        cpn.used?'<span class="sb sd" style="font-size:10px">✔ Utilisé</span>':
-        '<span class="sb sc" style="font-size:10px">✅ Actif</span>';
+        (cpn.amount<=0||cpn.used)?'<span class="sb sd" style="font-size:10px">✔ Utilisé</span>':
+        '<span class="sb sc" style="font-size:10px">✅ Actif — '+fm(cpn.amount)+'</span>';
       var actions='';
-      if(!cpn.used&&!cpn.cancelled){
-        actions='<button class="btn btn-r btn-sm" onclick="cancelCoupon(\''+x.clientId+'\',\''+cpn.code+'\')">❌ Annuler</button>';
+      if(!cpn.used&&!cpn.cancelled&&cpn.amount>0){
+        actions='<button class="btn btn-r btn-sm" onclick="cancelCoupon(&quot;'+x.clientId+'&quot;,&quot;'+cpn.code+'&quot;)">❌ Annuler</button>';
       }
-      return'<tr style="border-bottom:1px solid var(--bo2);hover:background:var(--dk3)">'+
-        '<td style="padding:8px;font-weight:600;color:var(--gold)">'+cpn.code+'</td>'+
+      return'<tr style="border-bottom:1px solid var(--bo2)">'+
+        '<td style="padding:8px;font-weight:700;color:var(--gold);font-family:monospace">'+cpn.code+'</td>'+
         '<td style="padding:8px">'+x.clientName+'</td>'+
-        '<td style="padding:8px;font-weight:600">'+fm(cpn.amount)+'</td>'+
+        '<td style="padding:8px;font-weight:600;color:'+(cpn.amount>0?'var(--grn)':'var(--tx3)')+'">'+fm(cpn.amount)+'</td>'+
+        '<td style="padding:8px">'+(typeLabels[cpn.type]||'✍️ Geste')+'</td>'+
         '<td style="padding:8px;color:var(--tx3)">'+cpn.date+'</td>'+
-        '<td style="padding:8px;color:var(--tx3);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+(cpn.reason||'—')+'</td>'+
+        '<td style="padding:8px;color:var(--tx3);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(cpn.reason||'')+'">'+((cpn.orderId?'🔗 '+cpn.orderId+' — ':'')+( cpn.reason||'—'))+'</td>'+
         '<td style="padding:8px">'+statusBadge+'</td>'+
         '<td style="padding:8px;text-align:center">'+actions+'</td>'+
       '</tr>';
@@ -7087,13 +7203,13 @@ function renderCouponsManager(){
     '</tbody></table>';
 }
 
+function openCouponsManager(){ renderCouponsSection(); }
 function openAddCouponForm(){
   var f=document.getElementById('cpn-add-form');
   if(f){f.style.display=f.style.display==='none'?'block':'none';}
   var d=document.getElementById('cpn-dist-form');
   if(d) d.style.display='none';
 }
-
 function openDistributeCoupons(){
   var f=document.getElementById('cpn-dist-form');
   if(f){f.style.display=f.style.display==='none'?'block':'none';}
@@ -7102,27 +7218,28 @@ function openDistributeCoupons(){
 }
 
 function addManualCoupon(){
-  var clientId=document.getElementById('cpn-new-client').value;
-  var amount=parseFloat(document.getElementById('cpn-new-amount').value)||0;
-  var reason=(document.getElementById('cpn-new-reason').value||'').trim()||'Coupon manuel admin';
+  var clientId=(document.getElementById('cpn-new-client')||{}).value||'';
+  var amount=parseFloat((document.getElementById('cpn-new-amount')||{}).value)||0;
+  var reason=((document.getElementById('cpn-new-reason')||{}).value||'').trim();
+  var type=((document.getElementById('cpn-new-type')||{}).value)||'manuel';
   if(!clientId){showErr('cpn-new-client','⚠️ Sélectionnez un client');return;}
   if(amount<=0){showErr('cpn-new-amount','⚠️ Montant invalide');return;}
   var cr=getClientCredit(clientId);
   if(!cr.coupons) cr.coupons=[];
   if(!cr.transactions) cr.transactions=[];
-  var code='MAN-'+Math.random().toString(36).substr(2,6).toUpperCase();
+  var prefix={fidelite:'FID',dedommagement:'DED',manuel:'MAN',distribution:'DIST'}[type]||'MAN';
+  var code=prefix+'-'+Math.random().toString(36).substr(2,6).toUpperCase();
   var today=new Date().toISOString().split('T')[0];
-  cr.coupons.push({code:code,amount:amount,date:today,used:false,cancelled:false,reason:reason,addedByAdmin:true});
-  cr.transactions.push({date:today,type:'coupon_admin',amount:amount,note:'Coupon '+code+' ajouté par admin — '+reason});
+  cr.coupons.push({code:code,amount:amount,originalAmount:amount,date:today,used:false,cancelled:false,type:type,reason:reason||'Geste commercial',addedByAdmin:true});
+  cr.transactions.push({date:today,type:'coupon_admin',amount:amount,note:'Coupon '+code+' ('+type+') — '+(reason||'admin')});
   try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
-  save();
-  if(window.saveToCloud) window.saveToCloud();
-  document.getElementById('cpn-new-client').value='';
-  document.getElementById('cpn-new-amount').value='';
-  document.getElementById('cpn-new-reason').value='';
-  document.getElementById('cpn-add-form').style.display='none';
-  renderCouponsManager();
-  toast('✅ Coupon '+code+' créé pour '+(getC(clientId).name)+' — '+fm(amount));
+  save();if(window.saveToCloud)window.saveToCloud();
+  if(document.getElementById('cpn-new-client')) document.getElementById('cpn-new-client').value='';
+  if(document.getElementById('cpn-new-amount')) document.getElementById('cpn-new-amount').value='';
+  if(document.getElementById('cpn-new-reason')) document.getElementById('cpn-new-reason').value='';
+  if(document.getElementById('cpn-add-form')) document.getElementById('cpn-add-form').style.display='none';
+  renderCouponsSection();
+  toast('✅ Coupon '+code+' créé pour '+getC(clientId).name+' — '+fm(amount));
 }
 
 function cancelCoupon(clientId, code){
@@ -7130,60 +7247,67 @@ function cancelCoupon(clientId, code){
   var cr=getClientCredit(clientId);
   var cpn=(cr.coupons||[]).find(function(c){return c.code===code;});
   if(!cpn){toast('Coupon introuvable',true);return;}
-  cpn.cancelled=true;
+  cpn.cancelled=true;cpn.amount=0;
   cpn.cancelDate=new Date().toISOString().split('T')[0];
   if(!cr.transactions) cr.transactions=[];
-  cr.transactions.push({date:cpn.cancelDate,type:'coupon_cancel',amount:cpn.amount,note:'Coupon '+code+' annulé par admin'});
+  cr.transactions.push({date:cpn.cancelDate,type:'coupon_cancel',amount:cpn.originalAmount||0,note:'Coupon '+code+' annulé par admin'});
   try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
-  save();
-  if(window.saveToCloud) window.saveToCloud();
-  renderCouponsManager();
+  save();if(window.saveToCloud)window.saveToCloud();
+  renderCouponsSection();
   toast('✅ Coupon '+code+' annulé');
 }
 
 function distributeCoupons(){
-  var amount=parseFloat(document.getElementById('cpn-dist-amount').value)||0;
-  var reason=(document.getElementById('cpn-dist-reason').value||'').trim()||'Distribution coupon';
-  var target=document.getElementById('cpn-dist-target').value;
+  var amount=parseFloat((document.getElementById('cpn-dist-amount')||{}).value)||0;
+  var reason=((document.getElementById('cpn-dist-reason')||{}).value||'').trim()||'Distribution';
+  var type=((document.getElementById('cpn-dist-type')||{}).value)||'distribution';
+  var target=(document.getElementById('cpn-dist-target')||{}).value||'all';
   if(amount<=0){showErr('cpn-dist-amount','⚠️ Montant invalide');return;}
   var targets=CLIENTS.filter(function(c){
     if(target==='all') return true;
     var cr=getClientCredit(c.id);
     if(target==='credit') return (cr.balance||0)>0;
-    if(target==='nocoupon'){
-      var active=(cr.coupons||[]).filter(function(x){return !x.used&&!x.cancelled;});
-      return active.length===0;
+    if(target==='nocoupon'){return (cr.coupons||[]).filter(function(x){return !x.used&&!x.cancelled&&x.amount>0;}).length===0;}
+    if(target==='vip'){
+      var ca=ORDERS.filter(function(o){return o.clientId===c.id&&o.status==='delivered';}).reduce(function(s,o){return s+o.total;},0);
+      var sorted=CLIENTS.slice().sort(function(a,b){
+        var caA=ORDERS.filter(function(o){return o.clientId===a.id&&o.status==='delivered';}).reduce(function(s,o){return s+o.total;},0);
+        var caB=ORDERS.filter(function(o){return o.clientId===b.id&&o.status==='delivered';}).reduce(function(s,o){return s+o.total;},0);
+        return caB-caA;
+      });
+      return sorted.slice(0,5).some(function(x){return x.id===c.id;});
     }
     return true;
   });
-  if(!targets.length){toast('Aucun client corresponde au critère',true);return;}
-  if(!confirm('Distribuer un coupon de '+fm(amount)+' à '+targets.length+' client(s) ?')) return;
+  if(!targets.length){toast('Aucun client correspondant',true);return;}
+  if(!confirm('Distribuer '+fm(amount)+' à '+targets.length+' client(s) ?')) return;
   var today=new Date().toISOString().split('T')[0];
   targets.forEach(function(c){
     var cr=getClientCredit(c.id);
     if(!cr.coupons) cr.coupons=[];
     if(!cr.transactions) cr.transactions=[];
-    var code='DIST-'+c.id.replace('C','')+'-'+Math.random().toString(36).substr(2,4).toUpperCase();
-    cr.coupons.push({code:code,amount:amount,date:today,used:false,cancelled:false,reason:reason,distributed:true});
+    var prefix={fidelite:'FID',dedommagement:'DED',distribution:'DIST',manuel:'MAN'}[type]||'DIST';
+    var code=prefix+'-'+c.id.replace('C','')+'-'+Math.random().toString(36).substr(2,4).toUpperCase();
+    cr.coupons.push({code:code,amount:amount,originalAmount:amount,date:today,used:false,cancelled:false,type:type,reason:reason,distributed:true});
     cr.transactions.push({date:today,type:'coupon_dist',amount:amount,note:'Coupon '+code+' distribué — '+reason});
   });
   try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
-  save();
-  if(window.saveToCloud) window.saveToCloud();
-  document.getElementById('cpn-dist-form').style.display='none';
-  renderCouponsManager();
+  save();if(window.saveToCloud)window.saveToCloud();
+  if(document.getElementById('cpn-dist-form')) document.getElementById('cpn-dist-form').style.display='none';
+  renderCouponsSection();
   toast('✅ '+targets.length+' coupon(s) distribué(s) — '+fm(amount)+' chacun');
 }
 
-// Mettre à jour openCouponPay pour marquer coupons utilisés avec code
 function _markCouponsUsed(cr, amountToUse, today){
   var used=0; var usedCodes=[];
   (cr.coupons||[]).filter(function(c){return !c.used&&!c.cancelled&&c.amount>0;}).forEach(function(c){
     if(used<amountToUse){
       var use=Math.min(c.amount,amountToUse-used);
-      c.amount-=use; used+=use;
+      c.amount=Math.round((c.amount-use)*100)/100;
+      used=Math.round((used+use)*100)/100;
       usedCodes.push({code:c.code,amount:use});
-      if(c.amount<=0) c.used=true;
+      // Mark as fully used only if depleted
+      if(c.amount<=0){c.used=true;c.amount=0;}
     }
   });
   return {used:used,codes:usedCodes};
