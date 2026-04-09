@@ -116,67 +116,67 @@ function sendSMSWhatsApp(phone, message){
 // ── Afficher erreur inline sur un champ ───────────────────
 function showErr(elId, msg){
   var el=document.getElementById(elId);
-  if(!el){console.warn('showErr: element not found:',elId);return;}
-  // Red border directly on element
-  el.style.setProperty('border','2px solid #E05252','important');
-  el.style.setProperty('outline','none','important');
+  if(!el) return;
+  // Apply red border via attribute (works everywhere)
+  el.setAttribute('style',(el.getAttribute('style')||'')+'border:2px solid #E05252 !important;outline:none !important;');
   el.classList.add('field-err');
 
-  // Walk up DOM to find best container (.fg div)
-  var container=el.parentNode;
-  for(var i=0;i<6;i++){
-    if(!container||container===document.body) break;
-    var cn=container.className||'';
-    if(cn.indexOf('fg')>-1) break;
-    if(container.parentNode){
-      var pn=container.parentNode.className||'';
-      if(pn.indexOf('fg')>-1){container=container.parentNode;break;}
-    }
-    container=container.parentNode||container;
-  }
-  if(!container||container===document.body) container=el.parentNode;
-
-  // Find or create error div
+  // Find pre-built error div first (fastest path)
   var errDiv=document.getElementById(elId+'-err');
   if(!errDiv){
+    // Walk up to find .fg container
+    var container=el.parentNode;
+    for(var i=0;i<6;i++){
+      if(!container||container.tagName==='BODY') break;
+      if((container.className||'').split(' ').indexOf('fg')>-1) break;
+      container=container.parentNode;
+    }
+    if(!container||container.tagName==='BODY') container=el.parentNode;
     errDiv=document.createElement('div');
     errDiv.id=elId+'-err';
     container.appendChild(errDiv);
   }
-  // Fully inline styles — no CSS dependency
-  errDiv.style.cssText=[
-    'display:block!important',
-    'color:#E05252',
-    'font-size:12px',
-    'font-weight:600',
-    'margin-top:6px',
-    'padding:5px 10px',
-    'background:rgba(224,82,82,0.1)',
-    'border:1px solid rgba(224,82,82,0.4)',
-    'border-left:3px solid #E05252',
-    'border-radius:0 6px 6px 0',
-    'line-height:1.5',
-    'animation:shake .3s ease'
-  ].join(';');
-  errDiv.innerHTML='\u26a0\ufe0f '+msg;
+
+  // Show error — use setAttribute for guaranteed rendering
+  errDiv.setAttribute('style',
+    'display:block !important;'+
+    'color:#E05252;'+
+    'font-size:12px;'+
+    'font-weight:600;'+
+    'margin-top:6px;'+
+    'padding:5px 10px;'+
+    'background:rgba(224,82,82,0.1);'+
+    'border:1px solid rgba(224,82,82,0.35);'+
+    'border-left:3px solid #E05252;'+
+    'border-radius:0 6px 6px 0;'+
+    'line-height:1.5;'+
+    'box-sizing:border-box'
+  );
+  errDiv.textContent='\u26a0\ufe0f '+msg;
   errDiv.className='field-err-msg show';
 
-  // Scroll element into view inside modal
+  // Scroll to error after modal renders
   setTimeout(function(){
-    try{el.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(e){}
-  },60);
+    try{
+      var md=el.closest('.md')||document.querySelector('.md[style*="block"]');
+      if(md) md.scrollTop=el.offsetTop-20;
+      else el.scrollIntoView({behavior:'smooth',block:'center'});
+    }catch(e){try{el.scrollIntoView();}catch(e2){}}
+  },100);
 
-  // Clear on user interaction
+  // Auto-clear when user corrects the field
   function clearFn(){
-    el.style.removeProperty('border');
-    el.style.removeProperty('outline');
+    // Restore original style without our injection
+    var st=el.getAttribute('style')||'';
+    el.setAttribute('style',st.replace('border:2px solid #E05252 !important;outline:none !important;',''));
     el.classList.remove('field-err');
-    if(errDiv){errDiv.style.display='none';errDiv.innerHTML='';}
+    errDiv.setAttribute('style','display:none');
+    errDiv.textContent='';
     el.removeEventListener('input',clearFn);
     el.removeEventListener('change',clearFn);
   }
-  el.addEventListener('input',clearFn,{once:true});
-  el.addEventListener('change',clearFn,{once:true});
+  el.addEventListener('input',clearFn);
+  el.addEventListener('change',clearFn);
 }
 function clearErr(elId){
   var el=document.getElementById(elId);
@@ -558,26 +558,70 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
   .content{padding:8px}
   .logo-big h1{font-size:30px}
 }
-/* ── Client App Responsive ── */
-.cl-wrap{max-width:520px;margin:0 auto}
-.prod-grid{gap:10px}
-.p-c{border-radius:14px;transition:.2s}
-.p-c:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
-.cart-pn{border-radius:16px 16px 0 0}
-.ci-item{border-radius:10px;margin-bottom:6px;padding:10px}
-@media(max-width:420px){
-  .p-c img{height:130px}
-  .cl-wrap{padding:0 8px}
-  .bt{font-size:11px;padding:7px 10px}
+/* ══ CLIENT APP — Responsive complet ══ */
+/* Base: mobile first */
+#pg-client{overflow-x:hidden}
+.cl-hd{padding:10px 14px}
+.prod-grid{grid-template-columns:repeat(2,1fr);gap:8px;padding:0 10px}
+.p-c .pn{font-size:12px}
+.p-c .pp{font-size:14px}
+.bt-bar{overflow-x:auto;-webkit-overflow-scrolling:touch}
+
+/* Petit mobile (< 360px) */
+@media(max-width:360px){
+  .prod-grid{grid-template-columns:repeat(1,1fr);gap:8px;padding:0 8px}
+  .cl-hd{padding:8px 10px}
+  .cl-logo{font-size:17px}
+  .bt{font-size:10px;padding:6px 8px}
+  .p-c .pn{font-size:11px}
+  .cart-pn{padding:12px}
 }
-@media(min-width:600px){
-  .prod-grid{grid-template-columns:repeat(3,1fr)!important}
-  .cl-wrap{max-width:680px}
+
+/* Mobile standard (360-480px) */
+@media(min-width:361px) and (max-width:480px){
+  .prod-grid{grid-template-columns:repeat(2,1fr);gap:8px;padding:0 10px}
+  .p-c .pn{font-size:12px}
 }
-@media(min-width:900px){
-  .prod-grid{grid-template-columns:repeat(4,1fr)!important}
-  .cl-wrap{max-width:900px;padding:0 24px}
-  #pg-client .cl-hd{max-width:900px;margin:0 auto}
+
+/* Grand mobile / petite tablette (480-768px) */
+@media(min-width:481px) and (max-width:767px){
+  .prod-grid{grid-template-columns:repeat(3,1fr);gap:10px;padding:0 12px}
+  .p-c .pn{font-size:13px}
+  .p-c .pp{font-size:15px}
+}
+
+/* Tablette (768-1024px) */
+@media(min-width:768px) and (max-width:1023px){
+  .prod-grid{grid-template-columns:repeat(4,1fr);gap:12px;padding:0 20px}
+  .cl-hd{padding:12px 24px}
+  .srch-sec{padding:12px 24px}
+  .cats{padding:0 24px}
+  .ord-filter{padding:0 24px 12px}
+  .cart-pn{max-width:480px;left:50%;right:auto;transform:translateX(-50%) translateY(100%);border-radius:16px 16px 0 0}
+  .cart-pn.on{transform:translateX(-50%) translateY(0)}
+  .cart-ov.on{display:block}
+}
+
+/* Desktop (>= 1024px) */
+@media(min-width:1024px){
+  #pg-client{display:flex;flex-direction:column;align-items:center}
+  #pg-client > *{width:100%;max-width:960px}
+  .cl-hd{padding:14px 0;max-width:960px;margin:0 auto;border-radius:0}
+  .prod-grid{grid-template-columns:repeat(5,1fr);gap:14px;padding:0}
+  .srch-sec{max-width:960px;padding:12px 0}
+  .cats{padding:0}
+  .ord-filter{padding:0 0 12px}
+  .cart-pn{max-width:500px;left:50%;right:auto;transform:translateX(-50%) translateY(100%);border-radius:16px 16px 0 0;border-left:1px solid var(--bo);border-right:1px solid var(--bo)}
+  .cart-pn.on{transform:translateX(-50%) translateY(0)}
+}
+
+/* Touch: bigger tap targets */
+@media(hover:none) and (pointer:coarse){
+  .add-btn{padding:10px;font-size:13px;min-height:40px}
+  .qb{width:34px;height:34px;font-size:18px}
+  .bt{min-height:38px;padding:8px 12px}
+  .cat-btn{padding:7px 14px;font-size:13px}
+  .cart-btn{width:42px;height:42px}
 }
 /* ── Admin scrollable sidebar on medium screens ── */
 @media(max-height:700px){
@@ -3790,39 +3834,68 @@ function addCatFromModal(){
 var _altPayMode='';var _altPendingOrder=null;
 function openCouponPay(total){
   var cr=getClientCredit(SESSION.id);
-  var coupons=(cr.coupons||[]).filter(function(c){return !c.used&&c.amount>0;});
+  // Only active, non-cancelled, non-zero coupons
+  var coupons=(cr.coupons||[]).filter(function(c){return !c.used&&!c.cancelled&&(c.amount||0)>0;});
   if(!coupons.length){toast('⚠️ Aucun coupon disponible',true);return;}
-  var totalCoupons=coupons.reduce(function(s,c){return s+c.amount;},0);
+  var totalCoupons=Math.round(coupons.reduce(function(s,c){return s+(c.amount||0);},0)*100)/100;
+  var typeIcons={avoir:'📄',fidelite:'⭐',dedommagement:'🤝',distribution:'📤',manuel:'🎁'};
+
   var html='<h3 style="color:var(--gold);margin-bottom:12px">🎟️ Payer avec coupon avoir</h3>'+
-    '<div style="font-size:13px;color:var(--tx2);margin-bottom:10px">Total commande : <strong style="color:var(--gold)">'+fm(total)+'</strong></div>'+
-    '<div style="background:rgba(201,168,76,0.1);border:1px solid var(--gold);border-radius:8px;padding:10px;margin-bottom:12px">'+
-    '<div style="font-size:11px;color:var(--tx3);margin-bottom:6px">Vos coupons disponibles :</div>'+
-    coupons.map(function(c){return '<div style="display:flex;justify-content:space-between;font-size:12px;padding:4px 0"><span style="color:var(--gold)">'+c.code+'</span><span>'+fm(c.amount)+'</span></div>';}).join('')+
-    '<div style="border-top:1px solid rgba(201,168,76,0.3);margin-top:6px;padding-top:6px;font-size:13px;font-weight:600;color:var(--gold)">Total coupons : '+fm(totalCoupons)+'</div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);margin-bottom:10px">'+
+    '<span>Total commande :</span><strong style="color:var(--gold)">'+fm(total)+'</strong></div>'+
+    '<div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold);border-radius:10px;padding:12px;margin-bottom:12px">'+
+    '<div style="font-size:11px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Vos coupons disponibles</div>'+
+    coupons.map(function(c){
+      var icon=typeIcons[c.type]||'🎟️';
+      return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(201,168,76,0.1)">'+
+        '<span style="color:var(--gold);font-family:monospace">'+icon+' '+c.code+'</span>'+
+        '<span style="font-weight:700;color:var(--grn)">'+fm(c.amount)+'</span>'+
+      '</div>';
+    }).join('')+
+    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid rgba(201,168,76,0.3);font-size:13px;font-weight:700;color:var(--gold)">'+
+    '<span>Total coupons</span><span>'+fm(totalCoupons)+'</span></div>'+
     '</div>';
+
   if(totalCoupons>=total){
-    html+='<div style="background:rgba(82,201,122,0.1);border-radius:8px;padding:10px;margin-bottom:12px;font-size:13px;color:var(--grn)">✅ Vos coupons couvrent la totalité — reste 0 MAD à payer</div>';
-    html+='<button class="btn btn-g" style="width:100%" onclick="confirmCouponPayment('+total+',0,\'\')">✅ Confirmer le paiement par coupon</button>';
+    // Coupons cover the full amount
+    var surplus=Math.round((totalCoupons-total)*100)/100;
+    html+='<div style="background:rgba(82,201,122,0.1);border:1px solid rgba(82,201,122,0.3);border-radius:8px;padding:10px;margin-bottom:12px;font-size:13px;color:var(--grn)">'+
+      '✅ Vos coupons couvrent la totalité'+
+      (surplus>0?'<br><span style="font-size:11px;color:var(--tx3)">Solde restant sur coupon après paiement : '+fm(surplus)+'</span>':'')+
+    '</div>'+
+    '<button class="btn btn-g" style="width:100%;padding:13px;font-size:14px" onclick="confirmCouponPayment('+total+',0,\'\')">✅ Confirmer le paiement par coupon ('+fm(total)+')</button>';
   } else {
-    var reste=total-totalCoupons;
-    html+='<div style="background:rgba(201,168,76,0.08);border-radius:8px;padding:10px;margin-bottom:12px;font-size:13px;color:var(--ora)">⚠️ Reste à payer : <strong>'+fm(reste)+'</strong></div>'+
-      '<div class="fg"><label>Compléter par :</label>'+
-      '<select id="coupon-complement-method" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:10px;color:var(--tx);font-size:13px;outline:none">'+
-      '<option value="">— Choisir le mode de paiement —</option>'+
-      '<option value="cash">💵 Espèces</option>'+
-      '<option value="transfer">🏦 Virement</option>'+
-      '<option value="cmi">💳 CMI</option>'+
-      '<option value="cheque">📋 Chèque</option>'+
-      '<option value="credit">🔄 À crédit</option>'+
-      '</select></div>'+
-      '<button class="btn btn-g" style="width:100%;margin-top:10px" onclick="confirmCouponPayment('+total+','+reste+',document.getElementById(\'coupon-complement-method\').value)">✅ Confirmer</button>';
+    // Coupons are NOT enough — must choose complementary payment
+    var reste=Math.round((total-totalCoupons)*100)/100;
+    html+='<div style="background:rgba(232,131,74,0.1);border:1px solid rgba(232,131,74,0.4);border-radius:8px;padding:12px;margin-bottom:14px">'+
+      '<div style="font-size:13px;font-weight:600;color:var(--ora)">⚠️ Coupon insuffisant</div>'+
+      '<div style="font-size:12px;color:var(--tx2);margin-top:4px">Coupons utilisés : <strong>'+fm(totalCoupons)+'</strong></div>'+
+      '<div style="font-size:13px;font-weight:700;color:var(--red);margin-top:4px">Reste obligatoire à payer : <strong>'+fm(reste)+'</strong></div>'+
+    '</div>'+
+    '<div class="fg"><label style="font-size:12px;font-weight:600">Moyen de paiement pour le reste ('+fm(reste)+') <span style="color:var(--red)">★</span></label>'+
+    '<select id="coupon-complement-method" style="width:100%;background:var(--dk4);border:2px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-size:13px;outline:none">'+
+    '<option value="">— Obligatoire : choisir le mode —</option>'+
+    '<option value="cash">💵 Espèces ('+fm(reste)+')</option>'+
+    '<option value="transfer">🏦 Virement bancaire</option>'+
+    '<option value="cmi">💳 CMI / Carte</option>'+
+    '<option value="cheque">📋 Chèque</option>'+
+    '<option value="credit">🔄 À crédit (ajouter '+fm(reste)+' au solde)</option>'+
+    '</select></div>'+
+    '<button class="btn btn-g" style="width:100%;margin-top:12px;padding:13px;font-size:14px" onclick="confirmCouponPayment('+total+','+reste+',document.getElementById(\'coupon-complement-method\').value)">'+
+    '✅ Payer : Coupon ('+fm(totalCoupons)+') + Complément ('+fm(reste)+')</button>';
   }
   document.getElementById('ord-content').innerHTML=html;
   openMd('ord');
 }
 
 function confirmCouponPayment(total, reste, complementMethod){
-  if(reste>0 && !complementMethod){toast('⚠️ Choisissez un moyen de paiement pour compléter',true);return;}
+  // Critical: if coupons don't cover total, complement is mandatory
+  if(reste>0 && (!complementMethod||complementMethod==='')){
+    toast('⚠️ Sélectionnez obligatoirement un moyen de paiement pour les '+fm(reste)+' restants',true);
+    var sel=document.getElementById('coupon-complement-method');
+    if(sel){sel.setAttribute('style','border:2px solid #E05252 !important;border-radius:10px;');}
+    return;
+  }
   var cr=getClientCredit(SESSION.id);
   var today=new Date().toISOString().split('T')[0];
   // Utiliser les coupons avec tracking des codes
