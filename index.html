@@ -116,38 +116,67 @@ function sendSMSWhatsApp(phone, message){
 // ── Afficher erreur inline sur un champ ───────────────────
 function showErr(elId, msg){
   var el=document.getElementById(elId);
-  if(!el) return;
+  if(!el){console.warn('showErr: element not found:',elId);return;}
+  // Red border directly on element
+  el.style.setProperty('border','2px solid #E05252','important');
+  el.style.setProperty('outline','none','important');
   el.classList.add('field-err');
-  // Find closest .fg ancestor for error placement
+
+  // Walk up DOM to find best container (.fg div)
   var container=el.parentNode;
-  var walker=el;
-  for(var i=0;i<4;i++){
-    if(walker.parentNode&&walker.parentNode.classList&&walker.parentNode.classList.contains('fg')){container=walker.parentNode;break;}
-    if(walker.parentNode) walker=walker.parentNode;
+  for(var i=0;i<6;i++){
+    if(!container||container===document.body) break;
+    var cn=container.className||'';
+    if(cn.indexOf('fg')>-1) break;
+    if(container.parentNode){
+      var pn=container.parentNode.className||'';
+      if(pn.indexOf('fg')>-1){container=container.parentNode;break;}
+    }
+    container=container.parentNode||container;
   }
+  if(!container||container===document.body) container=el.parentNode;
+
+  // Find or create error div
   var errDiv=document.getElementById(elId+'-err');
   if(!errDiv){
-    errDiv=container.querySelector('.field-err-msg[id="'+elId+'-err"]')||container.querySelector('[id="'+elId+'-err"]');
-    if(!errDiv){
-      errDiv=document.createElement('div');
-      errDiv.id=elId+'-err';
-      errDiv.className='field-err-msg';
-      errDiv.style.cssText='color:var(--red);font-size:11px;margin-top:4px;display:block;font-weight:500';
-      container.appendChild(errDiv);
-    }
+    errDiv=document.createElement('div');
+    errDiv.id=elId+'-err';
+    container.appendChild(errDiv);
   }
-  errDiv.innerHTML='⚠️ '+msg;
-  errDiv.style.display='block';
-  errDiv.classList.add('show');
-  el.scrollIntoView({behavior:'smooth',block:'nearest'});
+  // Fully inline styles — no CSS dependency
+  errDiv.style.cssText=[
+    'display:block!important',
+    'color:#E05252',
+    'font-size:12px',
+    'font-weight:600',
+    'margin-top:6px',
+    'padding:5px 10px',
+    'background:rgba(224,82,82,0.1)',
+    'border:1px solid rgba(224,82,82,0.4)',
+    'border-left:3px solid #E05252',
+    'border-radius:0 6px 6px 0',
+    'line-height:1.5',
+    'animation:shake .3s ease'
+  ].join(';');
+  errDiv.innerHTML='\u26a0\ufe0f '+msg;
+  errDiv.className='field-err-msg show';
+
+  // Scroll element into view inside modal
+  setTimeout(function(){
+    try{el.scrollIntoView({behavior:'smooth',block:'nearest'});}catch(e){}
+  },60);
+
+  // Clear on user interaction
   function clearFn(){
+    el.style.removeProperty('border');
+    el.style.removeProperty('outline');
     el.classList.remove('field-err');
-    if(errDiv){errDiv.style.display='none';errDiv.classList.remove('show');}
+    if(errDiv){errDiv.style.display='none';errDiv.innerHTML='';}
     el.removeEventListener('input',clearFn);
     el.removeEventListener('change',clearFn);
   }
-  el.addEventListener('input',clearFn);
-  el.addEventListener('change',clearFn);
+  el.addEventListener('input',clearFn,{once:true});
+  el.addEventListener('change',clearFn,{once:true});
 }
 function clearErr(elId){
   var el=document.getElementById(elId);
@@ -1061,9 +1090,9 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
  <div class="md" id="md-add-cl" style="display:none">
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <h2>Nouveau client</h2>
-  <div class="fr2"><div class="fg"><label>Nom complet <span style="color:var(--red)">★</span></label><input id="nc-name" placeholder="Nom et prénom du client"></div><div class="fg"><label>Téléphone <span style="color:var(--red)">★</span></label><input id="nc-ph" oninput="validatePhoneInput(this)" inputmode="numeric" pattern="[0-9+\-\. ]*" placeholder="0661234567"></div></div>
-  <div class="fr2"><div class="fg"><label>Ville <span style="color:var(--red)">★</span></label><input id="nc-city" placeholder="Casablanca" oninput="updateSecteurList('nc-sector','nc-city')"></div><div class="fg"><label>Région</label><select id="nc-reg"><option>Grand Casablanca</option><option>Rabat-Salé</option><option>Marrakech-Safi</option><option>Fès-Meknès</option><option>Tanger-Tétouan</option><option>Souss-Massa</option><option>Oriental</option><option>Béni Mellal</option><option>Drâa-Tafilalet</option></select></div></div>
-  <div class="fr2"><div class="fg"><label>Secteur / Quartier <span style="color:var(--red)">★</span></label><select id="nc-sector"><option value="">— Choisir ville d'abord —</option></select></div><div class="fg"><label>Adresse <span style="color:var(--red)">★</span></label><input id="nc-addr" placeholder="123 Rue Mohammed V..."></div></div>
+  <div class="fr2"><div class="fg"><label>Nom complet <span style="color:var(--red)">★</span></label><input id="nc-name" placeholder="Nom et prénom du client"><div id="nc-name-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div><div class="fg"><label>Téléphone <span style="color:var(--red)">★</span></label><input id="nc-ph" oninput="validatePhoneInput(this)" inputmode="numeric" pattern="[0-9+\-\. ]*" placeholder="0661234567"><div id="nc-ph-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div></div>
+  <div class="fr2"><div class="fg"><label>Ville <span style="color:var(--red)">★</span></label><input id="nc-city" placeholder="Casablanca" oninput="updateSecteurList('nc-sector','nc-city')"><div id="nc-city-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div><div class="fg"><label>Région</label><select id="nc-reg"><option>Grand Casablanca</option><option>Rabat-Salé</option><option>Marrakech-Safi</option><option>Fès-Meknès</option><option>Tanger-Tétouan</option><option>Souss-Massa</option><option>Oriental</option><option>Béni Mellal</option><option>Drâa-Tafilalet</option></select></div></div>
+  <div class="fr2"><div class="fg"><label>Secteur / Quartier <span style="color:var(--red)">★</span></label><select id="nc-sector"><option value="">— Choisir ville d'abord —</option></select></div><div class="fg"><label>Adresse <span style="color:var(--red)">★</span></label><input id="nc-addr" placeholder="123 Rue Mohammed V..."><div id="nc-addr-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div></div>
   <div class="fg">
    <label>Localisation sur carte</label>
    <div style="display:flex;gap:7px;margin-bottom:8px">
@@ -1073,7 +1102,7 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
    <div class="fr2"><div class="fg" style="margin:0"><label>Latitude</label><input id="nc-lat" type="number" step="any" placeholder="33.5731" oninput="updateLocBadge('nc')"></div><div class="fg" style="margin:0"><label>Longitude</label><input id="nc-lng" type="number" step="any" placeholder="-7.5898" oninput="updateLocBadge('nc')"></div></div>
    <div id="nc-loc-badge" class="map-coords-badge" style="margin-top:7px"></div>
   </div>
-  <div class="fr2"><div class="fg"><label>Identifiant <span style="color:var(--red)">★</span></label><input id="nc-user" placeholder="client1"></div><div class="fg"><label>Mot de passe <span style="color:var(--red)">★</span></label><input type="password" id="nc-pw" placeholder="Min. 8 car., Maj., min., chiffre, spécial" oninput="validatePassword(this.value,'nc-pw')"></div></div>
+  <div class="fr2"><div class="fg"><label>Identifiant <span style="color:var(--red)">★</span></label><input id="nc-user" placeholder="client1"><div id="nc-user-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div><div class="fg"><label>Mot de passe <span style="color:var(--red)">★</span></label><input type="password" id="nc-pw" placeholder="Min. 8 car., Maj., min., chiffre, spécial" oninput="validatePassword(this.value,'nc-pw')"><div id="nc-pw-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div></div>
   <div class="fg"><label>Email</label><input id="nc-email" type="email" placeholder="client@email.com" required></div>
   <div class="fg">
    <label>Photo du client (URL) <span style="color:var(--red)">★</span></label>
@@ -1081,6 +1110,7 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
     <input id="nc-photo" placeholder="https://exemple.com/photo.jpg" oninput="previewPhoto('nc-photo','nc-photo-prev')">
     <button type="button" class="photo-upload-btn" onclick="openPhotoUpload('nc-photo','nc-photo-prev','add-cl')">📁</button>
    </div>
+   <div id="nc-photo-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div>
    <img id="nc-photo-prev" class="photo-preview" src="" alt="">
   </div>
   <button class="btn btn-g" style="width:100%" onclick="saveClient()">Créer le client</button>
@@ -1123,7 +1153,7 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
  <div class="md" id="md-add-prod" style="display:none">
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <h2>Nouveau produit</h2>
-  <div class="fg"><label>Nom <span style="color:var(--red)">★</span></label><input id="np-name" placeholder="Nom du produit"></div>
+  <div class="fg"><label>Nom <span style="color:var(--red)">★</span></label><input id="np-name" placeholder="Nom du produit"><div id="np-name-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div>
   <div class="fr2">
    <div class="fg">
     <label>Catégorie</label>
@@ -1139,8 +1169,8 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
   <div style="background:rgba(201,168,76,0.04);border:1px solid var(--bo);border-radius:10px;padding:13px;margin-bottom:12px">
    <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:9px;text-transform:uppercase;letter-spacing:1px">💰 Prix</div>
    <div class="fr2">
-    <div class="fg" style="margin-bottom:7px"><label>Prix d'achat (MAD) <span style="color:var(--red)">★</span></label><input type="number" id="np-buy" placeholder="0" min="0" oninput="calcMargin('np')"></div>
-    <div class="fg" style="margin-bottom:7px"><label>Prix de vente (MAD) <span style="color:var(--red)">★</span></label><input type="number" id="np-sell" placeholder="0" min="0" oninput="calcMargin('np')"></div>
+    <div class="fg" style="margin-bottom:7px"><label>Prix d'achat (MAD) <span style="color:var(--red)">★</span></label><input type="number" id="np-buy" placeholder="0" min="0" oninput="calcMargin('np')"><div id="np-buy-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div>
+    <div class="fg" style="margin-bottom:7px"><label>Prix de vente (MAD) <span style="color:var(--red)">★</span></label><input type="number" id="np-sell" placeholder="0" min="0" oninput="calcMargin('np')"><div id="np-sell-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div>
    </div>
    <div id="np-margin" class="margin-box"></div>
   </div>
@@ -1150,6 +1180,7 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
     <select id="np-sup" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:10px 12px;color:var(--tx);font-size:13px;outline:none">
       <option value="">— Sélectionner —</option>
     </select>
+    <div id="np-sup-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div>
    </div>
    <div class="fg"><label>Paiement initial <span style="color:var(--red)">★</span></label>
     <select id="np-paymethod" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:10px 12px;color:var(--tx);font-size:13px;outline:none">
@@ -1159,6 +1190,7 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
       <option value="cheque">📋 Chèque</option>
       <option value="credit">🔄 À crédit</option>
     </select>
+    <div id="np-paymethod-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div>
    </div>
   </div>
   <div class="fg">
@@ -1167,6 +1199,7 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
     <input id="np-img" placeholder="https://images.exemple.com/produit.jpg" placeholder="https://... ou utiliser 📁" oninput="previewPhoto('np-img','np-img-prev')">
     <button type="button" class="photo-upload-btn" onclick="openPhotoUpload('np-img','np-img-prev','add-prod')">📁</button>
    </div>
+   <div id="np-img-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div>
    <img id="np-img-prev" class="photo-preview" style="border-radius:8px;width:80px;height:60px" src="" alt="">
   </div>
   <button class="btn btn-g" style="width:100%" onclick="saveProduct()">Ajouter</button>
@@ -5390,71 +5423,59 @@ function validateField(val, label, opts){
 // Helper: validate and highlight multiple fields at once
 function validateForm(fields){
   var ok=true;
-  // First clear all errors
+  var firstErrEl=null;
+  // Clear all previous errors first
   fields.forEach(function(f){
     var el=document.getElementById(f.id);
     if(!el) return;
+    el.style.removeProperty('border');
     el.classList.remove('field-err');
-    var errEl=document.getElementById(f.id+'-err')||
-              (el.parentNode?el.parentNode.querySelector('.field-err-msg'):null);
-    if(errEl){errEl.style.display='none';errEl.classList.remove('show');}
+    var prev=document.getElementById(f.id+'-err');
+    if(prev){prev.style.display='none';prev.innerHTML='';}
   });
 
-  var firstErrEl=null;
   fields.forEach(function(f){
     var el=document.getElementById(f.id);
     if(!el) return;
     var val=(el.value||'').trim();
-    // Get or create error element — always with consistent ID
-    var errEl=document.getElementById(f.id+'-err');
-    if(!errEl){
-      errEl=el.parentNode?el.parentNode.querySelector('.field-err-msg'):null;
-      if(!errEl){
-        errEl=document.createElement('div');
-        errEl.className='field-err-msg';
-        errEl.style.cssText='color:var(--red);font-size:11px;margin-top:4px;display:none';
-        if(el.parentNode) el.parentNode.appendChild(errEl);
-      }
-      errEl.id=f.id+'-err'; // Assign consistent ID
-    }
-
     var errMsg='';
+
     if(f.required!==false && !val){
-      errMsg='⚠️ '+f.label+' est obligatoire';
+      errMsg=f.label+' est obligatoire';
+      if(f.hint) errMsg+=' — '+f.hint;
     } else if(val){
       if(f.type==='email' && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)){
-        errMsg='⚠️ '+f.label+' : format email invalide';
+        errMsg=f.label+' : format email invalide (ex: nom@domaine.com)';
       } else if(f.type==='phone' && !/^[\d\s\+\-\.]{6,15}$/.test(val)){
-        errMsg='⚠️ '+f.label+' : numéro invalide (chiffres uniquement)';
+        errMsg=f.label+' : numéro invalide — chiffres uniquement (ex: 0661234567)';
       } else if((f.type==='number'||el.type==='number')&&val){
         var num=parseFloat(val);
-        if(isNaN(num)){errMsg='⚠️ '+f.label+' : valeur numérique requise';}
-        else if(f.min!==undefined&&num<f.min){errMsg='⚠️ '+f.label+' : minimum '+f.min;}
-        else if(f.max!==undefined&&num>f.max){errMsg='⚠️ '+f.label+' : maximum '+f.max;}
-        else if(f.positive&&num<=0){errMsg='⚠️ '+f.label+' : doit être > 0';}
+        if(isNaN(num)){errMsg=f.label+' : valeur numérique requise (pas de lettres)';}
+        else if(f.min!==undefined&&num<f.min){errMsg=f.label+' : valeur minimum '+f.min;}
+        else if(f.max!==undefined&&num>f.max){errMsg=f.label+' : valeur maximum '+f.max;}
+        else if(f.positive&&num<=0){errMsg=f.label+' : doit être supérieur à 0';}
       }
     }
+
     if(errMsg){
-      el.classList.add('field-err');
-      errEl.innerHTML='<span style="color:var(--red)">'+errMsg+'</span>';
-      errEl.style.display='block';
-      errEl.classList.add('show');
+      // Use showErr for consistent display
+      showErr(f.id, errMsg);
       if(!firstErrEl) firstErrEl=el;
-      function clearOnInput(){
-        el.classList.remove('field-err');
-        errEl.style.display='none';
-        errEl.classList.remove('show');
-        el.removeEventListener('input',clearOnInput);
-        el.removeEventListener('change',clearOnInput);
-      }
-      el.addEventListener('input',clearOnInput);
-      el.addEventListener('change',clearOnInput);
       ok=false;
     }
   });
+
   if(!ok){
-    if(firstErrEl) firstErrEl.scrollIntoView({behavior:'smooth',block:'center'});
-    toast('⚠️ Remplissez les champs obligatoires (★) marqués en rouge',true);
+    var errCount=fields.filter(function(f){
+      var el=document.getElementById(f.id);
+      return el&&el.classList.contains('field-err');
+    }).length;
+    toast('⚠️ '+errCount+' champ(s) à corriger — remplissez les zones marquées en rouge',true);
+    if(firstErrEl){
+      setTimeout(function(){
+        firstErrEl.scrollIntoView({behavior:'smooth',block:'center'});
+      },80);
+    }
   }
   return ok;
 }
