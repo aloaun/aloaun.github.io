@@ -189,6 +189,52 @@ function clearErr(elId){
     if(msg2){msg2.style.display='none';msg2.classList.remove('show');}
   }
 }
+
+// ═══════════════════════════════════════════════════════
+// VALIDATION SYSTEM v3 — Simple, Guaranteed, Cross-browser
+// ═══════════════════════════════════════════════════════
+function _fErr(id, msg){
+  // Mark field as error
+  var el = document.getElementById(id);
+  if(el){
+    el.className = (el.className||'').replace(' inp-err','') + ' inp-err';
+    el.style.border = '2px solid #E05252';
+    el.style.outline = 'none';
+    el.style.background = 'rgba(224,82,82,0.04)';
+    // Auto-clear on change
+    var fn = function(){
+      el.className = (el.className||'').replace(' inp-err','');
+      el.style.border = '';
+      el.style.outline = '';
+      el.style.background = '';
+      _fClear(id);
+      el.removeEventListener('input', fn);
+      el.removeEventListener('change', fn);
+    };
+    el.addEventListener('input', fn);
+    el.addEventListener('change', fn);
+  }
+  // Show error message
+  var errEl = document.getElementById(id+'-err');
+  if(errEl){
+    errEl.textContent = '⚠️ ' + msg;
+    errEl.style.cssText = 'display:block;color:#E05252;font-size:12px;font-weight:600;margin-top:6px;padding:5px 10px;background:rgba(224,82,82,0.1);border-left:3px solid #E05252;border-radius:0 6px 6px 0;line-height:1.5;box-sizing:border-box';
+    errEl.className = 'ferr on';
+  }
+}
+function _fClear(id){
+  var errEl = document.getElementById(id+'-err');
+  if(errEl){ errEl.style.display='none'; errEl.className='ferr'; errEl.textContent=''; }
+  var el = document.getElementById(id);
+  if(el){
+    el.className = (el.className||'').replace(' inp-err','');
+    el.style.border = '';
+    el.style.background = '';
+  }
+}
+function _fVal(id){ return (document.getElementById(id)||{value:''}).value||''; }
+function _fClearAll(ids){ ids.forEach(function(id){ _fClear(id); }); }
+
 </script>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -220,8 +266,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:var(--tx);min-h
 .fg input,.fg select,.fg textarea{width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:.2s}
 .fg input:focus,.fg select:focus,.fg textarea:focus{border-color:var(--gold)}
 .fg input.field-err,.fg select.field-err,.fg textarea.field-err{border-color:var(--red)!important;animation:shake .3s ease}
-.field-err-msg{color:var(--red);font-size:11px;margin-top:4px;display:none;font-weight:500}
-.field-err-msg.show,.field-err-msg[style*='display:block']{display:block!important}
+.field-err-msg{color:#E05252;font-size:12px;margin-top:4px;display:none;font-weight:500}
+.field-err-msg.show{display:block}
+.ferr{display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:6px;padding:5px 10px;background:rgba(224,82,82,0.1);border-left:3px solid #E05252;border-radius:0 6px 6px 0;line-height:1.5;box-sizing:border-box}
+.ferr.on{display:block!important}
+input.inp-err,select.inp-err{border:2px solid #E05252!important;background:rgba(224,82,82,0.04)!important}
 @keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
 .fg textarea{resize:vertical;min-height:65px}
 .btn-main{width:100%;padding:13px;background:var(--gold);color:var(--dk);border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;margin-top:6px}
@@ -1130,34 +1179,91 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
 
 
 
- <!-- Add Client -->
- <div class="md" id="md-add-cl" style="display:none">
+ <!-- Add Client — rebuilt from scratch -->
+ <div class="md" id="md-add-cl" style="display:none;max-width:540px">
   <button class="md-x" onclick="closeAllMd()">✕</button>
-  <h2>Nouveau client</h2>
-  <div class="fr2"><div class="fg"><label>Nom complet <span style="color:var(--red)">★</span></label><input id="nc-name" placeholder="Nom et prénom du client"><div id="nc-name-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div><div class="fg"><label>Téléphone <span style="color:var(--red)">★</span></label><input id="nc-ph" oninput="validatePhoneInput(this)" inputmode="numeric" pattern="[0-9+\-\. ]*" placeholder="0661234567"><div id="nc-ph-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div></div>
-  <div class="fr2"><div class="fg"><label>Ville <span style="color:var(--red)">★</span></label><input id="nc-city" placeholder="Casablanca" oninput="updateSecteurList('nc-sector','nc-city')"><div id="nc-city-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div><div class="fg"><label>Région</label><select id="nc-reg"><option>Grand Casablanca</option><option>Rabat-Salé</option><option>Marrakech-Safi</option><option>Fès-Meknès</option><option>Tanger-Tétouan</option><option>Souss-Massa</option><option>Oriental</option><option>Béni Mellal</option><option>Drâa-Tafilalet</option></select></div></div>
-  <div class="fr2"><div class="fg"><label>Secteur / Quartier <span style="color:var(--red)">★</span></label><select id="nc-sector"><option value="">— Choisir ville d'abord —</option></select></div><div class="fg"><label>Adresse <span style="color:var(--red)">★</span></label><input id="nc-addr" placeholder="123 Rue Mohammed V..."><div id="nc-addr-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div></div>
+  <h2 style="margin-bottom:4px">👤 Nouveau client</h2>
+  <p style="font-size:12px;color:var(--tx3);margin-bottom:16px">Les champs <span style="color:var(--red)">★</span> sont obligatoires</p>
+
   <div class="fg">
-   <label>Localisation sur carte</label>
+   <label>Nom complet <span style="color:var(--red)">★</span></label>
+   <input id="nc-name" placeholder="ex: Hassan Benali" autocomplete="off">
+   <span id="nc-name-err" class="ferr" style="display:none"></span>
+  </div>
+
+  <div class="fg">
+   <label>Téléphone <span style="color:var(--red)">★</span></label>
+   <input id="nc-ph" inputmode="numeric" placeholder="ex: 0661234567" autocomplete="off" oninput="validatePhoneInput(this)">
+   <span id="nc-ph-err" class="ferr" style="display:none"></span>
+  </div>
+
+  <div class="fg">
+   <label>Ville <span style="color:var(--red)">★</span></label>
+   <input id="nc-city" placeholder="ex: Casablanca" autocomplete="off" oninput="updateSecteurList('nc-sector','nc-city')">
+   <span id="nc-city-err" class="ferr" style="display:none"></span>
+  </div>
+
+  <div class="fg">
+   <label>Région</label>
+   <select id="nc-reg">
+    <option>Grand Casablanca</option><option>Rabat-Salé</option><option>Marrakech-Safi</option>
+    <option>Fès-Meknès</option><option>Tanger-Tétouan</option><option>Souss-Massa</option>
+    <option>Oriental</option><option>Béni Mellal</option><option>Drâa-Tafilalet</option>
+   </select>
+  </div>
+
+  <div class="fg">
+   <label>Secteur / Quartier</label>
+   <select id="nc-sector"><option value="">— Choisir ville d'abord —</option></select>
+  </div>
+
+  <div class="fg">
+   <label>Adresse <span style="color:var(--red)">★</span></label>
+   <input id="nc-addr" placeholder="ex: 12 Rue Mohammed V, Maarif" autocomplete="off">
+   <span id="nc-addr-err" class="ferr" style="display:none"></span>
+  </div>
+
+  <div style="background:var(--dk4);border:1px solid var(--bo2);border-radius:10px;padding:12px;margin-bottom:12px">
+   <div style="font-size:11px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📍 Localisation (optionnel)</div>
    <div style="display:flex;gap:7px;margin-bottom:8px">
-    <button type="button" class="btn btn-b btn-sm" onclick="openMapModal('nc','add-cl')">🗺️ Ouvrir la carte</button>
+    <button type="button" class="btn btn-b btn-sm" onclick="openMapModal('nc','add-cl')">🗺️ Carte</button>
     <button type="button" class="btn btn-gn btn-sm" onclick="geolocate('nc')">📍 Ma position</button>
    </div>
-   <div class="fr2"><div class="fg" style="margin:0"><label>Latitude</label><input id="nc-lat" type="number" step="any" placeholder="33.5731" oninput="updateLocBadge('nc')"></div><div class="fg" style="margin:0"><label>Longitude</label><input id="nc-lng" type="number" step="any" placeholder="-7.5898" oninput="updateLocBadge('nc')"></div></div>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="fg" style="margin:0"><label>Latitude</label><input id="nc-lat" type="number" step="any" placeholder="33.5731" oninput="updateLocBadge('nc')"></div>
+    <div class="fg" style="margin:0"><label>Longitude</label><input id="nc-lng" type="number" step="any" placeholder="-7.5898" oninput="updateLocBadge('nc')"></div>
+   </div>
    <div id="nc-loc-badge" class="map-coords-badge" style="margin-top:7px"></div>
   </div>
-  <div class="fr2"><div class="fg"><label>Identifiant <span style="color:var(--red)">★</span></label><input id="nc-user" placeholder="client1"><div id="nc-user-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div><div class="fg"><label>Mot de passe <span style="color:var(--red)">★</span></label><input type="password" id="nc-pw" placeholder="Min. 8 car., Maj., min., chiffre, spécial" oninput="validatePassword(this.value,'nc-pw')"><div id="nc-pw-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div></div>
-  <div class="fg"><label>Email</label><input id="nc-email" type="email" placeholder="client@email.com" required></div>
+
   <div class="fg">
-   <label>Photo du client (URL) <span style="color:var(--red)">★</span></label>
-   <div class="photo-field-wrap">
-    <input id="nc-photo" placeholder="https://exemple.com/photo.jpg" oninput="previewPhoto('nc-photo','nc-photo-prev')">
-    <button type="button" class="photo-upload-btn" onclick="openPhotoUpload('nc-photo','nc-photo-prev','add-cl')">📁</button>
-   </div>
-   <div id="nc-photo-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div>
-   <img id="nc-photo-prev" class="photo-preview" src="" alt="">
+   <label>Identifiant de connexion <span style="color:var(--red)">★</span></label>
+   <input id="nc-user" placeholder="ex: client01 (sans espaces ni accents)" autocomplete="off">
+   <span id="nc-user-err" class="ferr" style="display:none"></span>
   </div>
-  <button class="btn btn-g" style="width:100%" onclick="saveClient()">Créer le client</button>
+
+  <div class="fg">
+   <label>Mot de passe <span style="color:var(--red)">★</span></label>
+   <input type="password" id="nc-pw" placeholder="Min. 8 car. — Maj. + min. + chiffre + spécial" oninput="validatePassword(this.value,'nc-pw')">
+   <span id="nc-pw-err" class="ferr" style="display:none"></span>
+  </div>
+
+  <div class="fg">
+   <label>Email (optionnel — pour récupération)</label>
+   <input id="nc-email" type="email" placeholder="ex: client@email.com">
+  </div>
+
+  <div class="fg">
+   <label>Photo du client — URL image <span style="color:var(--red)">★</span></label>
+   <div style="display:flex;gap:6px">
+    <input id="nc-photo" placeholder="https://exemple.com/photo.jpg" style="flex:1" oninput="previewPhoto('nc-photo','nc-photo-prev')">
+    <button type="button" class="btn btn-o btn-sm" onclick="openPhotoUpload('nc-photo','nc-photo-prev','add-cl')">📁</button>
+   </div>
+   <span id="nc-photo-err" class="ferr" style="display:none"></span>
+   <img id="nc-photo-prev" class="photo-preview" src="" alt="" style="margin-top:8px">
+  </div>
+
+  <button class="btn btn-g" style="width:100%;padding:13px;font-size:14px;margin-top:4px" onclick="saveClient()">✅ Créer le client</button>
  </div>
 
  <!-- Edit Client -->
@@ -1193,60 +1299,95 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
   <button class="btn btn-g" style="width:100%" onclick="updateClient()">Enregistrer</button>
  </div>
 
- <!-- Add Product -->
- <div class="md" id="md-add-prod" style="display:none">
+ <!-- Add Product — rebuilt from scratch -->
+ <div class="md" id="md-add-prod" style="display:none;max-width:560px">
   <button class="md-x" onclick="closeAllMd()">✕</button>
-  <h2>Nouveau produit</h2>
-  <div class="fg"><label>Nom <span style="color:var(--red)">★</span></label><input id="np-name" placeholder="Nom du produit"><div id="np-name-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div>
-  <div class="fr2">
+  <h2 style="margin-bottom:4px">📦 Nouveau produit</h2>
+  <p style="font-size:12px;color:var(--tx3);margin-bottom:16px">Les champs <span style="color:var(--red)">★</span> sont obligatoires</p>
+
+  <div class="fg">
+   <label>Nom du produit <span style="color:var(--red)">★</span></label>
+   <input id="np-name" placeholder="ex: Crème hydratante 200ml" autocomplete="off">
+   <span id="np-name-err" class="ferr" style="display:none"></span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
    <div class="fg">
     <label>Catégorie</label>
-    <div style="display:flex;gap:6px">
-     <select id="np-cat" style="flex:1" onchange="checkNewCat('np')">
-      <option>Cosmétiques</option><option>Alimentation</option><option>Artisanat</option><option>Textile</option><option value="__new__">+ Nouvelle catégorie...</option>
-     </select>
+    <select id="np-cat" onchange="checkNewCat('np')">
+     <option>Cosmétiques</option><option>Alimentation</option><option>Artisanat</option>
+     <option>Textile</option><option value="__new__">+ Nouvelle...</option>
+    </select>
+   </div>
+   <div class="fg">
+    <label>Unité de mesure</label>
+    <input id="np-unit" placeholder="ex: pièce, kg, litre">
+   </div>
+  </div>
+  <div id="np-newcat-wrap" class="fg" style="display:none">
+   <label>Nom nouvelle catégorie</label>
+   <input id="np-newcat" placeholder="ex: Électronique">
+  </div>
+
+  <div style="background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.2);border-radius:10px;padding:14px;margin-bottom:12px">
+   <div style="font-size:11px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">💰 Prix d'achat et de vente</div>
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <div class="fg" style="margin:0">
+     <label>Prix d'achat (MAD) <span style="color:var(--red)">★</span></label>
+     <input type="number" id="np-buy" placeholder="0.00" min="0" step="0.01" inputmode="decimal" oninput="calcMargin('np')">
+     <span id="np-buy-err" class="ferr" style="display:none"></span>
+    </div>
+    <div class="fg" style="margin:0">
+     <label>Prix de vente (MAD) <span style="color:var(--red)">★</span></label>
+     <input type="number" id="np-sell" placeholder="0.00" min="0" step="0.01" inputmode="decimal" oninput="calcMargin('np')">
+     <span id="np-sell-err" class="ferr" style="display:none"></span>
     </div>
    </div>
-   <div class="fg"><label>Unité</label><input id="np-unit" placeholder="pièce, kg, flacon..."></div>
+   <div id="np-margin" class="margin-box" style="margin-top:8px"></div>
   </div>
-  <div id="np-newcat-wrap" class="fg" style="display:none"><label>Nom de la nouvelle catégorie</label><input id="np-newcat" placeholder="Ex: Électronique"></div>
-  <div style="background:rgba(201,168,76,0.04);border:1px solid var(--bo);border-radius:10px;padding:13px;margin-bottom:12px">
-   <div style="font-size:11px;color:var(--gold);font-weight:600;margin-bottom:9px;text-transform:uppercase;letter-spacing:1px">💰 Prix</div>
-   <div class="fr2">
-    <div class="fg" style="margin-bottom:7px"><label>Prix d'achat (MAD) <span style="color:var(--red)">★</span></label><input type="number" id="np-buy" placeholder="0" min="0" oninput="calcMargin('np')"><div id="np-buy-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div>
-    <div class="fg" style="margin-bottom:7px"><label>Prix de vente (MAD) <span style="color:var(--red)">★</span></label><input type="number" id="np-sell" placeholder="0" min="0" oninput="calcMargin('np')"><div id="np-sell-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div></div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+   <div class="fg">
+    <label>Stock initial</label>
+    <input type="number" id="np-stock" placeholder="0" min="0" inputmode="numeric">
    </div>
-   <div id="np-margin" class="margin-box"></div>
-  </div>
-  <div class="fr2"><div class="fg"><label>Stock initial</label><input type="number" id="np-stock" placeholder="0" min="0"></div><div class="fg"><label>Seuil alerte</label><input type="number" id="np-thr" placeholder="10" min="0"></div></div>
-  <div class="fr2">
-   <div class="fg"><label>Fournisseur initial <span style="color:var(--red)">★</span></label>
-    <select id="np-sup" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:10px 12px;color:var(--tx);font-size:13px;outline:none">
-      <option value="">— Sélectionner —</option>
-    </select>
-    <div id="np-sup-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div>
-   </div>
-   <div class="fg"><label>Paiement initial <span style="color:var(--red)">★</span></label>
-    <select id="np-paymethod" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:10px 12px;color:var(--tx);font-size:13px;outline:none">
-      <option value="">— Sélectionner —</option>
-      <option value="cash">💵 Espèces</option>
-      <option value="transfer">🏦 Virement</option>
-      <option value="cheque">📋 Chèque</option>
-      <option value="credit">🔄 À crédit</option>
-    </select>
-    <div id="np-paymethod-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div>
+   <div class="fg">
+    <label>Seuil alerte stock</label>
+    <input type="number" id="np-thr" placeholder="10" min="0" inputmode="numeric">
    </div>
   </div>
+
   <div class="fg">
-   <label>Image produit (URL) <span style="color:var(--red)">★</span></label>
-   <div class="photo-field-wrap">
-    <input id="np-img" placeholder="https://images.exemple.com/produit.jpg" placeholder="https://... ou utiliser 📁" oninput="previewPhoto('np-img','np-img-prev')">
-    <button type="button" class="photo-upload-btn" onclick="openPhotoUpload('np-img','np-img-prev','add-prod')">📁</button>
-   </div>
-   <div id="np-img-err" style="display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:5px;padding:4px 8px;background:rgba(224,82,82,0.08);border-left:3px solid #E05252;border-radius:0 4px 4px 0"></div>
-   <img id="np-img-prev" class="photo-preview" style="border-radius:8px;width:80px;height:60px" src="" alt="">
+   <label>Fournisseur initial <span style="color:var(--red)">★</span></label>
+   <select id="np-sup">
+    <option value="">— Sélectionner un fournisseur —</option>
+   </select>
+   <span id="np-sup-err" class="ferr" style="display:none"></span>
   </div>
-  <button class="btn btn-g" style="width:100%" onclick="saveProduct()">Ajouter</button>
+
+  <div class="fg">
+   <label>Mode de paiement initial <span style="color:var(--red)">★</span></label>
+   <select id="np-paymethod">
+    <option value="">— Sélectionner le mode —</option>
+    <option value="cash">💵 Espèces</option>
+    <option value="transfer">🏦 Virement bancaire</option>
+    <option value="cheque">📋 Chèque</option>
+    <option value="credit">🔄 À crédit fournisseur</option>
+   </select>
+   <span id="np-paymethod-err" class="ferr" style="display:none"></span>
+  </div>
+
+  <div class="fg">
+   <label>Image du produit — URL <span style="color:var(--red)">★</span></label>
+   <div style="display:flex;gap:6px">
+    <input id="np-img" placeholder="https://exemple.com/image-produit.jpg" style="flex:1" oninput="previewPhoto('np-img','np-img-prev')">
+    <button type="button" class="btn btn-o btn-sm" onclick="openPhotoUpload('np-img','np-img-prev','add-prod')">📁</button>
+   </div>
+   <span id="np-img-err" class="ferr" style="display:none"></span>
+   <img id="np-img-prev" class="photo-preview" style="border-radius:8px;width:80px;height:60px;margin-top:8px" src="" alt="">
+  </div>
+
+  <button class="btn btn-g" style="width:100%;padding:13px;font-size:14px;margin-top:4px" onclick="saveProduct()">✅ Ajouter le produit</button>
  </div>
 
  <!-- Edit Product -->
@@ -2845,83 +2986,109 @@ function updateProduct(){
   closeAllMd();renderProds();renderStock();toast('Produit mis à jour ✓');
 }
 function saveProduct(){
-  // Validation complète AU CLIC — tous les champs obligatoires en rouge immédiatement
-  var errors = [];
-  function chk(id, label, val){
-    if(!val||val.trim()===''){
-      showErr(id,'⚠️ '+label+' est obligatoire — veuillez remplir ce champ');
-      errors.push(label);
-    }
+  // ── Clear all previous errors ───────────────────────────────
+  _fClearAll(['np-name','np-buy','np-sell','np-img','np-sup','np-paymethod']);
+  var ok = true;
+  var firstErrId = null;
+
+  // ── Collect values ─────────────────────────────────────────
+  var name    = _fVal('np-name').trim();
+  var buyStr  = _fVal('np-buy').trim();
+  var sellStr = _fVal('np-sell').trim();
+  var img     = _fVal('np-img').trim();
+  var supId   = _fVal('np-sup').trim();
+  var payMet  = _fVal('np-paymethod').trim();
+
+  // ── Validate each field with specific message ───────────────
+  if(!name){
+    _fErr('np-name', 'Nom du produit obligatoire — saisissez le nom');
+    if(!firstErrId) firstErrId='np-name'; ok=false;
   }
-  var npName=(document.getElementById('np-name')||{}).value||'';
-  var npBuy=(document.getElementById('np-buy')||{}).value||'';
-  var npSell=(document.getElementById('np-sell')||{}).value||'';
-  var npImg=(document.getElementById('np-img')||{}).value||'';
-  var supId=(document.getElementById('np-sup')||{}).value||'';
-  var payMethod=(document.getElementById('np-paymethod')||{}).value||'';
-  chk('np-name','Nom du produit',npName);
-  chk('np-buy','Prix d\'achat',npBuy);
-  chk('np-sell','Prix de vente',npSell);
-  chk('np-img','Image du produit (URL https://...)',npImg);
-  if(!supId){showErr('np-sup','⚠️ Fournisseur obligatoire — sélectionnez un fournisseur dans la liste déroulante');errors.push('Fournisseur');}
-  if(!payMethod){showErr('np-paymethod','⚠️ Mode de paiement obligatoire — sélectionnez un mode dans la liste');errors.push('Mode paiement');}
-  if(errors.length){
-    toast('⚠️ '+errors.length+' champ(s) manquant(s) : '+errors.join(', '),true);
-    // Scroll to first error
-    var firstErr=document.querySelector('#md-add-prod .field-err');
-    if(firstErr) firstErr.scrollIntoView({behavior:'smooth',block:'center'});
+  if(!buyStr){
+    _fErr('np-buy', "Prix d'achat obligatoire — saisissez un montant en MAD");
+    if(!firstErrId) firstErrId='np-buy'; ok=false;
+  } else if(isNaN(parseFloat(buyStr))||parseFloat(buyStr)<=0){
+    _fErr('np-buy', "Prix d'achat invalide — saisissez un nombre supérieur à 0");
+    if(!firstErrId) firstErrId='np-buy'; ok=false;
+  }
+  if(!sellStr){
+    _fErr('np-sell', 'Prix de vente obligatoire — saisissez un montant en MAD');
+    if(!firstErrId) firstErrId='np-sell'; ok=false;
+  } else if(isNaN(parseFloat(sellStr))||parseFloat(sellStr)<=0){
+    _fErr('np-sell', 'Prix de vente invalide — saisissez un nombre supérieur à 0');
+    if(!firstErrId) firstErrId='np-sell'; ok=false;
+  }
+  if(!supId){
+    _fErr('np-sup', 'Fournisseur obligatoire — choisissez dans la liste déroulante');
+    if(!firstErrId) firstErrId='np-sup'; ok=false;
+  }
+  if(!payMet){
+    _fErr('np-paymethod', 'Mode de paiement obligatoire — choisissez dans la liste');
+    if(!firstErrId) firstErrId='np-paymethod'; ok=false;
+  }
+  if(!img){
+    _fErr('np-img', "Image obligatoire — collez l'URL d'une image (https://...)");
+    if(!firstErrId) firstErrId='np-img'; ok=false;
+  } else if(!img.startsWith('http')){
+    _fErr('np-img', "URL invalide — l'adresse doit commencer par https://...");
+    if(!firstErrId) firstErrId='np-img'; ok=false;
+  }
+
+  if(!ok){
+    var n = ['np-name','np-buy','np-sell','np-img','np-sup','np-paymethod'].filter(function(id){
+      var e=document.getElementById(id+'-err'); return e&&e.style.display!=='none'&&e.textContent;
+    }).length;
+    toast('⚠️ '+n+' champ(s) à corriger — vérifiez les zones marquées en rouge',true);
+    if(firstErrId){ setTimeout(function(){
+      var el=document.getElementById(firstErrId);
+      if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.focus(); }
+    },80); }
     return;
   }
-  var allOk=true;
-  if(isNaN(parseFloat(npBuy))||parseFloat(npBuy)<=0){showErr('np-buy','⚠️ Prix d\'achat invalide — saisissez un nombre > 0');return;}
-  if(isNaN(parseFloat(npSell))||parseFloat(npSell)<=0){showErr('np-sell','⚠️ Prix de vente invalide — saisissez un nombre > 0');return;}
-  if(!npImg.startsWith('http')){showErr('np-img','⚠️ URL invalide — l\'image doit commencer par https://...');return;}
-  var img=document.getElementById('np-img').value.trim();
-  if(!img.startsWith('http')){showErr('np-img','⚠️ URL invalide — commencez par https://...');return;}
-  var initBuy=+(document.getElementById('np-buy').value)||0;
-  var initSell=+(document.getElementById('np-sell').value)||0;
-  if(initSell<initBuy){showErr('np-sell','⚠️ Prix de vente doit être ≥ au prix d\'achat ('+initBuy+' MAD)');return;}
-  var name=document.getElementById('np-name').value.trim();
-  // Vérifier doublon de nom
+
+  // ── Cross-field validation ─────────────────────────────────
+  var buy=parseFloat(buyStr); var sell=parseFloat(sellStr);
+  if(sell<buy){
+    _fErr('np-sell',"Prix de vente ("+fm(sell)+") inférieur au prix d'achat ("+fm(buy)+") — ajustez");
+    document.getElementById('np-sell').scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
+
+  // ── Check for duplicate product name ──────────────────────
   var existing=PRODUCTS.find(function(p){return p.name.toLowerCase()===name.toLowerCase();});
   if(existing){
-    showErr('np-name','Ce produit existe déjà : "'+existing.name+'". Utilisez 📦 Approvisionner.');
-    if(confirm('Produit "'+existing.name+'" déjà existant.\nAller à sa fiche stock pour l\'approvisionner ?')){
-      closeAllMd();setTimeout(function(){approProd(existing.id);},300);
+    _fErr('np-name','Produit "'+existing.name+'" déjà existant — utilisez Approvisionner');
+    if(confirm("Produit déjà existant.\nAller à sa fiche pour l'approvisionner ?")){
+      closeAllMd(); setTimeout(function(){approProd(existing.id);},300);
     }
     return;
   }
-  var catSel=document.getElementById('np-cat').value;
-  var catNew=document.getElementById('np-newcat').value.trim();
+
+  // ── Save product ───────────────────────────────────────────
+  var catSel=_fVal('np-cat');
+  var catNew=_fVal('np-newcat').trim();
   var finalCat=catSel==='__new__'?(catNew||'Autre'):catSel;
-  if(finalCat&&PRODUCT_CATEGORIES.indexOf(finalCat)<0){PRODUCT_CATEGORIES.push(finalCat);}
-  var initStock=+(document.getElementById('np-stock').value)||0;
+  if(finalCat&&PRODUCT_CATEGORIES.indexOf(finalCat)<0) PRODUCT_CATEGORIES.push(finalCat);
+  var stock=+(document.getElementById('np-stock').value)||0;
   var payLabels={cash:'💵 Espèces',transfer:'🏦 Virement',cheque:'📋 Chèque',credit:'🔄 À crédit'};
-  var newProd={id:'P'+(100+PRODUCTS.length),name:name,category:finalCat,
-    buyPrice:initBuy,price:initSell,
-    unit:document.getElementById('np-unit').value,stock:initStock,
+  var newProd={
+    id:'P'+(100+PRODUCTS.length), name:name, category:finalCat,
+    buyPrice:buy, price:sell,
+    unit:document.getElementById('np-unit').value,
+    stock:stock,
     threshold:+(document.getElementById('np-thr').value)||10,
-    image:document.getElementById('np-img').value,purchases:[]};
-  if(initStock>0){
+    image:img, purchases:[]
+  };
+  if(stock>0){
     newProd.purchases.push({id:'PUR'+Date.now(),date:new Date().toISOString().split('T')[0],
-      qty:initStock,unitBuy:initBuy,total:Math.round(initBuy*initStock),
-      supplierId:supId,payMethod:payMethod,payLabel:payLabels[payMethod]||''});
-    // Update supplier debt if credit
-    if(supId){
-      var si=SUPPLIERS.findIndex(function(s){return s.id===supId;});
-      if(si>-1){
-        if(payMethod==='credit') SUPPLIERS[si].debt=(SUPPLIERS[si].debt||0)+Math.round(initBuy*initStock);
-        if(!SUPPLIERS[si].transactions) SUPPLIERS[si].transactions=[];
-        SUPPLIERS[si].transactions.push({date:new Date().toISOString().split('T')[0],type:'purchase',
-          prodName:name,qty:initStock,total:Math.round(initBuy*initStock),
-          payMethod:payMethod,payLabel:payLabels[payMethod]||''});
-      }
-    }
+      qty:stock,unitBuy:buy,total:Math.round(buy*stock),
+      supplierId:supId,payMethod:payMet,payLabel:payLabels[payMet]||payMet});
   }
   PRODUCTS.push(newProd);
-  save();
-  if(window.saveToCloud) window.saveToCloud();
-  closeAllMd();initProdFilters();renderProds();toast('✅ Produit ajouté avec succès !');
+  save(); if(window.saveToCloud) window.saveToCloud();
+  closeAllMd(); renderProds(); renderStock();
+  initProdFilters();
+  toast('✅ Produit "'+name+'" ajouté avec succès !');
 }
 function delProd(id){PRODUCTS=PRODUCTS.filter(function(p){return p.id!==id;});save();renderProds();toast('Produit supprimé');}
 
@@ -3309,56 +3476,106 @@ function updateClient(){
   closeAllMd();initClientFilters();renderClients();toast('✅ Client mis à jour avec succès !');
 }
 function saveClient(){
-  // Validation complète AU CLIC avec messages explicatifs détaillés
-  var errors=[];
-  function chkCl(id,label,extraMsg){
-    var el=document.getElementById(id);
-    if(!el) return;
-    var val=(el.value||'').trim();
-    if(!val){showErr(id,'⚠️ '+label+' obligatoire'+(extraMsg?' — '+extraMsg:''));errors.push(label);}
+  // ── Clear all previous errors ──────────────────────────────
+  _fClearAll(['nc-name','nc-ph','nc-city','nc-addr','nc-user','nc-pw','nc-photo']);
+  var ok=true; var firstErrId=null;
+
+  // ── Collect values ─────────────────────────────────────────
+  var name   = _fVal('nc-name').trim();
+  var phone  = _fVal('nc-ph').trim();
+  var city   = _fVal('nc-city').trim();
+  var addr   = _fVal('nc-addr').trim();
+  var user   = _fVal('nc-user').trim();
+  var pw     = _fVal('nc-pw');
+  var photo  = _fVal('nc-photo').trim();
+  var email  = _fVal('nc-email').trim();
+
+  // ── Validate each field ────────────────────────────────────
+  if(!name){
+    _fErr('nc-name','Nom complet obligatoire — saisissez le prénom et nom');
+    if(!firstErrId) firstErrId='nc-name'; ok=false;
   }
-  chkCl('nc-name','Nom complet','saisissez le nom et prénom du client');
-  chkCl('nc-ph','Téléphone','ex: 0661234567');
-  chkCl('nc-city','Ville','ex: Casablanca');
-  chkCl('nc-addr','Adresse','ex: 12 Rue Mohammed V');
-  chkCl('nc-user','Identifiant','ex: client01 (sans espaces)');
-  chkCl('nc-pw','Mot de passe','min. 8 caractères avec Maj, min, chiffre et spécial');
-  chkCl('nc-photo','Photo (URL)','copiez l\'URL d\'une image https://...');
-  if(errors.length){
-    toast('⚠️ '+errors.length+' champ(s) manquant(s) : '+errors.join(', '),true);
-    var firstErr=document.querySelector('#md-add-cl .field-err');
-    if(firstErr) firstErr.scrollIntoView({behavior:'smooth',block:'center'});
+  if(!phone){
+    _fErr('nc-ph','Téléphone obligatoire — ex: 0661234567');
+    if(!firstErrId) firstErrId='nc-ph'; ok=false;
+  } else if(!/^[\d\s\+\-\.]{6,15}$/.test(phone)){
+    _fErr('nc-ph','Téléphone invalide — saisissez uniquement des chiffres (ex: 0661234567)');
+    if(!firstErrId) firstErrId='nc-ph'; ok=false;
+  }
+  if(!city){
+    _fErr('nc-city','Ville obligatoire — ex: Casablanca');
+    if(!firstErrId) firstErrId='nc-city'; ok=false;
+  }
+  if(!addr){
+    _fErr('nc-addr','Adresse obligatoire — ex: 12 Rue Mohammed V');
+    if(!firstErrId) firstErrId='nc-addr'; ok=false;
+  }
+  if(!user){
+    _fErr('nc-user','Identifiant obligatoire — ex: client01 (sans espaces)');
+    if(!firstErrId) firstErrId='nc-user'; ok=false;
+  } else if(/\s/.test(user)){
+    _fErr('nc-user',"Identifiant invalide — pas d'espaces autorisés");
+    if(!firstErrId) firstErrId='nc-user'; ok=false;
+  }
+  if(!pw){
+    _fErr('nc-pw',"Mot de passe obligatoire — minimum 8 caractères");
+    if(!firstErrId) firstErrId='nc-pw'; ok=false;
+  }
+  if(!photo){
+    _fErr('nc-photo',"Photo obligatoire — collez l'URL d'une image (https://...)");
+    if(!firstErrId) firstErrId='nc-photo'; ok=false;
+  } else if(!photo.startsWith('http')){
+    _fErr('nc-photo',"URL photo invalide — doit commencer par https://...");
+    if(!firstErrId) firstErrId='nc-photo'; ok=false;
+  }
+
+  if(!ok){
+    var n=['nc-name','nc-ph','nc-city','nc-addr','nc-user','nc-pw','nc-photo'].filter(function(id){
+      var e=document.getElementById(id+'-err'); return e&&e.style.display!=='none'&&e.textContent;
+    }).length;
+    toast('⚠️ '+n+' champ(s) à corriger — vérifiez les zones en rouge',true);
+    if(firstErrId){ setTimeout(function(){
+      var el=document.getElementById(firstErrId);
+      if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.focus(); }
+    },80); }
     return;
   }
-  var photoUrl=(document.getElementById('nc-photo').value||'').trim();
-  if(!photoUrl.startsWith('http')){showErr('nc-photo','⚠️ URL invalide — l\'URL doit commencer par https://...');return;}
-  var name=document.getElementById('nc-name').value.trim();
-  var user=document.getElementById('nc-user').value.trim();
-  var pw=document.getElementById('nc-pw').value;
-  var email=(document.getElementById('nc-email').value||'').trim();
-  // Valider mot de passe fort
+
+  // ── Mot de passe fort ──────────────────────────────────────
   if(!validatePassword(pw,'nc-pw')) return;
-  // Vérifier identifiant unique
+
+  // ── Email format ──────────────────────────────────────────
+  if(email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    _fErr('nc-email',"Format email invalide — ex: nom@domaine.com");
+    return;
+  }
+
+  // ── Unicité identifiant ────────────────────────────────────
   if(CLIENTS.find(function(c){return c.username.toLowerCase()===user.toLowerCase();})){
-    showErr('nc-user','⚠️ Cet identifiant est déjà utilisé — choisissez-en un autre');return;
+    _fErr('nc-user','Cet identifiant est déjà utilisé — choisissez-en un autre');
+    document.getElementById('nc-user').focus(); return;
   }
-  // Vérifier email unique
-  if(email){
-    if(CLIENTS.find(function(c){return c.email&&c.email.toLowerCase()===email.toLowerCase();})){
-      showErr('nc-email','⚠️ Cet email est déjà associé à un autre compte');return;
-    }
+  if(email && CLIENTS.find(function(c){return c.email&&c.email.toLowerCase()===email.toLowerCase();})){
+    _fErr('nc-email',"Cet email est déjà associé à un autre compte");
+    return;
   }
-  var photoUrl=document.getElementById('nc-photo').value.trim();
-  if(!photoUrl){showErr('nc-photo','⚠️ Photo obligatoire — saisissez une URL d\'image');return;}
-  if(!photoUrl.startsWith('http')){showErr('nc-photo','⚠️ URL invalide — commencez par https://...');return;}
-  var latV=parseFloat(document.getElementById('nc-lat').value)||null;
-  var lngV=parseFloat(document.getElementById('nc-lng').value)||null;
-  var ncSector=document.getElementById('nc-sector');var ncSectorVal=ncSector?ncSector.value:'';
-  if(ncSectorVal==='__autre__'){var customSec=prompt('Entrez le nom du secteur/quartier :','');ncSectorVal=customSec||'';}
-  CLIENTS.push({id:'C'+(100+CLIENTS.length),name:name,phone:document.getElementById('nc-ph').value,city:document.getElementById('nc-city').value,region:document.getElementById('nc-reg').value,sector:ncSectorVal,address:document.getElementById('nc-addr').value,lat:latV,lng:lngV,username:user,password:pw,email:email,photo:document.getElementById('nc-photo').value||'https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128'});
-  save();
-  if(window.saveToCloud) window.saveToCloud();
-  closeAllMd();initClientFilters();renderClients();toast('✅ Client ajouté avec succès !');
+
+  // ── Save client ────────────────────────────────────────────
+  var lat=parseFloat(document.getElementById('nc-lat').value)||null;
+  var lng=parseFloat(document.getElementById('nc-lng').value)||null;
+  var secEl=document.getElementById('nc-sector');
+  var sector=secEl?secEl.value:'';
+  if(sector==='__autre__') sector=prompt('Entrez le secteur :','')||'';
+  CLIENTS.push({
+    id:'C'+(100+CLIENTS.length), name:name, phone:phone,
+    city:city, region:_fVal('nc-reg'), sector:sector,
+    address:addr, lat:lat, lng:lng,
+    username:user, password:pw, email:email,
+    photo:photo||('https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128')
+  });
+  save(); if(window.saveToCloud) window.saveToCloud();
+  closeAllMd(); initClientFilters(); renderClients();
+  toast('✅ Client "'+name+'" créé avec succès !');
 }
 function delCl(id){CLIENTS=CLIENTS.filter(function(c){return c.id!==id;});save();initClientFilters();renderClients();toast('Client supprimé');}
 
