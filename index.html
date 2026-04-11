@@ -115,6 +115,8 @@ function sendSMSWhatsApp(phone, message){
 
 // ── Afficher erreur inline sur un champ ───────────────────
 function showErr(elId, msg){
+  // Delegate to unified error system
+  if(typeof _fErr==='function'){_fErr(elId,msg);return;}
   var el=document.getElementById(elId);
   if(!el) return;
   // Apply red border via attribute (works everywhere)
@@ -271,7 +273,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:var(--tx);min-h
 .ferr{display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:6px;padding:5px 10px;background:rgba(224,82,82,0.1);border-left:3px solid #E05252;border-radius:0 6px 6px 0;line-height:1.5;box-sizing:border-box}
 .ferr.on{display:block!important}
 input.inp-err,select.inp-err{border:2px solid #E05252!important;background:rgba(224,82,82,0.04)!important}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
+.inp-err{animation:shake .3s ease}
 .fg textarea{resize:vertical;min-height:65px}
 .btn-main{width:100%;padding:13px;background:var(--gold);color:var(--dk);border:none;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:.2s;margin-top:6px}
 .btn-main:hover{background:var(--gl)}
@@ -300,7 +303,7 @@ input.inp-err,select.inp-err{border:2px solid #E05252!important;background:rgba(
 .topbar h2{font-size:16px;font-weight:600}
 .datebadge{font-size:12px;color:var(--tx3);background:var(--dk4);padding:5px 11px;border-radius:7px;white-space:nowrap}
 .content{flex:1;padding:20px 22px}
-.sec{display:none}.sec.on{display:block;animation:secIn .22s ease both}@keyframes secIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.sec.on .kpi{animation:fadeIn .3s ease both}.sec.on .kpi:nth-child(2){animation-delay:.05s}.sec.on .kpi:nth-child(3){animation-delay:.1s}.sec.on .kpi:nth-child(4){animation-delay:.15s}@keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+.sec{display:none}.sec.on{display:block;animation:secIn .22s ease both}@keyframes secIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}.sec.on .kpi{animation:fadeIn .3s ease both}.sec.on .kpi:nth-child(2){animation-delay:.05s}.sec.on .kpi:nth-child(3){animation-delay:.1s}.sec.on .kpi:nth-child(4){animation-delay:.15s}.sec.on .kpi:nth-child(5){animation-delay:.2s}@keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
 
 /* hamburger for mobile */
 .ham-btn{display:none;background:none;border:none;color:var(--tx);font-size:22px;cursor:pointer;padding:4px}
@@ -528,11 +531,12 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
 .of-btn{white-space:nowrap;padding:5px 12px;border-radius:20px;background:var(--dk3);border:1px solid var(--bo2);color:var(--tx2);font-family:'DM Sans',sans-serif;font-size:12px;cursor:pointer;transition:.2s}
 .of-btn.on{background:rgba(201,168,76,0.15);border-color:var(--gold);color:var(--gold)}
 .ord-c{background:var(--dk3);border:1px solid var(--bo);border-radius:12px;padding:14px;margin-bottom:10px;box-sizing:border-box}
-.bot-nav{position:fixed;bottom:0;left:0;right:0;background:rgba(17,17,17,0.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--bo);display:flex;z-index:200;padding:6px 0 env(safe-area-inset-bottom,6px);box-sizing:border-box}
-.bt{flex:1;display:flex;flex-direction:column;align-items:center;padding:5px 2px;cursor:pointer;color:var(--tx3);font-size:10px;gap:2px;transition:.15s;-webkit-tap-highlight-color:transparent;user-select:none;min-width:0}
+.bot-nav{position:fixed;bottom:0;left:0;right:0;width:100%;background:rgba(17,17,17,0.97);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--bo);display:flex;z-index:200;padding:8px 0 env(safe-area-inset-bottom,8px);box-sizing:border-box;gap:0}
+.bt{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:4px 2px;cursor:pointer;color:var(--tx3);font-size:11px;font-weight:500;gap:3px;transition:.15s;-webkit-tap-highlight-color:transparent;user-select:none;min-width:0;letter-spacing:.2px}
 .bt.on{color:var(--gold)}
-.bt.on .bt-ic{transform:scale(1.15)}
-.bt-ic{font-size:20px;transition:transform .15s;line-height:1}
+.bt.on .bt-ic{transform:scale(1.1)}
+.bt span{display:block;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.bt-ic{font-size:22px;transition:transform .15s;line-height:1;display:block}
 .toast{position:fixed;top:max(16px,env(safe-area-inset-top,16px));left:50%;transform:translateX(-50%) translateY(-20px);background:var(--grn);color:#fff;padding:10px 20px;border-radius:10px;font-size:13px;font-weight:500;z-index:99999;opacity:0;transition:.3s cubic-bezier(.34,1.56,.64,1);pointer-events:none;white-space:nowrap;max-width:90vw;text-align:center;box-shadow:0 4px 20px rgba(0,0,0,.4)}
 .toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
 .toast.err{background:var(--red)}
@@ -774,6 +778,7 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
     <div class="ni" id="ni-purchases" onclick="goSec('purchases',this)"><span>🛒</span>Achats</div>
     <div class="ni" id="ni-complaints" onclick="goSec('complaints',this)"><span>📣</span>Réclamations</div>
     <div class="ns">Paramètres</div>
+    <div class="ni" id="ni-scanner" onclick="goSec('scanner',this)"><span>📷</span>Scanner code-barres</div>
     <div class="ni" id="ni-company" onclick="goSec('company',this)"><span>🏢</span>Mon entreprise</div>
     <div class="ni" id="ni-admins" onclick="goSec('admins',this)"><span>👤</span>Admins</div>
    </nav>
@@ -872,7 +877,8 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
       <div class="stk-add-row" style="flex-wrap:wrap;gap:10px">
        <div style="display:flex;flex-direction:column;gap:3px;min-width:160px">
         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Produit <span style="color:var(--red)">★</span></label>
-        <select id="stk-add-prod" onchange="onStkProdChange()"><option value="">— Sélectionner —</option></select>
+        <select id="stk-add-prod" onchange="onStkProdChange();this.style.border='';_fClear('stk-add-prod')"><option value="">— Sélectionner —</option></select>
+        <div id="stk-add-prod-err" class="ferr"></div>
        </div>
        <div style="display:flex;flex-direction:column;gap:3px">
         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Quantité <span style="color:var(--red)">★</span></label>
@@ -897,6 +903,7 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
         </select>
        </div>
        <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:5px">
+        <button class="btn btn-b btn-sm" onclick="goSec('scanner',document.getElementById('ni-scanner'))" title="Scanner code-barres">📷 Scanner</button>
         <button class="btn btn-o btn-sm" onclick="openMd('add-supplier')" title="Ajouter un nouveau fournisseur">➕ Nouveau fourn.</button>
         <button class="btn btn-gn" onclick="doAddStock()">✅ Ajouter au stock</button>
        </div>
@@ -1116,6 +1123,41 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
       </div>
      </div>
      <div class="tc"><table><thead><tr><th id="cmp-check-th" style="display:none"><input type="checkbox" id="cmp-check-all" onchange="toggleAllCmpChecks(this.checked)"></th><th>N°</th><th>Client</th><th>Type</th><th>Commande</th><th>Message</th><th>Date</th><th>Statut</th><th>Action</th></tr></thead><tbody id="complaints-tb"></tbody></table></div>
+    </div>
+
+    <!-- BARCODE SCANNER -->
+    <div class="sec" id="sec-scanner">
+     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:8px">
+      <div>
+       <h3 style="font-size:13px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px;margin-bottom:3px">📷 Scanner code-barres produit</h3>
+       <p style="font-size:12px;color:var(--tx3)">Entrée ou sortie de stock par scan — nécessite la caméra</p>
+      </div>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+       <button class="btn btn-g btn-sm" id="btn-scan-start" onclick="startBarcodeScanner()">📷 Démarrer le scanner</button>
+       <button class="btn btn-r btn-sm" id="btn-scan-stop" onclick="stopBarcodeScanner()" style="display:none">⏹ Arrêter</button>
+      </div>
+     </div>
+     <!-- Mode -->
+     <div style="display:flex;gap:10px;margin-bottom:16px">
+      <button class="btn btn-gn" id="scan-mode-in" onclick="setScanMode('in')" style="flex:1;padding:12px;font-size:13px">📥 Entrée stock (approvisionnement)</button>
+      <button class="btn btn-o" id="scan-mode-out" onclick="setScanMode('out')" style="flex:1;padding:12px;font-size:13px;opacity:.5">📤 Sortie stock (commande)</button>
+     </div>
+     <!-- Camera view -->
+     <div id="scanner-container" style="display:none;position:relative;border-radius:12px;overflow:hidden;background:#000;margin-bottom:16px">
+      <video id="scanner-video" style="width:100%;max-height:300px;object-fit:cover;display:block" playsinline autoplay muted></video>
+      <canvas id="scanner-canvas" style="display:none"></canvas>
+      <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:120px;border:2px solid var(--gold);border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,.5)"></div>
+      <div style="position:absolute;bottom:10px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#fff;padding:5px 14px;border-radius:20px;font-size:12px">Centrez le code-barres dans le cadre</div>
+     </div>
+     <!-- Manual input -->
+     <div style="display:flex;gap:8px;margin-bottom:16px">
+      <input type="text" id="scan-manual-input" placeholder="Ou saisissez/collez le code-barres manuellement..." inputmode="text" style="flex:1;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 14px;color:var(--tx);font-size:13px;outline:none">
+      <button class="btn btn-g" onclick="processBarcodeInput(document.getElementById('scan-manual-input').value)">→ Chercher</button>
+     </div>
+     <!-- Result -->
+     <div id="scan-result" style="display:none;background:var(--dk3);border:1px solid var(--bo);border-radius:12px;padding:16px;margin-bottom:16px"></div>
+     <!-- History -->
+     <div id="scan-history" style="margin-top:16px"></div>
     </div>
 
     <!-- COMPANY -->
@@ -1435,6 +1477,10 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
    </select>
   </div>
   <div class="fg">
+   <label>Code-barres (optionnel)</label>
+   <input id="ep-barcode" placeholder="ex: 6111234567890">
+  </div>
+  <div class="fg">
    <label>Image produit</label>
    <div class="photo-field-wrap">
     <input id="ep-img" placeholder="https://... ou utiliser 📁" oninput="previewPhoto('ep-img','ep-img-prev')">
@@ -1569,7 +1615,7 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
   <div id="pay-alt-cash-wrap">
    <div class="cmi-field" style="margin-bottom:0">
     <label>Montant remis par le client (MAD)</label>
-    <input id="pay-cash-given" type="number" placeholder="Montant exact (max = total commande)" min="0" oninput="calcChange();var tot=_altPendingOrder?_altPendingOrder.total:0;if(parseFloat(this.value)>tot){this.style.borderColor='#e05252';}else{this.style.borderColor='#ddd';}" style="width:100%;background:#fff;border:1.5px solid #ddd;border-radius:8px;padding:11px 13px;color:#111;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:8px;transition:.2s">
+    <input id="pay-cash-given" type="number" placeholder="Montant exact en espèces" min="0" inputmode="decimal" oninput="calcChange()" onkeyup="var tot=_altPendingOrder?_altPendingOrder.total:0;var v=parseFloat(this.value)||0;if(v>tot){this.style.border='2px solid #E05252';this.title='⚠️ Dépasse le total : '+tot+' MAD';}else if(v>0){this.style.border='2px solid #52C97A';this.title='';}else{this.style.border='1.5px solid #ddd';this.title='';}" style="width:100%;background:#fff;border:1.5px solid #ddd;border-radius:8px;padding:11px 13px;color:#111;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;margin-bottom:8px;transition:.2s">
    </div>
    <div id="pay-change-box" style="display:none;background:rgba(82,201,122,0.1);border:1px solid rgba(82,201,122,0.2);border-radius:8px;padding:10px 13px;font-size:14px;color:var(--grn);font-weight:600;margin-bottom:12px"></div>
   </div>
@@ -1815,13 +1861,12 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
   <div style="padding:16px 14px 8px"><h2 style="font-size:18px;font-weight:600">Mon compte crédit</h2></div>
   <div style="padding:0 14px" id="cl-credit-info"></div>
  </div>
- <nav class="bot-nav">
-  <div class="bt on" id="bt-cat" onclick="clPage('cat',this)"><div class="bt-ic">🏪</div>Catalogue</div>
-  <div class="bt" id="bt-ord" onclick="clPage('orders',this)"><div class="bt-ic">📦</div>Commandes</div>
-  <div class="bt" id="bt-cmp" onclick="clPage('complaints',this)"><div class="bt-ic">📣</div>Réclamations</div>
-  <div class="bt" id="bt-crd" onclick="clPage('credit',this)"><div class="bt-ic">💳</div>Crédit</div>
-  <div class="bt" id="bt-cont" onclick="clPage('contact',this)"><div class="bt-ic">✉️</div>Contact</div>
-  <div class="bt" id="bt-prof" onclick="clPage('profile',this)"><div class="bt-ic">👤</div>Profil</div>
+ <nav class="bot-nav" id="bot-nav">
+  <div class="bt on" id="bt-cat" onclick="clPage('cat',this)"><div class="bt-ic">🏪</div><span>Catalogue</span></div>
+  <div class="bt" id="bt-ord" onclick="clPage('orders',this)"><div class="bt-ic">📦</div><span>Commandes</span></div>
+  <div class="bt" id="bt-cmp" onclick="clPage('complaints',this)"><div class="bt-ic">📣</div><span>Réclamations</span></div>
+  <div class="bt" id="bt-crd" onclick="clPage('credit',this)"><div class="bt-ic">💳</div><span>Crédit</span></div>
+  <div class="bt" id="bt-prof" onclick="clPage('profile',this)"><div class="bt-ic">👤</div><span>Profil</span></div>
  </nav>
 </div>
 
@@ -2806,10 +2851,18 @@ function confirmReturn(id){
   if(!cr.coupons) cr.coupons=[];
   var couponGenerated=0; var creditReduced=0;
   // Commandes payées en espèces, chèque ou virement uniquement → coupon avoir
-  var paidByCashOrCheque = (o.payStatus==='paid') &&
-    (o.payMethod==='cash' || o.payMethod==='cheque' || o.payMethod==='transfer');
-  // Commandes payées à crédit → réduire le solde crédit
-  var paidByCredit = (o.payMethod==='credit' || o.payStatus==='partial' || o.payStatus==='credit');
+  // Determine payment type for return logic
+  var payMethod = o.payMethod||'';
+  var payStatus = o.payStatus||'';
+  // Paid by cash/cheque/transfer/CMI → generate coupon avoir
+  var paidByCashOrCheque = payStatus==='paid' && (
+    payMethod==='cash' || payMethod==='cheque' || payMethod==='transfer' || payMethod==='cmi' ||
+    payMethod.startsWith('coupon') // coupon payment
+  );
+  // Paid by credit → reduce credit balance
+  var paidByCredit = payMethod==='credit' || payStatus==='partial' || payStatus==='credit';
+  // Partial: mix of credit + cash
+  var paidPartial = payStatus==='partial';
 
   if(paidByCashOrCheque){
     // Réduire d'abord le solde crédit existant, puis coupon pour le reste
@@ -2933,6 +2986,7 @@ function openEditProd(id){
   var p=PRODUCTS.find(function(x){return x.id===id;});if(!p)return;
   document.getElementById('ep-id').value=p.id;
   document.getElementById('ep-name').value=p.name;
+  var epBar=document.getElementById('ep-barcode'); if(epBar) epBar.value=p.barcode||'';
   document.getElementById('ep-cat').innerHTML=buildCatOptions(p.category,'ep');
   document.getElementById('ep-unit').value=p.unit||'';
   document.getElementById('ep-buy').value=p.buyPrice||0;
@@ -3088,7 +3142,9 @@ function saveProduct(){
     unit:document.getElementById('np-unit').value,
     stock:stock,
     threshold:+(document.getElementById('np-thr').value)||10,
-    image:img, purchases:[]
+    image:img,
+    barcode:document.getElementById('np-barcode')?document.getElementById('np-barcode').value.trim():'',
+    purchases:[]
   };
   if(stock>0){
     newProd.purchases.push({id:'PUR'+Date.now(),date:new Date().toISOString().split('T')[0],
@@ -3180,10 +3236,21 @@ function doAddStock(){
   var supId=supSel?supSel.value:'';
   var payMethodSel=document.getElementById('stk-add-paymethod');
   var payMethod=payMethodSel?payMethodSel.value:'';
-  if(!pid){showErr('stk-add-prod','⚠️ Sélectionnez un produit dans la liste déroulante');toast('⚠️ Choisissez un produit dans la liste',true);return;}
-  if(qty<=0||isNaN(qty)){showErr('stk-add-qty','⚠️ Quantité obligatoire — saisissez un nombre > 0 (pas de lettres)');return;}
-  if(isNaN(newBuy)||newBuy<=0){showErr('stk-add-price','⚠️ Prix achat obligatoire — saisissez un nombre > 0 (pas de lettres)');return;}
-  if(!supId||supId==='__new__'){showErr('stk-add-sup','⚠️ Fournisseur obligatoire — sélectionnez ou créez un fournisseur');return;}
+  if(!pid){
+    var prodSel=document.getElementById('stk-add-prod');
+    if(prodSel){prodSel.style.border='2px solid #E05252';}
+    _fErr('stk-add-prod','Produit obligatoire — sélectionnez un produit dans la liste déroulante');
+    toast('⚠️ Sélectionnez un produit dans la liste déroulante',true);return;
+  }
+  if(!document.getElementById('stk-add-qty').value.trim()){_fErr('stk-add-qty','Quantité obligatoire — saisissez le nombre de produits reçus');return;}
+  if(qty<=0||isNaN(qty)){_fErr('stk-add-qty','Quantité invalide — saisissez un nombre supérieur à 0');return;}
+  if(!document.getElementById('stk-add-price').value.trim()||isNaN(newBuy)||newBuy<=0){_fErr('stk-add-price',"Prix d'achat obligatoire — saisissez le montant unitaire en MAD");return;}
+  if(!supId||supId==='__new__'){
+    var supSel=document.getElementById('stk-add-sup');
+    if(supSel) supSel.style.border='2px solid #E05252';
+    _fErr('stk-add-sup','Fournisseur obligatoire — sélectionnez dans la liste ou créez-en un');
+    toast('⚠️ Sélectionnez un fournisseur',true);return;
+  }
   if(!payMethod){showErr('stk-add-paymethod','⚠️ Mode de paiement obligatoire');return;}
   var i=PRODUCTS.findIndex(function(p){return p.id===pid;});
   if(i>-1){
@@ -3278,6 +3345,7 @@ function renderStock(){
       '<td><input type="number" id="st-'+p.id+'" value="'+(p.threshold||10)+'" min="0" style="width:55px;background:var(--dk4);border:1px solid var(--bo2);border-radius:6px;padding:5px 7px;color:var(--tx);font-family:\'DM Sans\',sans-serif;font-size:12px;outline:none;text-align:center" onchange="setThreshold(\''+p.id+'\')"></td>'+
       '<td><span style="font-size:13px;font-weight:600;color:var(--grn)">'+fm(b)+'</span></td>'+
       '<td><span style="font-size:13px;font-weight:600;color:var(--gold)">'+fm(p.price)+'</span></td>'+
+      '<td><span style="font-size:11px;font-family:monospace;color:var(--tx3)">'+(p.barcode||'—')+'</span></td>'+
       '<td><span style="font-size:12px;font-weight:600;color:'+(b>0&&p.price>b?'var(--grn)':'var(--red)')+'">'+(b>0?Math.round((p.price-b)/b*100)+'%':'—')+'</span></td>'+
       '<td style="color:var(--grn)">+'+fm(m)+'</td>'+
       '<td><span style="color:var(--pur)">'+mp+'%</span></td>'+
@@ -4019,9 +4087,9 @@ function clPage(name,el){
   document.querySelectorAll('.bt').forEach(function(b){b.className='bt';});
   if(el)el.className='bt on';
   if(name==='orders')renderClOrds();
-  if(name==='complaints')renderClComplaints();
+  if(name==='complaints'){renderClComplaints();if(window.renderContactMsgs)renderContactMsgs();}
   if(name==='credit')renderClCreditInfo();
-  if(name==='contact')renderContactMsgs();
+  if(name==='contact'){if(window.renderContactMsgs)renderContactMsgs();}
 }
 
 // ═══════════ CATEGORY MANAGEMENT ═══════════
@@ -4200,12 +4268,12 @@ function calcChange(){
   var total=_altPendingOrder?_altPendingOrder.total:0;
   var given=parseFloat(document.getElementById('pay-cash-given').value)||0;
   var box=document.getElementById('pay-change-box');
-  var min10=Math.ceil(total*0.1);
+  if(!box) return;
   if(given>0){
     if(given>total){
-      box.innerHTML='⚠️ Le montant remis ('+fm(given)+') ne peut pas dépasser le total ('+fm(total)+')';
-      box.style.background='rgba(224,82,82,0.08)';box.style.borderColor='rgba(224,82,82,0.2)';box.style.color='var(--red)';
-      box.style.display='block';return;
+      box.innerHTML='🚫 <strong>'+fm(given)+' dépasse le total</strong> — le montant en espèces ne peut pas dépasser '+fm(total)+'. Saisissez le montant exact.';
+      box.style.cssText='display:block;background:rgba(224,82,82,0.1);border:1px solid rgba(224,82,82,0.4);border-left:3px solid #E05252;padding:8px 12px;border-radius:0 8px 8px 0;color:#E05252;font-size:12px;margin-top:6px';
+      return;
     }
     if(given<min10){
       box.innerHTML='⚠️ Montant minimum requis : <strong>'+fm(min10)+'</strong> (10% du total)';
@@ -4228,11 +4296,20 @@ function processAltPay(){
   if(_altPayMode==='cash'){
     var given=parseFloat(document.getElementById('pay-cash-given').value)||0;
     var total=_altPendingOrder.total;
-    var min10=Math.ceil(total*0.1);
-    if(!given||given<=0){toast('⚠️ Saisissez le montant remis',true);return;}
-    if(given>total){toast('⚠️ Le montant remis ('+fm(given)+') ne peut pas dépasser le total ('+fm(total)+')',true);return;}
-    if(given<min10){toast('⚠️ Montant minimum : '+fm(min10)+' (10% du total de '+fm(total)+')',true);return;}
-    if(given<total){toast('⚠️ Montant insuffisant — manque '+fm(total-given),true);return;}
+    var cashInput=document.getElementById('pay-cash-given');
+    if(!given||given<=0){
+      if(cashInput){cashInput.style.border='2px solid #E05252';}
+      toast('⚠️ Saisissez le montant remis en espèces',true);return;
+    }
+    if(given>total){
+      if(cashInput){cashInput.style.border='2px solid #E05252';}
+      toast('⚠️ Montant remis ('+fm(given)+') dépasse le total de la commande ('+fm(total)+') — saisissez le montant exact',true);return;
+    }
+    if(given<total){
+      if(cashInput){cashInput.style.border='2px solid #E8834A';}
+      toast('⚠️ Montant insuffisant — il manque '+fm(total-given)+' pour couvrir la commande',true);return;
+    }
+    if(cashInput) cashInput.style.border='2px solid #52C97A';
   } else {
     var ref=document.getElementById('pay-transfer-ref').value.trim();
     if(!ref){toast('⚠️ Entrez la référence du virement',true);return;}
@@ -4611,17 +4688,43 @@ function openConfirmPendingPayments(cid){
 
 function confirmCreditPayment(pid){
   var p=PENDING_PAYMENTS.find(function(x){return x.id===pid;});
-  if(!p) return;
-  p.status='confirmed';
+  if(!p){toast('⚠️ Paiement introuvable — actualisez la page',true);return;}
+  if(p.status==='confirmed'){toast('⚠️ Ce paiement a déjà été confirmé',true);return;}
   var cr=getClientCredit(p.clientId);
-  cr.balance=Math.max(0,cr.balance-p.amount);
-  cr.transactions.push({date:new Date().toISOString().split('T')[0],type:'payment',amount:p.amount,method:p.method,note:'Paiement confirmé — '+p.methodLabel});
+  if(!cr){toast('⚠️ Client introuvable',true);return;}
+  p.status='confirmed';
+  p.confirmedDate=new Date().toISOString().split('T')[0];
+  cr.balance=Math.max(0,(cr.balance||0)-p.amount);
+  if(!cr.transactions) cr.transactions=[];
+  cr.transactions.push({
+    date:new Date().toISOString().split('T')[0],
+    type:'payment',
+    amount:p.amount,
+    method:p.method,
+    note:'Paiement confirmé par admin — '+p.methodLabel+(p.note?' ('+p.note+')':'')
+  });
   try{localStorage.setItem('al_pending_pay',JSON.stringify(PENDING_PAYMENTS));}catch(e){}
   try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
-  if(window._origSave) window._origSave();
-  if(window.saveToCloud) window.saveToCloud();
-  closeAllMd();renderCredits();
-  toast('✅ Paiement confirmé — Solde réduit de '+fm(p.amount));
+  save();
+  if(window.saveToCloud){
+    window.saveToCloud().then(function(){
+      // Refresh confirm payments modal if still open
+      var cid=p.clientId;
+      var remaining=PENDING_PAYMENTS.filter(function(x){return x.clientId===cid&&x.status==='pending';});
+      if(remaining.length>0){
+        // Re-render the modal with remaining payments
+        openConfirmPendingPayments(cid);
+      } else {
+        closeAllMd();
+      }
+      renderCredits();
+      if(window.updateCreditBadge) updateCreditBadge();
+      toast('✅ Paiement de '+fm(p.amount)+' confirmé — Solde client: '+fm(cr.balance));
+    });
+  } else {
+    closeAllMd();renderCredits();
+    toast('✅ Paiement confirmé — Solde réduit de '+fm(p.amount));
+  }
 }
 function rejectCreditPayment(pid){
   var p=PENDING_PAYMENTS.find(function(x){return x.id===pid;});
@@ -5247,7 +5350,7 @@ goSec=function(n,el){
   document.querySelectorAll('.ni').forEach(function(x){x.className='ni';});
   var s=document.getElementById('sec-'+n);if(s)s.className='sec on';
   if(el)el.className='ni on';
-  var T={dash:'Tableau de bord',orders:'Commandes',prods:'Produits',stock:'Stock & Prix',clients:'Clients',analytics:'Analytique',regional:'Régions & Villes',invoices:'Factures',credits:'Crédits clients',suppliers:'Fournisseurs',complaints:'Réclamations',company:'Mon entreprise'};
+  var T={dash:'Tableau de bord',orders:'Commandes',prods:'Produits',stock:'Stock & Prix',clients:'Clients',analytics:'Analytique',regional:'Régions & Villes',invoices:'Factures',credits:'Crédits clients',suppliers:'Fournisseurs',complaints:'Réclamations',company:'Mon entreprise',scanner:'📷 Scanner code-barres'};
   document.getElementById('pg-ttl').textContent=T[n]||n;
   closeSide();
   if(n==='orders'){initOrderFilters();renderOrders();}
@@ -7177,6 +7280,7 @@ function refreshUI(){
       else if(sec==='stock' && window.renderStock) window.renderStock();
       else if(sec==='credits' && window.renderCredits) window.renderCredits();
       else if(sec==='coupons' && window.renderCouponsSection) window.renderCouponsSection();
+      else if(sec==='scanner') renderScanHistory();
       else if(sec==='complaints'){
         if(window.renderComplaints) window.renderComplaints();
         if(window.renderAdminContactMsgs) setTimeout(window.renderAdminContactMsgs,100);
@@ -7411,6 +7515,209 @@ function initContactMap(){
     if(mapEl) mapEl.innerHTML='<div style="height:100%;display:flex;align-items:center;justify-content:center;color:var(--tx3);font-size:12px">📍 '+addr+'</div>';
   }
 }
+
+// ════════════════════════════════════════════════════════════
+// 📷 BARCODE SCANNER — Entrée/Sortie de stock
+// ════════════════════════════════════════════════════════════
+var _scanMode = 'in'; // 'in' = entrée, 'out' = sortie
+var _scanStream = null;
+var _scanInterval = null;
+var _scanHistory = [];
+
+function setScanMode(mode){
+  _scanMode = mode;
+  var btnIn = document.getElementById('scan-mode-in');
+  var btnOut = document.getElementById('scan-mode-out');
+  if(btnIn) btnIn.style.opacity = mode==='in'?'1':'0.5';
+  if(btnOut) btnOut.style.opacity = mode==='out'?'1':'0.5';
+  var result = document.getElementById('scan-result');
+  if(result) result.style.display='none';
+  toast('Mode: '+(mode==='in'?'📥 Entrée stock':'📤 Sortie stock'));
+}
+
+function startBarcodeScanner(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    toast('⚠️ La caméra n\'est pas disponible sur ce navigateur ou appareil',true);return;
+  }
+  var container=document.getElementById('scanner-container');
+  var video=document.getElementById('scanner-video');
+  var btnStart=document.getElementById('btn-scan-start');
+  var btnStop=document.getElementById('btn-scan-stop');
+  if(container) container.style.display='block';
+  if(btnStart) btnStart.style.display='none';
+  if(btnStop) btnStop.style.display='inline-flex';
+  navigator.mediaDevices.getUserMedia({
+    video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}}
+  }).then(function(stream){
+    _scanStream=stream;
+    if(video){video.srcObject=stream;video.play();}
+    // Start frame analysis every 500ms
+    _scanInterval=setInterval(function(){
+      scanVideoFrame();
+    },500);
+    toast('📷 Scanner démarré — approchez un code-barres');
+  }).catch(function(err){
+    stopBarcodeScanner();
+    if(err.name==='NotAllowedError'){
+      toast('⚠️ Permission caméra refusée — autorisez dans les paramètres du navigateur',true);
+    } else {
+      toast('⚠️ Impossible d\'accéder à la caméra: '+err.message,true);
+    }
+  });
+}
+
+function stopBarcodeScanner(){
+  if(_scanInterval){clearInterval(_scanInterval);_scanInterval=null;}
+  if(_scanStream){_scanStream.getTracks().forEach(function(t){t.stop();});_scanStream=null;}
+  var container=document.getElementById('scanner-container');
+  var btnStart=document.getElementById('btn-scan-start');
+  var btnStop=document.getElementById('btn-scan-stop');
+  if(container) container.style.display='none';
+  if(btnStart) btnStart.style.display='inline-flex';
+  if(btnStop) btnStop.style.display='none';
+}
+
+function scanVideoFrame(){
+  var video=document.getElementById('scanner-video');
+  var canvas=document.getElementById('scanner-canvas');
+  if(!video||!canvas||!video.videoWidth) return;
+  var ctx=canvas.getContext('2d');
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
+  ctx.drawImage(video,0,0);
+  // Use BarcodeDetector API (Chrome/Android) if available
+  if(window.BarcodeDetector){
+    var bd=new BarcodeDetector({formats:['ean_13','ean_8','code_128','code_39','qr_code','upc_a','upc_e']});
+    bd.detect(canvas).then(function(barcodes){
+      if(barcodes&&barcodes.length>0){
+        var code=barcodes[0].rawValue;
+        stopBarcodeScanner();
+        processBarcodeInput(code);
+      }
+    }).catch(function(){});
+  } else {
+    // Fallback: show manual input hint
+    var hint=document.getElementById('scan-api-hint');
+    if(!hint){
+      hint=document.createElement('div');
+      hint.id='scan-api-hint';
+      hint.style.cssText='margin-bottom:10px;padding:8px 12px;background:rgba(232,131,74,0.1);border:1px solid var(--ora);border-radius:8px;font-size:12px;color:var(--ora)';
+      hint.innerHTML='⚠️ La détection automatique nécessite Chrome sur Android/Desktop. Utilisez la saisie manuelle ci-dessous ou installez Chrome.';
+      var container=document.getElementById('scanner-container');
+      if(container&&container.parentNode) container.parentNode.insertBefore(hint,container.nextSibling);
+      clearInterval(_scanInterval);
+    }
+  }
+}
+
+function processBarcodeInput(code){
+  if(!code||!code.trim()){toast('⚠️ Code-barres vide',true);return;}
+  code=code.trim();
+  // Search product by barcode field OR by name match
+  var prod=PRODUCTS.find(function(p){
+    return p.barcode===code || p.id===code ||
+           p.name.toLowerCase()===code.toLowerCase();
+  });
+  var resultDiv=document.getElementById('scan-result');
+  if(!resultDiv) return;
+  if(!prod){
+    resultDiv.style.display='block';
+    resultDiv.innerHTML='<div style="color:var(--red);font-size:14px;font-weight:600;margin-bottom:10px">❌ Produit introuvable pour le code: <code style="background:var(--dk4);padding:2px 6px;border-radius:4px">'+code+'</code></div>'+
+      '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">Ce code-barres n\'est pas associé à un produit dans votre catalogue.</div>'+
+      '<button class="btn btn-g btn-sm" onclick="addBarcodeToProduct(\''+code+'\')">➕ Associer à un produit existant</button>';
+    return;
+  }
+  // Product found — show scan action
+  var icon=_scanMode==='in'?'📥':'📤';
+  var action=_scanMode==='in'?'Approvisionner':'Sortir du stock';
+  var color=_scanMode==='in'?'var(--grn)':'var(--ora)';
+  resultDiv.style.display='block';
+  resultDiv.innerHTML=
+    '<div style="display:flex;align-items:center;gap:12px;margin-bottom:14px">'+
+    '<img src="'+prod.image+'" style="width:60px;height:60px;border-radius:8px;object-fit:cover;background:var(--dk4)" onerror="this.style.display=\'none\'">'+
+    '<div>'+
+    '<div style="font-size:16px;font-weight:700;margin-bottom:3px">'+prod.name+'</div>'+
+    '<div style="font-size:12px;color:var(--tx3)">Stock actuel : <strong style="color:'+color+'">'+prod.stock+'</strong> '+prod.unit+'</div>'+
+    '<div style="font-size:12px;color:var(--tx3)">Prix vente : '+fm(prod.price)+'</div>'+
+    '</div></div>'+
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'+
+    '<label style="font-size:13px;color:var(--tx2)">'+icon+' Quantité à '+(_scanMode==='in'?'ajouter':'retirer')+' :</label>'+
+    '<input type="number" id="scan-qty" value="1" min="1" max="'+(prod.stock||999)+'" style="width:80px;background:var(--dk4);border:1px solid var(--gold);border-radius:8px;padding:8px;color:var(--tx);font-size:16px;text-align:center;outline:none" inputmode="numeric">'+
+    '</div>'+
+    '<div style="display:flex;gap:8px">'+
+    '<button class="btn btn-g" style="flex:1;padding:11px" onclick="confirmScanAction(\''+prod.id+'\')">✅ '+action+'</button>'+
+    '<button class="btn btn-o btn-sm" onclick="document.getElementById(\'scan-result\').style.display=\'none\'">✕</button>'+
+    '</div>';
+  // Add to history
+  _scanHistory.unshift({code:code,prodName:prod.name,prodId:prod.id,mode:_scanMode,time:new Date().toLocaleTimeString('fr-FR')});
+  renderScanHistory();
+  // Clear manual input
+  var inp=document.getElementById('scan-manual-input');
+  if(inp) inp.value='';
+}
+
+function confirmScanAction(prodId){
+  var prod=PRODUCTS.find(function(p){return p.id===prodId;});
+  if(!prod) return;
+  var qty=parseInt(document.getElementById('scan-qty').value)||1;
+  if(qty<=0){toast('⚠️ Quantité invalide',true);return;}
+  if(_scanMode==='in'){
+    prod.stock+=qty;
+    _scanHistory[0].qty=qty; _scanHistory[0].action='Entrée +'+qty;
+    toast('✅ Stock +'+qty+' — '+prod.name+' : '+prod.stock+' en stock');
+  } else {
+    if(qty>prod.stock){toast('⚠️ Stock insuffisant ('+prod.stock+' disponible)',true);return;}
+    prod.stock-=qty;
+    _scanHistory[0].qty=qty; _scanHistory[0].action='Sortie -'+qty;
+    toast('✅ Stock -'+qty+' — '+prod.name+' : '+prod.stock+' en stock');
+  }
+  save(); if(window.saveToCloud) window.saveToCloud();
+  document.getElementById('scan-result').style.display='none';
+  renderScanHistory();
+}
+
+function addBarcodeToProduct(code){
+  var html='<div style="padding:4px"><div style="font-size:13px;color:var(--tx2);margin-bottom:10px">Sélectionnez le produit à associer au code <code>'+code+'</code> :</div>'+
+    '<select id="barcode-prod-sel" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px;color:var(--tx);font-size:13px;outline:none;margin-bottom:10px">'+
+    '<option value="">— Choisir —</option>'+
+    PRODUCTS.map(function(p){return'<option value="'+p.id+'">'+p.name+' (stock: '+p.stock+')</option>';}).join('')+
+    '</select>'+
+    '<button class="btn btn-g" style="width:100%" onclick="saveBarcode(\''+code+'\')">💾 Associer</button>'+
+    '</div>';
+  document.getElementById('scan-result').innerHTML=html;
+}
+
+function saveBarcode(code){
+  var sel=document.getElementById('barcode-prod-sel');
+  if(!sel||!sel.value){toast('⚠️ Sélectionnez un produit',true);return;}
+  var prod=PRODUCTS.find(function(p){return p.id===sel.value;});
+  if(!prod) return;
+  prod.barcode=code;
+  save(); if(window.saveToCloud) window.saveToCloud();
+  toast('✅ Code "'+code+'" associé à "'+prod.name+'"');
+  processBarcodeInput(code);
+}
+
+function renderScanHistory(){
+  var div=document.getElementById('scan-history');
+  if(!div||!_scanHistory.length) return;
+  div.innerHTML='<div style="font-size:11px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">📋 Historique de session</div>'+
+    '<div style="background:var(--dk3);border:1px solid var(--bo);border-radius:10px;overflow:hidden">'+
+    _scanHistory.slice(0,10).map(function(h){
+      return'<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 12px;border-bottom:1px solid var(--bo2);font-size:12px">'+
+        '<span>'+(h.mode==='in'?'📥':'📤')+' <strong>'+h.prodName+'</strong></span>'+
+        '<span style="color:var(--tx3)">'+h.time+(h.action?' · '+h.action:'')+'</span>'+
+      '</div>';
+    }).join('')+
+    '</div>';
+}
+
+// Add scanner to goSec
+var _origGoSec=goSec;
+goSec=function(n,el){
+  _origGoSec(n,el);
+  if(n==='scanner') renderScanHistory();
+};
 
 window._fbSave = saveToCloud;
 window._fbLoad = loadFromCloud;
