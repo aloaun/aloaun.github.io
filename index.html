@@ -766,6 +766,7 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
     <div class="ns">Gestion</div>
     <div class="ni" id="ni-prods" onclick="goSec('prods',this)"><span>🏪</span>Produits</div>
     <div class="ni" id="ni-stock" onclick="goSec('stock',this)"><span>📋</span>Stock &amp; Prix</div>
+    <div class="ni" id="ni-appro" onclick="goSec('appro',this)"><span>📥</span>Approvisionnement</div>
     <div class="ni" id="ni-clients" onclick="goSec('clients',this)"><span>👥</span>Clients</div>
     <div class="ns">Rapports</div>
     <div class="ni" id="ni-analytics" onclick="goSec('analytics',this)"><span>📈</span>Analytique</div>
@@ -870,57 +871,220 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
     <div class="sec" id="sec-stock">
      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:7px">
       <h3 style="font-size:13px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px">Inventaire &amp; Prix</h3>
-      <button class="btn btn-g btn-sm" onclick="renderStock()">🔄 Actualiser</button>
+      <div style="display:flex;gap:7px;flex-wrap:wrap">
+       <button class="btn btn-b btn-sm" onclick="goSec('appro',document.getElementById('ni-appro'))">📥 Approvisionnement →</button>
+       <button class="btn btn-g btn-sm" onclick="renderStock()">🔄 Actualiser</button>
+      </div>
      </div>
-     <div class="stk-add-box" id="stk-add-form">
-      <h4>➕ Ajouter un approvisionnement <span style="font-size:10px;color:var(--tx3);font-weight:400">— champs <span style="color:var(--red)">★</span> obligatoires</span></h4>
-      <div class="stk-add-row" style="flex-wrap:wrap;gap:10px">
-       <div style="display:flex;flex-direction:column;gap:3px;min-width:160px">
-        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Produit <span style="color:var(--red)">★</span></label>
-        <select id="stk-add-prod" onchange="onStkProdChange();this.style.border='';_fClear('stk-add-prod')"><option value="">— Sélectionner —</option></select>
-        <div id="stk-add-prod-err" class="ferr"></div>
-       </div>
-       <div style="display:flex;flex-direction:column;gap:3px">
-        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Quantité <span style="color:var(--red)">★</span></label>
-        <input type="number" id="stk-add-qty" placeholder="Ex: 50" min="1" style="width:90px" oninput="onStkCalcCmp()">
-       </div>
-       <div style="display:flex;flex-direction:column;gap:3px">
-        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Prix achat MAD <span style="color:var(--red)">★</span></label>
-        <input type="number" id="stk-add-price" placeholder="Ex: 95" min="0" step="0.01" style="width:110px" oninput="onStkCalcCmp()">
-       </div>
-       <div style="display:flex;flex-direction:column;gap:3px;min-width:170px">
-        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Fournisseur <span style="color:var(--red)">★</span></label>
-        <select id="stk-add-sup" onchange="if(this.value==='__new__'){openMd('add-supplier');this.value='';}" ><option value="">— Choisir —</option></select>
-       </div>
-       <div style="display:flex;flex-direction:column;gap:3px;min-width:140px">
-        <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Mode paiement <span style="color:var(--red)">★</span></label>
-        <select id="stk-add-paymethod">
+     <div id="stk-alerts"></div>
+     <div class="tc" style="overflow-x:auto">
+      <table style="min-width:1100px"><thead><tr>
+       <th>Produit</th><th>Catégorie</th>
+       <th>Stock actuel</th><th>Seuil alerte</th>
+       <th>Prix d'achat</th><th>Prix de vente</th>
+       <th>Code-barres</th><th>Marge %</th><th>Marge unitaire</th><th>Marge TTC</th><th>État</th>
+       <th>Fournisseurs</th>
+       <th>Historique achats</th>
+       <th>Action</th>
+      </tr></thead><tbody id="stk-tb"></tbody></table>
+     </div>
+    </div>
+
+    <!-- APPROVISIONNEMENT -->
+    <div class="sec" id="sec-appro">
+     <!-- KPIs -->
+     <div class="kpis" id="appro-kpis" style="margin-bottom:16px"></div>
+     <!-- Tabs: Nouveau produit / Réapprovisionner existant -->
+     <div style="display:flex;gap:0;background:var(--dk4);border-radius:12px;padding:4px;margin-bottom:18px;width:fit-content">
+      <button id="appro-tab-new" class="tab on" onclick="switchApproTab('new')" style="border-radius:9px;padding:9px 22px;font-size:13px">➕ Nouveau produit</button>
+      <button id="appro-tab-reap" class="tab" onclick="switchApproTab('reap')" style="border-radius:9px;padding:9px 22px;font-size:13px">📦 Réapprovisionner</button>
+      <button id="appro-tab-scan" class="tab" onclick="switchApproTab('scan')" style="border-radius:9px;padding:9px 22px;font-size:13px">📷 Scanner code-barres</button>
+     </div>
+
+     <!-- ONGLET 1: Nouveau produit -->
+     <div id="appro-panel-new">
+      <div class="stk-add-box" style="margin-bottom:16px">
+       <h4>➕ Créer et ajouter un nouveau produit <span style="font-size:10px;color:var(--tx3);font-weight:400">— champs <span style="color:var(--red)">★</span> obligatoires</span></h4>
+       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px">
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Nom du produit <span style="color:var(--red)">★</span></label>
+         <input type="text" id="np-name" placeholder="Ex: Huile d'Argan Premium" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+         <div id="np-name-err" class="ferr"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Catégorie <span style="color:var(--red)">★</span></label>
+         <select id="np-cat" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+          <option value="">— Choisir —</option>
+         </select>
+         <div id="np-cat-err" class="ferr"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Code-barres <span style="color:var(--tx3)">(optionnel)</span></label>
+         <div style="display:flex;gap:6px">
+          <input type="text" id="np-barcode" placeholder="Ex: 6111234567890" style="flex:1;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+          <button class="btn btn-b btn-sm" onclick="startApproScanner('np-barcode')" title="Scanner avec caméra">📷</button>
+         </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Quantité initiale <span style="color:var(--red)">★</span></label>
+         <input type="number" id="np-qty" placeholder="Ex: 50" min="1" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+         <div id="np-qty-err" class="ferr"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Prix d'achat MAD <span style="color:var(--red)">★</span></label>
+         <input type="number" id="np-buy" placeholder="Ex: 95" min="0" step="0.01" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="calcNpMargin()">
+         <div id="np-buy-err" class="ferr"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Prix de vente MAD <span style="color:var(--red)">★</span></label>
+         <input type="number" id="np-sell" placeholder="Ex: 185" min="0" step="0.01" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="calcNpMargin()">
+         <div id="np-sell-err" class="ferr"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Fournisseur <span style="color:var(--red)">★</span></label>
+         <select id="np-sup" onchange="if(this.value==='__new__'){openMd('add-supplier');this.value='';}" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+          <option value="">— Choisir —</option>
+         </select>
+         <div id="np-sup-err" class="ferr"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Mode paiement <span style="color:var(--red)">★</span></label>
+         <select id="np-pay" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
           <option value="">— Choisir —</option>
           <option value="cash">💵 Espèces</option>
           <option value="transfer">🏦 Virement</option>
           <option value="cheque">📋 Chèque</option>
           <option value="credit">🔄 À crédit</option>
-        </select>
+         </select>
+         <div id="np-pay-err" class="ferr"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Unité / Conditionnement</label>
+         <input type="text" id="np-unit" placeholder="Ex: flacon 100ml, kg, pièce..." style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Seuil alerte stock</label>
+         <input type="number" id="np-threshold" placeholder="Ex: 10" min="0" value="10" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Image (URL)</label>
+         <div style="display:flex;gap:6px">
+          <input type="text" id="appro-np-img" placeholder="https://... ou 📁" style="flex:1;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="previewPhoto('appro-np-img','appro-np-img-prev')">
+          <button class="btn btn-o btn-sm" onclick="openPhotoUpload('appro-np-img','appro-np-img-prev','appro-panel-new')">📁</button>
+         </div>
+         <img id="appro-np-img-prev" style="margin-top:6px;max-width:80px;max-height:60px;border-radius:6px;display:none">
+        </div>
        </div>
-       <div style="display:flex;flex-direction:column;justify-content:flex-end;gap:5px">
-        <button class="btn btn-b btn-sm" onclick="goSec('scanner',document.getElementById('ni-scanner'))" title="Scanner code-barres">📷 Scanner</button>
-        <button class="btn btn-o btn-sm" onclick="openMd('add-supplier')" title="Ajouter un nouveau fournisseur">➕ Nouveau fourn.</button>
-        <button class="btn btn-gn" onclick="doAddStock()">✅ Ajouter au stock</button>
+       <div id="np-margin-preview" style="display:none;margin-top:10px;background:rgba(155,107,219,0.07);border:1px solid rgba(155,107,219,0.18);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--pur)"></div>
+       <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn btn-gn" style="flex:1;padding:12px" onclick="doAddNewProduct()">✅ Créer le produit &amp; enregistrer le stock</button>
+        <button class="btn btn-o btn-sm" onclick="resetNewProductForm()">🗑️ Effacer</button>
        </div>
       </div>
-      <div id="stk-cmp-preview" style="display:none;margin-top:9px;background:rgba(155,107,219,0.07);border:1px solid rgba(155,107,219,0.18);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--pur)"></div>
+      <!-- Historique récent -->
+      <div class="tc"><div class="tc-h"><h3>Derniers produits ajoutés</h3><button class="btn btn-g btn-sm" onclick="renderApproSection()">🔄</button></div>
+       <div id="appro-new-history"></div>
+      </div>
      </div>
-     <div id="stk-alerts"></div>
-     <div class="tc" style="overflow-x:auto">
-      <table style="min-width:950px"><thead><tr>
-       <th>Produit</th><th>Catégorie</th>
-       <th>Stock actuel</th><th>Seuil alerte</th>
-       <th>Prix d'achat</th><th>Prix de vente</th>
-       <th>Marge unitaire</th><th>Marge %</th><th>État</th>
-       <th>Fournisseurs</th>
-       <th>Historique achats</th>
-       <th>Action</th>
-      </tr></thead><tbody id="stk-tb"></tbody></table>
+
+     <!-- ONGLET 2: Réapprovisionner produit existant -->
+     <div id="appro-panel-reap" style="display:none">
+      <div class="stk-add-box" style="margin-bottom:16px">
+       <h4>📦 Réapprovisionner un produit existant <span style="font-size:10px;color:var(--tx3);font-weight:400">— champs <span style="color:var(--red)">★</span> obligatoires</span></h4>
+       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px">
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Produit <span style="color:var(--red)">★</span></label>
+         <select id="appro-prod" onchange="onApproProdChange();_fClear('appro-prod')" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+          <option value="">— Sélectionner —</option>
+         </select>
+         <div id="appro-prod-err" class="ferr"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Code-barres (recherche)</label>
+         <div style="display:flex;gap:6px">
+          <input type="text" id="appro-barcode" placeholder="Scanner ou saisir code-barres..." style="flex:1;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')findProdByBarcode()">
+          <button class="btn btn-b btn-sm" onclick="startApproScanner('appro-barcode')" title="Scanner avec caméra">📷</button>
+          <button class="btn btn-g btn-sm" onclick="findProdByBarcode()">→</button>
+         </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Quantité à recevoir <span style="color:var(--red)">★</span></label>
+         <input type="number" id="appro-qty" placeholder="Ex: 50" min="1" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="onApproCalcCmp()">
+         <div id="appro-qty-err" class="ferr"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Prix d'achat MAD <span style="color:var(--red)">★</span></label>
+         <input type="number" id="appro-price" placeholder="Ex: 95" min="0" step="0.01" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="onApproCalcCmp()">
+         <div id="appro-price-err" class="ferr"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Fournisseur <span style="color:var(--red)">★</span></label>
+         <select id="appro-sup" onchange="if(this.value==='__new__'){openMd('add-supplier');this.value='';};" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+          <option value="">— Choisir —</option>
+         </select>
+         <div id="appro-sup-err" class="ferr"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Mode paiement <span style="color:var(--red)">★</span></label>
+         <select id="appro-pay" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+          <option value="">— Choisir —</option>
+          <option value="cash">💵 Espèces</option>
+          <option value="transfer">🏦 Virement</option>
+          <option value="cheque">📋 Chèque</option>
+          <option value="credit">🔄 À crédit</option>
+         </select>
+         <div id="appro-pay-err" class="ferr"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Notes / Numéro bon de commande</label>
+         <input type="text" id="appro-note" placeholder="Ex: BC-2024-001..." style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+        </div>
+       </div>
+       <!-- Preview CMP -->
+       <div id="appro-cmp-preview" style="display:none;margin-top:10px;background:rgba(155,107,219,0.07);border:1px solid rgba(155,107,219,0.18);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--pur)"></div>
+       <!-- Infos produit sélectionné -->
+       <div id="appro-prod-info" style="display:none;margin-top:10px;background:rgba(201,168,76,0.07);border:1px solid var(--bo);border-radius:8px;padding:10px 14px;font-size:12px"></div>
+       <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn btn-gn" style="flex:1;padding:12px" onclick="doApproReap()">✅ Enregistrer l'approvisionnement</button>
+        <button class="btn btn-o btn-sm" onclick="openMd('add-supplier')">➕ Nouveau fournisseur</button>
+       </div>
+      </div>
+      <!-- Historique approvisionnements -->
+      <div class="tc" style="margin-top:4px">
+       <div class="tc-h"><h3>Historique des approvisionnements</h3>
+        <div style="display:flex;gap:6px">
+         <input type="text" id="appro-hist-q" placeholder="🔍 Produit ou fournisseur..." oninput="renderApproHistory()" style="background:var(--dk4);border:1px solid var(--bo2);border-radius:8px;padding:6px 10px;color:var(--tx);font-size:12px;outline:none;width:200px">
+         <button class="btn btn-g btn-sm" onclick="exportApproCSV()">📥 CSV</button>
+        </div>
+       </div>
+       <div style="overflow-x:auto">
+        <table style="min-width:700px"><thead><tr><th>Date</th><th>Produit</th><th>Code-barres</th><th>Fournisseur</th><th>Qté</th><th>Prix/u</th><th>Total</th><th>Paiement</th><th>Note</th></tr></thead>
+        <tbody id="appro-history-tb"></tbody></table>
+       </div>
+      </div>
+     </div>
+
+     <!-- ONGLET 3: Scanner code-barres -->
+     <div id="appro-panel-scan" style="display:none">
+      <div style="background:var(--dk3);border:1px solid var(--bo);border-radius:12px;padding:18px;margin-bottom:16px">
+       <h4 style="color:var(--gold);margin-bottom:8px">📷 Scanner code-barres — Approvisionnement rapide</h4>
+       <p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Scannez le code-barres d'un produit pour l'identifier automatiquement et l'approvisionner</p>
+       <div style="display:flex;gap:8px;margin-bottom:14px">
+        <button class="btn btn-g btn-sm" id="appro-scan-start" onclick="startApproCamScanner()">📷 Démarrer le scanner</button>
+        <button class="btn btn-r btn-sm" id="appro-scan-stop" onclick="stopApproCamScanner()" style="display:none">⏹ Arrêter</button>
+       </div>
+       <div id="appro-scanner-container" style="display:none;position:relative;border-radius:12px;overflow:hidden;background:#000;margin-bottom:14px">
+        <video id="appro-scanner-video" style="width:100%;max-height:280px;object-fit:cover;display:block" playsinline autoplay muted></video>
+        <canvas id="appro-scanner-canvas" style="display:none"></canvas>
+        <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:100px;border:2px solid var(--gold);border-radius:8px;box-shadow:0 0 0 9999px rgba(0,0,0,.5)"></div>
+        <div style="position:absolute;bottom:8px;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.7);color:#fff;padding:4px 12px;border-radius:20px;font-size:12px">Centrez le code-barres dans le cadre</div>
+       </div>
+       <div style="display:flex;gap:8px">
+        <input type="text" id="appro-scan-manual" placeholder="Ou saisissez le code-barres manuellement..." style="flex:1;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 14px;color:var(--tx);font-size:13px;outline:none" onkeydown="if(event.key==='Enter')processApproBarcode(this.value)">
+        <button class="btn btn-g" onclick="processApproBarcode(document.getElementById('appro-scan-manual').value)">→ Chercher</button>
+       </div>
+       <div id="appro-scan-result" style="display:none;margin-top:14px;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:14px"></div>
+      </div>
      </div>
     </div>
 
@@ -1228,10 +1392,10 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
 <div class="mo" id="mo-bg" onclick="if(event.target===this)closeAllMd()">
 
  <!-- Confirm Pending Payments Modal -->
-
-
-
- <!-- Add Client — rebuilt from scratch -->
+ <div class="md" id="md-confirm-pay" style="display:none;max-width:540px">
+  <button class="md-x" onclick="closeAllMd()">✕</button>
+  <div id="md-confirm-pay-content"></div>
+ </div> <!-- Add Client — rebuilt from scratch -->
  <div class="md" id="md-add-cl" style="display:none;max-width:540px">
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <h2 style="margin-bottom:4px">👤 Nouveau client</h2>
@@ -2394,12 +2558,13 @@ function goSec(n,el){
   document.querySelectorAll('.ni').forEach(function(x){x.className='ni';});
   var s=document.getElementById('sec-'+n);if(s)s.className='sec on';
   if(el)el.className='ni on';
-  var T={dash:'Tableau de bord',orders:'Commandes',prods:'Produits',stock:'Stock & Prix',clients:'Clients',analytics:'Analytique',regional:'Ventes par région',invoices:'Factures',admins:'Admins',purchases:'Approvisionnements',suppliers:'Fournisseurs',credits:'Crédits',complaints:'Réclamations',company:'Entreprise',coupons:'Gestion des coupons'};
+  var T={dash:'Tableau de bord',orders:'Commandes',prods:'Produits',stock:'Stock & Prix',appro:'Approvisionnement',clients:'Clients',analytics:'Analytique',regional:'Ventes par région',invoices:'Factures',admins:'Admins',purchases:'Historique achats',suppliers:'Fournisseurs',credits:'Crédits',complaints:'Réclamations',company:'Entreprise',coupons:'Gestion des coupons'};
   document.getElementById('pg-ttl').textContent=T[n]||n;
   closeSide();
   if(n==='orders'){initOrderFilters();renderOrders();}
   if(n==='prods'){initProdFilters();renderProds();}
   if(n==='stock'){fillStkAddProd();renderStock();}
+  if(n==='appro'){renderApproSection();}
   if(n==='clients'){initClientFilters();renderClients();}
   if(n==='analytics')renderAnalytics();
   if(n==='regional')renderRegional();
@@ -3161,7 +3326,9 @@ function delProd(id){PRODUCTS=PRODUCTS.filter(function(p){return p.id!==id;});sa
 
 // ═══════════ STOCK ═══════════
 function fillStkAddProd(){
+  // Redirige vers la section Approvisionnement si l'ancien formulaire n'existe plus
   var sel=document.getElementById('stk-add-prod');
+  if(!sel) return; // formulaire retiré — géré dans sec-appro
   sel.innerHTML='<option value="">— Sélectionner un produit ★ —</option>'+PRODUCTS.map(function(p){return'<option value="'+p.id+'">'+p.name+' (stock: '+p.stock+')</option>';}).join('');
   var supSel=document.getElementById('stk-add-sup');
   if(supSel){
@@ -3389,23 +3556,21 @@ function renderStock(){
   }).join('');
 }
 function approProd(pid){
-  // Aller à la section stock
-  var niStock=document.getElementById('ni-stock');
-  goSec('stock',niStock);
+  // Aller à la nouvelle section Approvisionnement
+  var niAppro=document.getElementById('ni-appro');
+  goSec('appro',niAppro);
   // Attendre que la section soit visible puis pré-remplir
   setTimeout(function(){
-    var sel=document.getElementById('stk-add-prod');
+    var sel=document.getElementById('appro-prod');
     if(sel){
       sel.value=pid;
-      onStkProdChange();
+      onApproProdChange();
       // Scroll vers le formulaire d'approvisionnement
-      var box=document.querySelector('.stk-add-box');
+      var box=document.querySelector('#sec-appro .stk-add-box');
       if(box){
         box.scrollIntoView({behavior:'smooth',block:'start'});
         box.style.border='2px solid var(--gold)';
-        box.style.borderRadius='12px';
-        box.style.padding='14px';
-        setTimeout(function(){box.style.border='';box.style.padding='';},3000);
+        setTimeout(function(){box.style.border='';},3000);
       }
     }
   },400);
@@ -4706,24 +4871,20 @@ function confirmCreditPayment(pid){
   try{localStorage.setItem('al_pending_pay',JSON.stringify(PENDING_PAYMENTS));}catch(e){}
   try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
   save();
-  if(window.saveToCloud){
-    window.saveToCloud().then(function(){
-      // Refresh confirm payments modal if still open
-      var cid=p.clientId;
-      var remaining=PENDING_PAYMENTS.filter(function(x){return x.clientId===cid&&x.status==='pending';});
-      if(remaining.length>0){
-        // Re-render the modal with remaining payments
-        openConfirmPendingPayments(cid);
-      } else {
-        closeAllMd();
-      }
-      renderCredits();
-      if(window.updateCreditBadge) updateCreditBadge();
-      toast('✅ Paiement de '+fm(p.amount)+' confirmé — Solde client: '+fm(cr.balance));
-    });
+  // Refresh confirm payments modal if still open
+  var cid=p.clientId;
+  var remaining=PENDING_PAYMENTS.filter(function(x){return x.clientId===cid&&x.status==='pending';});
+  if(remaining.length>0){
+    openConfirmPendingPayments(cid);
   } else {
-    closeAllMd();renderCredits();
-    toast('✅ Paiement confirmé — Solde réduit de '+fm(p.amount));
+    closeAllMd();
+  }
+  renderCredits();
+  if(window.updateCreditBadge) updateCreditBadge();
+  toast('✅ Paiement de '+fm(p.amount)+' confirmé — Solde client: '+fm(cr.balance));
+  // Sync cloud in background (no .then dependency)
+  if(window.saveToCloud){
+    try{ window.saveToCloud(); }catch(e){}
   }
 }
 function rejectCreditPayment(pid){
@@ -5350,24 +5511,444 @@ goSec=function(n,el){
   document.querySelectorAll('.ni').forEach(function(x){x.className='ni';});
   var s=document.getElementById('sec-'+n);if(s)s.className='sec on';
   if(el)el.className='ni on';
-  var T={dash:'Tableau de bord',orders:'Commandes',prods:'Produits',stock:'Stock & Prix',clients:'Clients',analytics:'Analytique',regional:'Régions & Villes',invoices:'Factures',credits:'Crédits clients',suppliers:'Fournisseurs',complaints:'Réclamations',company:'Mon entreprise',scanner:'📷 Scanner code-barres'};
+  var T={dash:'Tableau de bord',orders:'Commandes',prods:'Produits',stock:'Stock & Prix',appro:'Approvisionnement',clients:'Clients',analytics:'Analytique',regional:'Régions & Villes',invoices:'Factures',credits:'Crédits clients',suppliers:'Fournisseurs',purchases:'Historique achats',complaints:'Réclamations',company:'Mon entreprise',scanner:'📷 Scanner code-barres',coupons:'Coupons',admins:'Admins'};
   document.getElementById('pg-ttl').textContent=T[n]||n;
   closeSide();
   if(n==='orders'){initOrderFilters();renderOrders();}
   if(n==='prods'){initProdFilters();renderProds();}
   if(n==='stock'){fillStkAddProd();renderStock();}
+  if(n==='appro'){renderApproSection();}
   if(n==='clients'){initClientFilters();renderClients();}
   if(n==='analytics')renderAnalytics();
   if(n==='regional'){setRegView(_regView);renderRegional();}
   if(n==='invoices')loadInvSel();
   if(n==='credits')renderCredits();
   if(n==='suppliers')renderSuppliers();
+  if(n==='purchases')renderPurchases();
   if(n==='complaints')renderComplaints();
   if(n==='company')loadCompanyForm();
+  if(n==='coupons')renderCouponsSection();
+  if(n==='admins')renderAdmins();
+};
 };
 
-// ═══════════ FIX clPage FOR NEW PAGES ═══════════
-// [old clPage removed]
+// ════════════════════════════════════════════════════
+// APPROVISIONNEMENT — Section dédiée complète
+// ════════════════════════════════════════════════════
+var _approCamStream=null;
+
+function switchApproTab(tab){
+  ['new','reap','scan'].forEach(function(t){
+    document.getElementById('appro-panel-'+t).style.display=t===tab?'block':'none';
+    var btn=document.getElementById('appro-tab-'+t);
+    if(btn){btn.className=t===tab?'tab on':'tab';}
+  });
+  if(tab==='reap'){fillApproSuppliers();fillApproProdSel();}
+  if(tab==='new'){fillApproCats();fillApproSupNew();}
+}
+
+function fillApproSuppliers(){
+  ['appro-sup','np-sup'].forEach(function(id){
+    var sel=document.getElementById(id);
+    if(!sel) return;
+    var cur=sel.value;
+    var html='<option value="">— Choisir —</option>';
+    SUPPLIERS.forEach(function(s){html+='<option value="'+s.id+'">'+s.name+'</option>';});
+    html+='<option value="__new__" style="color:var(--gold);font-weight:600">➕ Nouveau fournisseur...</option>';
+    sel.innerHTML=html;
+    sel.value=cur;
+  });
+}
+
+function fillApproProdSel(){
+  var sel=document.getElementById('appro-prod');
+  if(!sel) return;
+  var cur=sel.value;
+  var html='<option value="">— Sélectionner —</option>';
+  PRODUCTS.forEach(function(p){html+='<option value="'+p.id+'">'+(p.barcode?'['+p.barcode+'] ':'')+p.name+' (stock: '+p.stock+')</option>';});
+  sel.innerHTML=html;
+  sel.value=cur;
+}
+
+function fillApproCats(){
+  var sel=document.getElementById('np-cat');
+  if(!sel) return;
+  var cur=sel.value;
+  var html='<option value="">— Choisir —</option>';
+  PRODUCT_CATEGORIES.forEach(function(c){html+='<option value="'+c+'">'+c+'</option>';});
+  sel.innerHTML=html;
+  sel.value=cur;
+}
+
+function fillApproSupNew(){
+  fillApproSuppliers();
+}
+
+function renderApproSection(){
+  // KPIs
+  var allPur=[];
+  PRODUCTS.forEach(function(p){if(p.purchases)p.purchases.forEach(function(pur){allPur.push({prod:p,pur:pur});});});
+  var totalInv=allPur.reduce(function(s,x){return s+(x.pur.total||0);},0);
+  var thisMonth=new Date().toISOString().slice(0,7);
+  var monthInv=allPur.filter(function(x){return (x.pur.date||'').slice(0,7)===thisMonth;}).reduce(function(s,x){return s+(x.pur.total||0);},0);
+  var oos=PRODUCTS.filter(function(p){return p.stock===0;}).length;
+  var low=PRODUCTS.filter(function(p){return p.stock>0&&p.stock<=(p.threshold||10);}).length;
+  var kpiEl=document.getElementById('appro-kpis');
+  if(kpiEl){kpiEl.innerHTML=[
+    {l:'Total investi',v:fm(totalInv),i:'💰',c:'var(--gold)'},
+    {l:'Ce mois-ci',v:fm(monthInv),i:'📅',c:'var(--blu)'},
+    {l:'Ruptures de stock',v:oos,i:'🚨',c:'var(--red)'},
+    {l:'Stock bas',v:low,i:'⚠️',c:'var(--ora)'},
+    {l:'Fournisseurs',v:SUPPLIERS.length,i:'🏭',c:'var(--grn)'},
+    {l:'Produits',v:PRODUCTS.length,i:'🏪',c:'var(--pur)'},
+  ].map(function(k){return '<div class="kpi" style="--ac:'+k.c+'"><div class="ki">'+k.i+'</div><div class="kl">'+k.l+'</div><div class="kv" style="color:'+k.c+'">'+k.v+'</div></div>';}).join('');}
+  fillApproProdSel();
+  fillApproSuppliers();
+  fillApproCats();
+  renderApproHistory();
+  renderApproNewHistory();
+}
+
+function onApproProdChange(){
+  var pid=document.getElementById('appro-prod').value;
+  var infoEl=document.getElementById('appro-prod-info');
+  if(!pid){if(infoEl)infoEl.style.display='none';return;}
+  var p=PRODUCTS.find(function(x){return x.id===pid;});
+  if(!p||!infoEl) return;
+  var lastPur=p.purchases&&p.purchases.length?p.purchases[0]:null;
+  var lastSup=lastPur&&lastPur.supplierId?SUPPLIERS.find(function(s){return s.id===lastPur.supplierId;}):null;
+  infoEl.innerHTML=
+    '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">'+
+    '<img src="'+prodImg(p)+'" style="width:48px;height:48px;border-radius:8px;object-fit:cover">'+
+    '<div>'+
+    '<div style="font-weight:600;color:var(--gold)">'+p.name+'</div>'+
+    '<div style="font-size:11px;color:var(--tx3)">Catégorie : '+p.category+(p.barcode?' · Code : '+p.barcode:'')+'</div>'+
+    '<div style="font-size:12px;margin-top:4px">Stock actuel : <strong style="color:'+(p.stock===0?'var(--red)':p.stock<=(p.threshold||10)?'var(--ora)':'var(--grn)')+'">'+p.stock+' unités</strong> · Seuil alerte : '+( p.threshold||10)+'</div>'+
+    '<div style="font-size:12px">Prix achat : <strong>'+fm(p.buyPrice||0)+'</strong> · Prix vente : <strong style="color:var(--gold)">'+fm(p.price)+'</strong></div>'+
+    (lastPur?'<div style="font-size:11px;color:var(--tx3)">Dernier appro : '+lastPur.date+' · '+lastPur.qty+' u · '+fm(lastPur.unitBuy||0)+'/u'+(lastSup?' · '+lastSup.name:'')+'</div>':'')+
+    '</div></div>';
+  infoEl.style.display='block';
+  // Pre-fill buy price and last supplier
+  if(p.buyPrice){var pr=document.getElementById('appro-price');if(pr&&!pr.value)pr.value=p.buyPrice;}
+  if(lastSup){var sp=document.getElementById('appro-sup');if(sp&&!sp.value)sp.value=lastSup.id;}
+  onApproCalcCmp();
+}
+
+function onApproCalcCmp(){
+  var pid=document.getElementById('appro-prod').value;
+  var qty=parseInt(document.getElementById('appro-qty').value)||0;
+  var newBuy=parseFloat(document.getElementById('appro-price').value);
+  var prev=document.getElementById('appro-cmp-preview');
+  if(!pid||qty<=0){if(prev)prev.style.display='none';return;}
+  var p=PRODUCTS.find(function(x){return x.id===pid;});
+  if(!p||!prev){return;}
+  var oldBuy=p.buyPrice||0;
+  if(isNaN(newBuy)||newBuy===oldBuy){
+    prev.innerHTML='✅ Prix d\'achat inchangé ('+fm(oldBuy)+') — Stock: '+p.stock+' → '+(p.stock+qty);
+    prev.style.display='block';return;
+  }
+  var cmp=p.stock>0?Math.round((p.stock*oldBuy+qty*newBuy)/(p.stock+qty)*100)/100:newBuy;
+  var oldMarginPct=oldBuy>0?Math.round((p.price-oldBuy)/oldBuy*100):0;
+  var newSell=Math.round(cmp*(1+oldMarginPct/100));
+  prev.innerHTML='📊 <strong>Coût Moyen Pondéré :</strong> '+fm(oldBuy)+' → <span style="color:var(--gold)">'+fm(cmp)+'</span><br>'+
+    '💰 <strong>Prix vente suggéré</strong> (marge '+oldMarginPct+'% conservée) : <span style="color:var(--gold)">'+fm(newSell)+'</span><br>'+
+    '📦 Stock : '+p.stock+' → <strong>'+(p.stock+qty)+'</strong> · 💵 Total achat : <strong>'+fm(qty*newBuy)+'</strong>';
+  prev.style.display='block';
+}
+
+function doApproReap(){
+  var pid=document.getElementById('appro-prod').value;
+  var qty=parseInt(document.getElementById('appro-qty').value)||0;
+  var newBuy=parseFloat(document.getElementById('appro-price').value);
+  var supId=document.getElementById('appro-sup').value;
+  var payMethod=document.getElementById('appro-pay').value;
+  var note=(document.getElementById('appro-note').value||'').trim();
+  // Validation
+  var ok=true;
+  if(!pid){_fErr('appro-prod','Sélectionnez un produit');ok=false;}
+  if(qty<=0||isNaN(qty)){_fErr('appro-qty','Quantité invalide (> 0)');ok=false;}
+  if(isNaN(newBuy)||newBuy<=0){_fErr('appro-price',"Prix d'achat invalide (> 0)");ok=false;}
+  if(!supId||supId==='__new__'){_fErr('appro-sup','Sélectionnez un fournisseur');ok=false;}
+  if(!payMethod){_fErr('appro-pay','Sélectionnez un mode de paiement');ok=false;}
+  if(!ok){toast('⚠️ Corrigez les champs en rouge',true);return;}
+  var i=PRODUCTS.findIndex(function(p){return p.id===pid;});
+  if(i<0){toast('Produit introuvable',true);return;}
+  var p=PRODUCTS[i];
+  var oldBuy=p.buyPrice||0; var oldStock=p.stock;
+  var effectiveBuy=newBuy;
+  if(newBuy!==oldBuy&&oldBuy>0){
+    var cmp=oldStock>0?Math.round((oldStock*oldBuy+qty*newBuy)/(oldStock+qty)*100)/100:newBuy;
+    var oldMarginPct=Math.round((p.price-oldBuy)/oldBuy*100);
+    var newSell=Math.round(cmp*(1+oldMarginPct/100));
+    PRODUCTS[i].buyPrice=Math.round(cmp*100)/100;
+    PRODUCTS[i].price=newSell;
+    effectiveBuy=cmp;
+  } else if(newBuy>0){ PRODUCTS[i].buyPrice=newBuy; }
+  PRODUCTS[i].stock+=qty;
+  var totalAchat=Math.round(effectiveBuy*qty);
+  var payLabels={cash:'💵 Espèces',transfer:'🏦 Virement',cheque:'📋 Chèque',credit:'🔄 À crédit'};
+  if(!PRODUCTS[i].purchases) PRODUCTS[i].purchases=[];
+  PRODUCTS[i].purchases.unshift({
+    id:'PUR'+Date.now(),date:new Date().toISOString().split('T')[0],
+    qty:qty,unitBuy:newBuy,total:totalAchat,
+    supplierId:supId,supplierName:(SUPPLIERS.find(function(s){return s.id===supId;})||{name:''}).name,
+    payMethod:payMethod,payLabel:payLabels[payMethod]||'',note:note
+  });
+  // Mise à jour dette fournisseur
+  var si=SUPPLIERS.findIndex(function(s){return s.id===supId;});
+  if(si>-1){
+    if(payMethod==='credit') SUPPLIERS[si].debt=(SUPPLIERS[si].debt||0)+totalAchat;
+    if(!SUPPLIERS[si].transactions) SUPPLIERS[si].transactions=[];
+    SUPPLIERS[si].transactions.push({date:new Date().toISOString().split('T')[0],type:'purchase',prodName:p.name,qty:qty,total:totalAchat,payMethod:payMethod,payLabel:payLabels[payMethod]||''});
+  }
+  save(); if(window.saveToCloud) window.saveToCloud();
+  // Reset form
+  document.getElementById('appro-qty').value='';
+  document.getElementById('appro-price').value='';
+  document.getElementById('appro-note').value='';
+  document.getElementById('appro-prod').value='';
+  document.getElementById('appro-sup').value='';
+  document.getElementById('appro-pay').value='';
+  var prev=document.getElementById('appro-cmp-preview');if(prev)prev.style.display='none';
+  var info=document.getElementById('appro-prod-info');if(info)info.style.display='none';
+  fillApproProdSel();
+  renderApproHistory();
+  toast('✅ Approvisionnement enregistré — Stock: '+(oldStock+qty)+' u · Total: '+fm(totalAchat));
+}
+
+function calcNpMargin(){
+  var buy=parseFloat(document.getElementById('np-buy').value)||0;
+  var sell=parseFloat(document.getElementById('np-sell').value)||0;
+  var prev=document.getElementById('np-margin-preview');
+  if(!prev) return;
+  if(buy>0&&sell>0){
+    var margin=sell-buy;
+    var pct=Math.round(margin/buy*100);
+    prev.innerHTML='📊 Marge : <strong style="color:var(--grn)">+'+fm(margin)+'</strong> ('+pct+'%) · Prix achat : '+fm(buy)+' · Prix vente : '+fm(sell);
+    prev.style.display='block';
+  } else { prev.style.display='none'; }
+}
+
+function doAddNewProduct(){
+  var name=(document.getElementById('np-name').value||'').trim();
+  var cat=document.getElementById('np-cat').value;
+  var barcode=(document.getElementById('np-barcode').value||'').trim();
+  var qty=parseInt(document.getElementById('np-qty').value)||0;
+  var buy=parseFloat(document.getElementById('np-buy').value);
+  var sell=parseFloat(document.getElementById('np-sell').value);
+  var supId=document.getElementById('np-sup').value;
+  var payMethod=document.getElementById('np-pay').value;
+  var unit=(document.getElementById('np-unit').value||'').trim();
+  var threshold=parseInt(document.getElementById('np-threshold').value)||10;
+  var img=(document.getElementById('appro-np-img').value||'').trim();
+  // Validation
+  var ok=true;
+  if(!name){_fErr('np-name','Nom du produit obligatoire');ok=false;}
+  if(!cat){_fErr('np-cat','Catégorie obligatoire');ok=false;}
+  if(qty<=0||isNaN(qty)){_fErr('np-qty','Quantité initiale invalide');ok=false;}
+  if(isNaN(buy)||buy<=0){_fErr('np-buy',"Prix d'achat invalide");ok=false;}
+  if(isNaN(sell)||sell<=0){_fErr('np-sell','Prix de vente invalide');ok=false;}
+  if(!supId||supId==='__new__'){_fErr('np-sup','Sélectionnez un fournisseur');ok=false;}
+  if(!payMethod){_fErr('np-pay','Sélectionnez un mode de paiement');ok=false;}
+  if(!ok){toast('⚠️ Corrigez les champs en rouge',true);return;}
+  // Vérifier unicité code-barres
+  if(barcode && PRODUCTS.find(function(p){return p.barcode===barcode;})){
+    _fErr('np-barcode','Ce code-barres est déjà utilisé par un autre produit');
+    toast('❌ Code-barres déjà existant',true);return;
+  }
+  var newId='P'+String(Date.now()).slice(-6);
+  var totalAchat=Math.round(buy*qty);
+  var payLabels={cash:'💵 Espèces',transfer:'🏦 Virement',cheque:'📋 Chèque',credit:'🔄 À crédit'};
+  var newProd={
+    id:newId,name:name,category:cat,barcode:barcode||'',
+    buyPrice:buy,price:sell,unit:unit,stock:qty,threshold:threshold,
+    image:img||'',
+    purchases:[{id:'PUR'+Date.now(),date:new Date().toISOString().split('T')[0],qty:qty,unitBuy:buy,total:totalAchat,supplierId:supId,supplierName:(SUPPLIERS.find(function(s){return s.id===supId;})||{name:''}).name,payMethod:payMethod,payLabel:payLabels[payMethod]||''}]
+  };
+  PRODUCTS.push(newProd);
+  // Mise à jour dette fournisseur
+  var si=SUPPLIERS.findIndex(function(s){return s.id===supId;});
+  if(si>-1){
+    if(payMethod==='credit') SUPPLIERS[si].debt=(SUPPLIERS[si].debt||0)+totalAchat;
+    if(!SUPPLIERS[si].transactions) SUPPLIERS[si].transactions=[];
+    SUPPLIERS[si].transactions.push({date:new Date().toISOString().split('T')[0],type:'purchase',prodName:name,qty:qty,total:totalAchat,payMethod:payMethod,payLabel:payLabels[payMethod]||''});
+  }
+  save(); if(window.saveToCloud) window.saveToCloud();
+  resetNewProductForm();
+  renderApproSection();
+  toast('✅ Produit "'+name+'" créé — Stock: '+qty+' u · Total achat: '+fm(totalAchat));
+}
+
+function resetNewProductForm(){
+  ['np-name','np-barcode','np-qty','np-buy','np-sell','np-unit','appro-np-img'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
+  var th=document.getElementById('np-threshold');if(th)th.value='10';
+  var cat=document.getElementById('np-cat');if(cat)cat.value='';
+  var sup=document.getElementById('np-sup');if(sup)sup.value='';
+  var pay=document.getElementById('np-pay');if(pay)pay.value='';
+  var prev=document.getElementById('appro-np-img-prev');if(prev){prev.src='';prev.style.display='none';}
+  var mp=document.getElementById('np-margin-preview');if(mp)mp.style.display='none';
+}
+
+function renderApproHistory(){
+  var q=(document.getElementById('appro-hist-q')?document.getElementById('appro-hist-q').value||'':'').toLowerCase();
+  var all=[];
+  PRODUCTS.forEach(function(p){
+    if(p.purchases)p.purchases.forEach(function(pur){
+      var sup=pur.supplierId?SUPPLIERS.find(function(s){return s.id===pur.supplierId;}):null;
+      all.push({date:pur.date||'',prodName:p.name,barcode:p.barcode||'',cat:p.category,qty:pur.qty||0,unit:pur.unitBuy||0,total:pur.total||0,supName:sup?sup.name:'—',payLabel:pur.payLabel||'—',note:pur.note||''});
+    });
+  });
+  all.sort(function(a,b){return b.date.localeCompare(a.date);});
+  if(q) all=all.filter(function(x){return x.prodName.toLowerCase().includes(q)||x.supName.toLowerCase().includes(q)||x.barcode.includes(q);});
+  var tb=document.getElementById('appro-history-tb');
+  if(!tb) return;
+  tb.innerHTML=all.length?all.map(function(x){
+    return '<tr>'+
+      '<td style="color:var(--tx3);white-space:nowrap">'+x.date+'</td>'+
+      '<td><strong>'+x.prodName+'</strong></td>'+
+      '<td style="font-family:monospace;font-size:11px;color:var(--tx3)">'+(x.barcode||'—')+'</td>'+
+      '<td><span style="background:rgba(74,158,232,0.1);color:var(--blu);padding:2px 8px;border-radius:10px;font-size:11px">'+x.supName+'</span></td>'+
+      '<td style="text-align:center;font-weight:600">'+x.qty+'</td>'+
+      '<td style="color:var(--tx2)">'+fm(x.unit)+'</td>'+
+      '<td style="color:var(--gold);font-weight:600">'+fm(x.total)+'</td>'+
+      '<td><span style="background:rgba(82,201,122,0.1);color:var(--grn);padding:2px 8px;border-radius:10px;font-size:11px">'+x.payLabel+'</span></td>'+
+      '<td style="font-size:11px;color:var(--tx3)">'+x.note+'</td>'+
+    '</tr>';
+  }).join(''):'<tr><td colspan="9" style="text-align:center;padding:30px;color:var(--tx3)">Aucun approvisionnement enregistré</td></tr>';
+}
+
+function renderApproNewHistory(){
+  var el=document.getElementById('appro-new-history');
+  if(!el) return;
+  var recent=PRODUCTS.slice().sort(function(a,b){
+    var da=a.purchases&&a.purchases.length?a.purchases[0].date:'';
+    var db=b.purchases&&b.purchases.length?b.purchases[0].date:'';
+    return db.localeCompare(da);
+  }).slice(0,8);
+  el.innerHTML='<table style="min-width:500px"><thead><tr><th>Produit</th><th>Catégorie</th><th>Code-barres</th><th>Stock</th><th>Prix vente</th><th>Dernier appro</th></tr></thead><tbody>'+
+    recent.map(function(p){
+      var lp=p.purchases&&p.purchases.length?p.purchases[0]:null;
+      return '<tr>'+
+        '<td><div style="display:flex;align-items:center;gap:6px"><img src="'+prodImg(p)+'" style="width:28px;height:28px;border-radius:5px;object-fit:cover" onerror="this.style.display=\'none\'">'+p.name+'</div></td>'+
+        '<td style="color:var(--tx3)">'+p.category+'</td>'+
+        '<td style="font-family:monospace;font-size:11px;color:var(--tx3)">'+(p.barcode||'—')+'</td>'+
+        '<td><strong style="color:'+(p.stock===0?'var(--red)':p.stock<=(p.threshold||10)?'var(--ora)':'var(--grn)')+'">'+p.stock+'</strong></td>'+
+        '<td style="color:var(--gold)">'+fm(p.price)+'</td>'+
+        '<td style="font-size:11px;color:var(--tx3)">'+(lp?lp.date+' · '+lp.qty+' u':'—')+'</td>'+
+      '</tr>';
+    }).join('')+'</tbody></table>';
+}
+
+function exportApproCSV(){
+  var all=[];
+  PRODUCTS.forEach(function(p){
+    if(p.purchases)p.purchases.forEach(function(pur){
+      var sup=pur.supplierId?SUPPLIERS.find(function(s){return s.id===pur.supplierId;}):null;
+      all.push([pur.date||'',p.name,p.barcode||'',p.category,sup?sup.name:'',pur.qty||0,pur.unitBuy||0,pur.total||0,pur.payLabel||'',pur.note||'']);
+    });
+  });
+  all.sort(function(a,b){return String(b[0]).localeCompare(String(a[0]));});
+  var rows=[['Date','Produit','Code-barres','Catégorie','Fournisseur','Qté','Prix/u','Total','Paiement','Note']].concat(all);
+  var csv=rows.map(function(r){return r.map(function(v){return '"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var blob=new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a');a.href=url;a.download='approvisionnements_'+new Date().toISOString().split('T')[0]+'.csv';
+  document.body.appendChild(a);a.click();document.body.removeChild(a);
+  setTimeout(function(){URL.revokeObjectURL(url);},1000);
+  toast('✅ Export CSV OK');
+}
+
+function findProdByBarcode(){
+  var code=(document.getElementById('appro-barcode').value||'').trim();
+  if(!code){toast('⚠️ Saisissez un code-barres',true);return;}
+  var p=PRODUCTS.find(function(x){return x.barcode===code;});
+  if(!p){toast('❌ Aucun produit avec ce code-barres : '+code,true);return;}
+  var sel=document.getElementById('appro-prod');
+  if(sel){sel.value=p.id;onApproProdChange();}
+  toast('✅ Produit trouvé : '+p.name);
+}
+
+function processApproBarcode(code){
+  code=(code||'').trim();
+  if(!code) return;
+  var p=PRODUCTS.find(function(x){return x.barcode===code;});
+  var res=document.getElementById('appro-scan-result');
+  if(!res) return;
+  if(p){
+    res.innerHTML=
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">'+
+      '<img src="'+prodImg(p)+'" style="width:56px;height:56px;border-radius:8px;object-fit:cover">'+
+      '<div><div style="font-weight:600;color:var(--gold);font-size:15px">'+p.name+'</div>'+
+      '<div style="font-size:12px;color:var(--tx3)">Stock : <strong style="color:'+(p.stock===0?'var(--red)':'var(--grn)')+'">'+p.stock+'</strong> u · Prix vente : '+fm(p.price)+'</div>'+
+      '<div style="font-size:11px;color:var(--tx3)">Code-barres : '+code+'</div></div></div>'+
+      '<button class="btn btn-gn" style="width:100%" onclick="switchApproTab(\'reap\');setTimeout(function(){document.getElementById(\'appro-prod\').value=\''+p.id+'\';onApproProdChange();},200)">📦 Réapprovisionner ce produit →</button>';
+    res.style.display='block';
+    toast('✅ Produit : '+p.name+' — Stock: '+p.stock);
+  } else {
+    res.innerHTML=
+      '<div style="color:var(--ora);font-weight:600;margin-bottom:8px">⚠️ Code-barres inconnu : '+code+'</div>'+
+      '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">Ce code-barres n\'est associé à aucun produit existant.</div>'+
+      '<button class="btn btn-g" style="width:100%" onclick="switchApproTab(\'new\');setTimeout(function(){var el=document.getElementById(\'np-barcode\');if(el)el.value=\''+code+'\';},200)">➕ Créer un nouveau produit avec ce code →</button>';
+    res.style.display='block';
+  }
+}
+
+function startApproScanner(targetId){
+  // Quick barcode scan using camera, result goes to targetId
+  if(!navigator.mediaDevices){toast('Caméra non disponible',true);return;}
+  // Use the main scanner section
+  switchApproTab('scan');
+  setTimeout(function(){startApproCamScanner();},300);
+}
+
+var _approScanInterval=null;
+function startApproCamScanner(){
+  var container=document.getElementById('appro-scanner-container');
+  var video=document.getElementById('appro-scanner-video');
+  var startBtn=document.getElementById('appro-scan-start');
+  var stopBtn=document.getElementById('appro-scan-stop');
+  if(!container||!video) return;
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){toast('Caméra non disponible sur cet appareil',true);return;}
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(stream){
+    _approCamStream=stream;
+    video.srcObject=stream;
+    container.style.display='block';
+    if(startBtn)startBtn.style.display='none';
+    if(stopBtn)stopBtn.style.display='inline-block';
+    // Scan loop via canvas
+    var canvas=document.getElementById('appro-scanner-canvas');
+    _approScanInterval=setInterval(function(){
+      if(!canvas||!video.videoWidth) return;
+      canvas.width=video.videoWidth;canvas.height=video.videoHeight;
+      var ctx=canvas.getContext('2d');
+      ctx.drawImage(video,0,0);
+      // BarcodeDetector API if available
+      if(window.BarcodeDetector){
+        var bd=new BarcodeDetector();
+        bd.detect(canvas).then(function(codes){
+          if(codes.length){
+            var code=codes[0].rawValue;
+            stopApproCamScanner();
+            var manualInput=document.getElementById('appro-scan-manual');
+            if(manualInput) manualInput.value=code;
+            processApproBarcode(code);
+          }
+        }).catch(function(){});
+      }
+    },400);
+  }).catch(function(e){toast('❌ Accès caméra refusé : '+e.message,true);});
+}
+function stopApproCamScanner(){
+  if(_approScanInterval){clearInterval(_approScanInterval);_approScanInterval=null;}
+  if(_approCamStream){_approCamStream.getTracks().forEach(function(t){t.stop();});_approCamStream=null;}
+  var container=document.getElementById('appro-scanner-container');
+  var startBtn=document.getElementById('appro-scan-start');
+  var stopBtn=document.getElementById('appro-scan-stop');
+  if(container)container.style.display='none';
+  if(startBtn)startBtn.style.display='inline-block';
+  if(stopBtn)stopBtn.style.display='none';
+}
+// ════════════════════════════════════════════════════
 
 // ═══════════ UPDATE initClient ═══════════
 var _origInitClient=initClient;
@@ -5896,7 +6477,22 @@ processAltPay = function(){
     var given = parseFloat(document.getElementById('pay-cash-given').value) || 0;
     if(!validateField(String(given), 'Montant remis', {numeric:true})) return;
     if(given <= 0){ toast('⚠️ Le montant remis doit être supérieur à 0', true); return; }
-    paidAmount = Math.min(given, total);
+    // CORRECTION: le paiement en espèces ne doit pas dépasser le montant de la commande
+    if(given > total){
+      var cashInput = document.getElementById('pay-cash-given');
+      if(cashInput){
+        cashInput.style.border='2px solid #E05252';
+        cashInput.focus();
+      }
+      var box = document.getElementById('pay-change-box');
+      if(box){
+        box.innerHTML='❌ Le montant en espèces ('+fm(given)+') dépasse le total de la commande ('+fm(total)+'). Veuillez saisir un montant ≤ '+fm(total);
+        box.style.background='rgba(224,82,82,0.1)';box.style.borderColor='rgba(224,82,82,0.3)';box.style.color='var(--red)';box.style.display='block';
+      }
+      toast('❌ Montant en espèces supérieur au total de la commande ('+fm(total)+')', true);
+      return;
+    }
+    paidAmount = given;
   } else {
     var cin = (document.getElementById('pay-transfer-cin').value || '').trim();
     var ref = (document.getElementById('pay-transfer-ref').value || '').trim();
@@ -5990,18 +6586,28 @@ calcChange = function(){
   var total = _altPendingOrder ? _altPendingOrder.total : 0;
   var given = parseFloat(document.getElementById('pay-cash-given').value) || 0;
   var box = document.getElementById('pay-change-box');
+  var cashInput = document.getElementById('pay-cash-given');
   if(given <= 0 && document.getElementById('pay-cash-given').value !== ''){
     box.innerHTML = '⚠️ Le montant doit être supérieur à 0';
     box.style.background = 'rgba(224,82,82,0.08)'; box.style.borderColor = 'rgba(224,82,82,0.2)'; box.style.color = 'var(--red)';
     box.style.display = 'block'; return;
   }
   if(given > 0){
+    if(given > total){
+      // BLOQUER: paiement espèces > montant commande
+      if(cashInput) cashInput.style.border='2px solid #E05252';
+      box.innerHTML = '❌ <strong>Montant trop élevé !</strong> Le paiement en espèces ne peut pas dépasser le total de la commande : <strong>'+fm(total)+'</strong>';
+      box.style.background = 'rgba(224,82,82,0.1)'; box.style.borderColor = 'rgba(224,82,82,0.3)'; box.style.color = 'var(--red)';
+      box.style.display = 'block'; return;
+    }
+    if(cashInput) cashInput.style.border='2px solid #52C97A';
     var change = given - total;
-    if(change >= 0){
-      box.innerHTML = '💶 Monnaie à rendre : <strong>'+fm(change)+'</strong>';
+    if(change === 0){
+      box.innerHTML = '✅ Montant exact — pas de monnaie à rendre';
       box.style.background = 'rgba(82,201,122,0.1)'; box.style.borderColor = 'rgba(82,201,122,0.2)'; box.style.color = 'var(--grn)';
     } else {
-      var reste = -change;
+      // given < total → paiement partiel
+      var reste = total - given;
       var cr = getClientCredit(SESSION ? SESSION.id : '');
       var creditLeft = cr.limit > 0 ? Math.max(0, cr.limit - (cr.balance||0)) : Infinity;
       if(reste <= creditLeft || cr.limit === 0){
@@ -6013,7 +6619,10 @@ calcChange = function(){
       }
     }
     box.style.display = 'block';
-  } else { box.style.display = 'none'; }
+  } else {
+    if(cashInput) cashInput.style.border='';
+    box.style.display = 'none';
+  }
 };
 
 // ─── 5. FILTRE COMMANDES CLIENT PAR ANNÉE ─────────────────────
