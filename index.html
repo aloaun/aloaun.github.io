@@ -115,70 +115,8 @@ function sendSMSWhatsApp(phone, message){
 
 // ── Afficher erreur inline sur un champ ───────────────────
 function showErr(elId, msg){
-  // Delegate to unified error system
-  if(typeof _fErr==='function'){_fErr(elId,msg);return;}
-  var el=document.getElementById(elId);
-  if(!el) return;
-  // Apply red border via attribute (works everywhere)
-  el.setAttribute('style',(el.getAttribute('style')||'')+'border:2px solid #E05252 !important;outline:none !important;');
-  el.classList.add('field-err');
-
-  // Find pre-built error div first (fastest path)
-  var errDiv=document.getElementById(elId+'-err');
-  if(!errDiv){
-    // Walk up to find .fg container
-    var container=el.parentNode;
-    for(var i=0;i<6;i++){
-      if(!container||container.tagName==='BODY') break;
-      if((container.className||'').split(' ').indexOf('fg')>-1) break;
-      container=container.parentNode;
-    }
-    if(!container||container.tagName==='BODY') container=el.parentNode;
-    errDiv=document.createElement('div');
-    errDiv.id=elId+'-err';
-    container.appendChild(errDiv);
-  }
-
-  // Show error — use setAttribute for guaranteed rendering
-  errDiv.setAttribute('style',
-    'display:block !important;'+
-    'color:#E05252;'+
-    'font-size:12px;'+
-    'font-weight:600;'+
-    'margin-top:6px;'+
-    'padding:5px 10px;'+
-    'background:rgba(224,82,82,0.1);'+
-    'border:1px solid rgba(224,82,82,0.35);'+
-    'border-left:3px solid #E05252;'+
-    'border-radius:0 6px 6px 0;'+
-    'line-height:1.5;'+
-    'box-sizing:border-box'
-  );
-  errDiv.textContent='\u26a0\ufe0f '+msg;
-  errDiv.className='field-err-msg show';
-
-  // Scroll to error after modal renders
-  setTimeout(function(){
-    try{
-      var md=el.closest('.md')||document.querySelector('.md[style*="block"]');
-      if(md) md.scrollTop=el.offsetTop-20;
-      else el.scrollIntoView({behavior:'smooth',block:'center'});
-    }catch(e){try{el.scrollIntoView();}catch(e2){}}
-  },100);
-
-  // Auto-clear when user corrects the field
-  function clearFn(){
-    // Restore original style without our injection
-    var st=el.getAttribute('style')||'';
-    el.setAttribute('style',st.replace('border:2px solid #E05252 !important;outline:none !important;',''));
-    el.classList.remove('field-err');
-    errDiv.setAttribute('style','display:none');
-    errDiv.textContent='';
-    el.removeEventListener('input',clearFn);
-    el.removeEventListener('change',clearFn);
-  }
-  el.addEventListener('input',clearFn);
-  el.addEventListener('change',clearFn);
+  // Always use the unified _fErr — it handles everything
+  _fErr(elId, msg);
 }
 function clearErr(elId){
   var el=document.getElementById(elId);
@@ -196,19 +134,20 @@ function clearErr(elId){
 // VALIDATION SYSTEM v3 — Simple, Guaranteed, Cross-browser
 // ═══════════════════════════════════════════════════════
 function _fErr(id, msg){
-  // Mark field as error
+  // ── Step 1: mark the input field ──────────────────────────
   var el = document.getElementById(id);
   if(el){
-    el.className = (el.className||'').replace(' inp-err','') + ' inp-err';
-    el.style.border = '2px solid #E05252';
+    el.style.setProperty('border','2px solid #E05252','important');
     el.style.outline = 'none';
-    el.style.background = 'rgba(224,82,82,0.04)';
-    // Auto-clear on change
+    el.style.background = 'rgba(224,82,82,0.05)';
+    el.classList.add('inp-err');
+    // Auto-clear when user types
     var fn = function(){
-      el.className = (el.className||'').replace(' inp-err','');
+      el.style.removeProperty('border');
       el.style.border = '';
       el.style.outline = '';
       el.style.background = '';
+      el.classList.remove('inp-err');
       _fClear(id);
       el.removeEventListener('input', fn);
       el.removeEventListener('change', fn);
@@ -216,22 +155,54 @@ function _fErr(id, msg){
     el.addEventListener('input', fn);
     el.addEventListener('change', fn);
   }
-  // Show error message
-  var errEl = document.getElementById(id+'-err');
-  if(errEl){
-    errEl.textContent = '⚠️ ' + msg;
-    errEl.style.cssText = 'display:block;color:#E05252;font-size:12px;font-weight:600;margin-top:6px;padding:5px 10px;background:rgba(224,82,82,0.1);border-left:3px solid #E05252;border-radius:0 6px 6px 0;line-height:1.5;box-sizing:border-box';
-    errEl.className = 'ferr on';
+
+  // ── Step 2: find or create error element ──────────────────
+  var errEl = document.getElementById(id + '-err');
+
+  // If not found, create one and insert after the field
+  if(!errEl){
+    errEl = document.createElement('span');
+    errEl.id = id + '-err';
+    if(el && el.parentNode){
+      // Insert right after the element (or after its wrapper)
+      var ref = el.nextSibling;
+      el.parentNode.insertBefore(errEl, ref);
+    }
   }
+
+  if(!errEl) return;
+
+  // ── Step 3: show error — use direct property assignment ───
+  // NEVER use cssText — it conflicts with existing inline style="display:none"
+  errEl.removeAttribute('style'); // remove display:none inline style first
+  errEl.style.display      = 'block';
+  errEl.style.color        = '#E05252';
+  errEl.style.fontSize     = '12px';
+  errEl.style.fontWeight   = '600';
+  errEl.style.marginTop    = '6px';
+  errEl.style.padding      = '5px 10px';
+  errEl.style.background   = 'rgba(224,82,82,0.1)';
+  errEl.style.borderLeft   = '3px solid #E05252';
+  errEl.style.borderRadius = '0 6px 6px 0';
+  errEl.style.lineHeight   = '1.5';
+  errEl.style.boxSizing    = 'border-box';
+  errEl.textContent        = '⚠️ ' + msg;
+  errEl.className          = 'ferr on';
 }
 function _fClear(id){
-  var errEl = document.getElementById(id+'-err');
-  if(errEl){ errEl.style.display='none'; errEl.className='ferr'; errEl.textContent=''; }
+  var errEl = document.getElementById(id + '-err');
+  if(errEl){
+    errEl.style.display = 'none';
+    errEl.textContent = '';
+    errEl.className = 'ferr';
+  }
   var el = document.getElementById(id);
   if(el){
-    el.className = (el.className||'').replace(' inp-err','');
+    el.style.removeProperty('border');
     el.style.border = '';
+    el.style.outline = '';
     el.style.background = '';
+    el.classList.remove('inp-err');
   }
 }
 function _fVal(id){ return (document.getElementById(id)||{value:''}).value||''; }
@@ -1524,19 +1495,19 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
   <div class="fg">
    <label>Nom complet <span style="color:var(--red)">★</span></label>
    <input id="nc-name" placeholder="ex: Hassan Benali" autocomplete="off">
-   <span id="nc-name-err" class="ferr" style="display:none"></span>
+   <span id="nc-name-err" class="ferr"></span>
   </div>
 
   <div class="fg">
    <label>Téléphone <span style="color:var(--red)">★</span></label>
    <input id="nc-ph" inputmode="numeric" placeholder="ex: 0661234567" autocomplete="off" oninput="validatePhoneInput(this)">
-   <span id="nc-ph-err" class="ferr" style="display:none"></span>
+   <span id="nc-ph-err" class="ferr"></span>
   </div>
 
   <div class="fg">
    <label>Ville <span style="color:var(--red)">★</span></label>
    <input id="nc-city" placeholder="ex: Casablanca" autocomplete="off" oninput="updateSecteurList('nc-sector','nc-city')">
-   <span id="nc-city-err" class="ferr" style="display:none"></span>
+   <span id="nc-city-err" class="ferr"></span>
   </div>
 
   <div class="fg">
@@ -1556,7 +1527,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
   <div class="fg">
    <label>Adresse <span style="color:var(--red)">★</span></label>
    <input id="nc-addr" placeholder="ex: 12 Rue Mohammed V, Maarif" autocomplete="off">
-   <span id="nc-addr-err" class="ferr" style="display:none"></span>
+   <span id="nc-addr-err" class="ferr"></span>
   </div>
 
   <div style="background:var(--dk4);border:1px solid var(--bo2);border-radius:10px;padding:12px;margin-bottom:12px">
@@ -1575,13 +1546,13 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
   <div class="fg">
    <label>Identifiant de connexion <span style="color:var(--red)">★</span></label>
    <input id="nc-user" placeholder="ex: client01 (sans espaces ni accents)" autocomplete="off">
-   <span id="nc-user-err" class="ferr" style="display:none"></span>
+   <span id="nc-user-err" class="ferr"></span>
   </div>
 
   <div class="fg">
    <label>Mot de passe <span style="color:var(--red)">★</span></label>
    <input type="password" id="nc-pw" placeholder="Min. 8 car. — Maj. + min. + chiffre + spécial" oninput="validatePassword(this.value,'nc-pw')">
-   <span id="nc-pw-err" class="ferr" style="display:none"></span>
+   <span id="nc-pw-err" class="ferr"></span>
   </div>
 
   <div class="fg">
@@ -1595,7 +1566,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
     <input id="nc-photo" placeholder="https://exemple.com/photo.jpg" style="flex:1" oninput="previewPhoto('nc-photo','nc-photo-prev')">
     <button type="button" class="btn btn-o btn-sm" onclick="openPhotoUpload('nc-photo','nc-photo-prev','add-cl')">📁</button>
    </div>
-   <span id="nc-photo-err" class="ferr" style="display:none"></span>
+   <span id="nc-photo-err" class="ferr"></span>
    <img id="nc-photo-prev" class="photo-preview" src="" alt="" style="margin-top:8px">
   </div>
 
@@ -1644,7 +1615,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
   <div class="fg">
    <label>Nom du produit <span style="color:var(--red)">★</span></label>
    <input id="np-name" placeholder="ex: Crème hydratante 200ml" autocomplete="off">
-   <span id="np-name-err" class="ferr" style="display:none"></span>
+   <span id="np-name-err" class="ferr"></span>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -1671,12 +1642,12 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
     <div class="fg" style="margin:0">
      <label>Prix d'achat (MAD) <span style="color:var(--red)">★</span></label>
      <input type="number" id="np-buy" placeholder="0.00" min="0" step="0.01" inputmode="decimal" oninput="calcMargin('np')">
-     <span id="np-buy-err" class="ferr" style="display:none"></span>
+     <span id="np-buy-err" class="ferr"></span>
     </div>
     <div class="fg" style="margin:0">
      <label>Prix de vente (MAD) <span style="color:var(--red)">★</span></label>
      <input type="number" id="np-sell" placeholder="0.00" min="0" step="0.01" inputmode="decimal" oninput="calcMargin('np')">
-     <span id="np-sell-err" class="ferr" style="display:none"></span>
+     <span id="np-sell-err" class="ferr"></span>
     </div>
    </div>
    <div id="np-margin" class="margin-box" style="margin-top:8px"></div>
@@ -1698,7 +1669,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
    <select id="np-sup">
     <option value="">— Sélectionner un fournisseur —</option>
    </select>
-   <span id="np-sup-err" class="ferr" style="display:none"></span>
+   <span id="np-sup-err" class="ferr"></span>
   </div>
 
   <div class="fg">
@@ -1710,7 +1681,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
     <option value="cheque">📋 Chèque</option>
     <option value="credit">🔄 À crédit fournisseur</option>
    </select>
-   <span id="np-paymethod-err" class="ferr" style="display:none"></span>
+   <span id="np-paymethod-err" class="ferr"></span>
   </div>
 
   <div class="fg">
@@ -1719,7 +1690,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
     <input id="np-img" placeholder="https://exemple.com/image-produit.jpg" style="flex:1" oninput="previewPhoto('np-img','np-img-prev')">
     <button type="button" class="btn btn-o btn-sm" onclick="openPhotoUpload('np-img','np-img-prev','add-prod')">📁</button>
    </div>
-   <span id="np-img-err" class="ferr" style="display:none"></span>
+   <span id="np-img-err" class="ferr"></span>
    <img id="np-img-prev" class="photo-preview" style="border-radius:8px;width:80px;height:60px;margin-top:8px" src="" alt="">
   </div>
 
@@ -3915,7 +3886,26 @@ function saveClient(){
 
   if(!ok){
     toast('⚠️ '+errors.length+' erreur(s) : '+errors.join(', '),true);
-    if(firstErrId){setTimeout(function(){var el=document.getElementById(firstErrId);if(el){el.scrollIntoView({behavior:'smooth',block:'center'});el.focus();}},80);}
+    // Scroll the modal to show the first error
+    if(firstErrId){
+      setTimeout(function(){
+        var el=document.getElementById(firstErrId);
+        var errEl=document.getElementById(firstErrId+'-err');
+        var target=errEl||el;
+        if(target){
+          // Scroll within the modal
+          var modal=document.getElementById('md-add-cl');
+          if(modal){
+            var rect=target.getBoundingClientRect();
+            var modalRect=modal.getBoundingClientRect();
+            if(rect.top<modalRect.top||rect.bottom>modalRect.bottom){
+              modal.scrollTop=target.offsetTop-80;
+            }
+          }
+          if(el) el.focus();
+        }
+      },50);
+    }
     return;
   }
   if(!photo) photo='https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128&bold=true&format=svg';
