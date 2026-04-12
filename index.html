@@ -133,80 +133,100 @@ function clearErr(elId){
 // ═══════════════════════════════════════════════════════
 // VALIDATION SYSTEM v3 — Simple, Guaranteed, Cross-browser
 // ═══════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// SYSTÈME DE VALIDATION — v4 DÉFINITIF
+// Règle : _fErr affiche, _fClear masque, autoclear sur frappe
+// ═══════════════════════════════════════════════════════════════
+
+// Stocke les fonctions de nettoyage par id pour éviter l'accumulation
+var _fClearFns = {};
+
 function _fErr(id, msg){
-  // ── Step 1: mark the input field ──────────────────────────
-  var el = document.getElementById(id);
-  if(el){
-    el.style.setProperty('border','2px solid #E05252','important');
-    el.style.outline = 'none';
-    el.style.background = 'rgba(224,82,82,0.05)';
-    el.classList.add('inp-err');
-    // Auto-clear when user types
-    var fn = function(){
-      el.style.removeProperty('border');
-      el.style.border = '';
-      el.style.outline = '';
-      el.style.background = '';
-      el.classList.remove('inp-err');
-      _fClear(id);
-      el.removeEventListener('input', fn);
-      el.removeEventListener('change', fn);
-    };
-    el.addEventListener('input', fn);
-    el.addEventListener('change', fn);
+  // ── 1. Nettoyer l'ancien listener s'il existe ────────────
+  if(_fClearFns[id]){
+    var el0=document.getElementById(id);
+    if(el0){
+      el0.removeEventListener('input', _fClearFns[id]);
+      el0.removeEventListener('change', _fClearFns[id]);
+    }
+    delete _fClearFns[id];
   }
 
-  // ── Step 2: find or create error element ──────────────────
-  var errEl = document.getElementById(id + '-err');
+  // ── 2. Marquer le champ en rouge ─────────────────────────
+  var el = document.getElementById(id);
+  if(el){
+    el.style.border = '2px solid #E05252';
+    el.style.outline = 'none';
+    el.style.background = 'rgba(224,82,82,0.05)';
+    // Attacher le nettoyage automatique à la frappe
+    _fClearFns[id] = function(){ _fClear(id); };
+    el.addEventListener('input', _fClearFns[id]);
+    el.addEventListener('change', _fClearFns[id]);
+  }
 
-  // If not found, create one and insert after the field
+  // ── 3. Trouver ou créer le span d'erreur ─────────────────
+  var errEl = document.getElementById(id + '-err');
   if(!errEl){
     errEl = document.createElement('span');
     errEl.id = id + '-err';
     if(el && el.parentNode){
-      // Insert right after the element (or after its wrapper)
-      var ref = el.nextSibling;
-      el.parentNode.insertBefore(errEl, ref);
+      el.parentNode.insertBefore(errEl, el.nextSibling);
     }
   }
-
   if(!errEl) return;
 
-  // ── Step 3: show error — use direct property assignment ───
-  // NEVER use cssText — it conflicts with existing inline style="display:none"
-  errEl.removeAttribute('style'); // remove display:none inline style first
+  // ── 4. Afficher le message — propriétés directes ─────────
+  // removeAttribute('style') supprime display:none du HTML
+  errEl.removeAttribute('style');
   errEl.style.display      = 'block';
   errEl.style.color        = '#E05252';
   errEl.style.fontSize     = '12px';
   errEl.style.fontWeight   = '600';
   errEl.style.marginTop    = '6px';
-  errEl.style.padding      = '5px 10px';
+  errEl.style.padding      = '6px 12px';
   errEl.style.background   = 'rgba(224,82,82,0.1)';
   errEl.style.borderLeft   = '3px solid #E05252';
   errEl.style.borderRadius = '0 6px 6px 0';
   errEl.style.lineHeight   = '1.5';
   errEl.style.boxSizing    = 'border-box';
   errEl.textContent        = '⚠️ ' + msg;
-  errEl.className          = 'ferr on';
 }
+
 function _fClear(id){
-  var errEl = document.getElementById(id + '-err');
-  if(errEl){
-    errEl.style.display = 'none';
-    errEl.textContent = '';
-    errEl.className = 'ferr';
+  // Retirer le listener
+  if(_fClearFns[id]){
+    var el0=document.getElementById(id);
+    if(el0){
+      el0.removeEventListener('input', _fClearFns[id]);
+      el0.removeEventListener('change', _fClearFns[id]);
+    }
+    delete _fClearFns[id];
   }
+  // Restaurer le champ
   var el = document.getElementById(id);
   if(el){
-    el.style.removeProperty('border');
-    el.style.border = '';
-    el.style.outline = '';
-    el.style.background = '';
-    el.classList.remove('inp-err');
+    el.style.border      = '';
+    el.style.outline     = '';
+    el.style.background  = '';
+  }
+  // Masquer le message
+  var errEl = document.getElementById(id + '-err');
+  if(errEl){
+    errEl.style.display  = 'none';
+    errEl.textContent    = '';
   }
 }
-function _fVal(id){ return (document.getElementById(id)||{value:''}).value||''; }
-function _fClearAll(ids){ ids.forEach(function(id){ _fClear(id); }); }
+
+function _fVal(id){
+  var el = document.getElementById(id);
+  return el ? (el.value || '') : '';
+}
+
+function _fClearAll(ids){
+  ids.forEach(function(id){ _fClear(id); });
+}
+
+
 
 </script>
 <style>
@@ -3848,76 +3868,130 @@ function updateClient(){
   closeAllMd();initClientFilters();renderClients();toast('✅ Client mis à jour avec succès !');
 }
 function saveClient(){
-  // ── Clear all previous errors ──────────────────────────────
+  // ── 1. Collecter toutes les valeurs ──────────────────────
+  var name   = _fVal('nc-name').trim();
+  var phone  = _fVal('nc-ph').trim();
+  var city   = _fVal('nc-city').trim();
+  var addr   = _fVal('nc-addr').trim();
+  var user   = _fVal('nc-user').trim();
+  var pw     = _fVal('nc-pw');
+  var photo  = _fVal('nc-photo').trim();
+  var email  = _fVal('nc-email').trim();
+
+  // ── 2. Effacer les erreurs précédentes ───────────────────
+  // (APRÈS avoir lu les valeurs, pour ne pas déclencher les listeners)
   _fClearAll(['nc-name','nc-ph','nc-city','nc-addr','nc-user','nc-pw','nc-photo','nc-email']);
-  var ok=true; var firstErrId=null; var errors=[];
-  var name=_fVal('nc-name').trim(),phone=_fVal('nc-ph').trim(),city=_fVal('nc-city').trim();
-  var addr=_fVal('nc-addr').trim(),user=_fVal('nc-user').trim(),pw=_fVal('nc-pw');
-  var photo=_fVal('nc-photo').trim(),email=_fVal('nc-email').trim();
+
+  // ── 3. Valider chaque champ et collecter les erreurs ─────
+  var ok = true;
+  var firstErrId = null;
+  var errCount = 0;
+
+  function fail(id, msg){
+    _fErr(id, msg);
+    if(!firstErrId) firstErrId = id;
+    ok = false;
+    errCount++;
+  }
 
   // Nom
-  if(!name){_fErr('nc-name','Nom complet obligatoire — ex: Hassan Benali');if(!firstErrId)firstErrId='nc-name';ok=false;errors.push('Nom');}
-  else if(name.length<3){_fErr('nc-name','Nom trop court — minimum 3 caractères');if(!firstErrId)firstErrId='nc-name';ok=false;errors.push('Nom');}
-  else if(/\d/.test(name)){_fErr('nc-name','Le nom ne doit pas contenir de chiffres');if(!firstErrId)firstErrId='nc-name';ok=false;errors.push('Nom');}
-  // Téléphone
-  if(!phone){_fErr('nc-ph','Téléphone obligatoire — ex: 0661234567');if(!firstErrId)firstErrId='nc-ph';ok=false;errors.push('Téléphone');}
-  else if(!/^[\d\s\+\-\.]{6,15}$/.test(phone)){_fErr('nc-ph','Format invalide — chiffres uniquement, 6-15 car. (ex: 0661234567)');if(!firstErrId)firstErrId='nc-ph';ok=false;errors.push('Téléphone');}
-  else if(CLIENTS.find(function(c){return c.phone===phone;})){_fErr('nc-ph','Ce numéro existe déjà pour un autre client');if(!firstErrId)firstErrId='nc-ph';ok=false;errors.push('Téléphone');}
-  // Ville
-  if(!city){_fErr('nc-city','Ville obligatoire — ex: Casablanca');if(!firstErrId)firstErrId='nc-city';ok=false;errors.push('Ville');}
-  // Adresse
-  if(!addr){_fErr('nc-addr','Adresse obligatoire — ex: 12 Rue Mohammed V, Maarif');if(!firstErrId)firstErrId='nc-addr';ok=false;errors.push('Adresse');}
-  else if(addr.length<5){_fErr('nc-addr','Adresse trop courte — soyez plus précis');if(!firstErrId)firstErrId='nc-addr';ok=false;errors.push('Adresse');}
-  // Identifiant
-  if(!user){_fErr('nc-user',"Identifiant obligatoire — ex: hassan01 (sans espaces)");if(!firstErrId)firstErrId='nc-user';ok=false;errors.push('Identifiant');}
-  else if(/\s/.test(user)){_fErr('nc-user',"Pas d'espaces dans l'identifiant — ex: hassan01");if(!firstErrId)firstErrId='nc-user';ok=false;errors.push('Identifiant');}
-  else if(user.length<3){_fErr('nc-user','Identifiant trop court — minimum 3 caractères');if(!firstErrId)firstErrId='nc-user';ok=false;errors.push('Identifiant');}
-  else if(CLIENTS.find(function(c){return c.username&&c.username.toLowerCase()===user.toLowerCase();})){_fErr('nc-user','Identifiant déjà utilisé — choisissez-en un autre');if(!firstErrId)firstErrId='nc-user';ok=false;errors.push('Identifiant');}
-  // Mot de passe
-  if(!pw){_fErr('nc-pw','Mot de passe obligatoire — minimum 6 caractères');if(!firstErrId)firstErrId='nc-pw';ok=false;errors.push('Mot de passe');}
-  else if(pw.length<6){_fErr('nc-pw','Mot de passe trop court — minimum 6 caractères');if(!firstErrId)firstErrId='nc-pw';ok=false;errors.push('Mot de passe');}
-  // Email (optionnel)
-  if(email){
-    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){_fErr('nc-email','Format email invalide — ex: nom@domaine.com');if(!firstErrId)firstErrId='nc-email';ok=false;errors.push('Email');}
-    else if(CLIENTS.find(function(c){return c.email&&c.email.toLowerCase()===email.toLowerCase();})){_fErr('nc-email','Email déjà associé à un autre compte');if(!firstErrId)firstErrId='nc-email';ok=false;errors.push('Email');}
-  }
-  // Photo (optionnel)
-  if(photo&&!photo.startsWith('http')){_fErr('nc-photo',"URL photo invalide — doit commencer par https://...");if(!firstErrId)firstErrId='nc-photo';ok=false;errors.push('Photo');}
+  if(!name)
+    fail('nc-name','Nom complet obligatoire — ex: Hassan Benali');
+  else if(name.length < 3)
+    fail('nc-name','Nom trop court — minimum 3 caractères');
+  else if(/\d/.test(name))
+    fail('nc-name','Le nom ne doit pas contenir de chiffres');
 
+  // Téléphone
+  if(!phone)
+    fail('nc-ph','Téléphone obligatoire — ex: 0661234567');
+  else if(!/^[\d\s\+\-\.]{6,15}$/.test(phone))
+    fail('nc-ph','Format invalide — chiffres uniquement, 6-15 car. (ex: 0661234567)');
+  else if(CLIENTS.find(function(c){ return c.phone === phone; }))
+    fail('nc-ph','Ce numéro existe déjà pour un autre client');
+
+  // Ville
+  if(!city)
+    fail('nc-city','Ville obligatoire — ex: Casablanca');
+
+  // Adresse
+  if(!addr)
+    fail('nc-addr','Adresse obligatoire — ex: 12 Rue Mohammed V, Maarif');
+  else if(addr.length < 5)
+    fail('nc-addr','Adresse trop courte — soyez plus précis');
+
+  // Identifiant
+  if(!user)
+    fail('nc-user','Identifiant obligatoire — ex: hassan01 (sans espaces)');
+  else if(/\s/.test(user))
+    fail('nc-user',"Pas d'espaces dans l'identifiant");
+  else if(user.length < 3)
+    fail('nc-user','Identifiant trop court — minimum 3 caractères');
+  else if(CLIENTS.find(function(c){ return c.username && c.username.toLowerCase() === user.toLowerCase(); }))
+    fail('nc-user','Identifiant déjà utilisé — choisissez-en un autre');
+
+  // Mot de passe
+  if(!pw)
+    fail('nc-pw','Mot de passe obligatoire — minimum 6 caractères');
+  else if(pw.length < 6)
+    fail('nc-pw','Mot de passe trop court — minimum 6 caractères');
+
+  // Email optionnel
+  if(email){
+    if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+      fail('nc-email','Format email invalide — ex: nom@domaine.com');
+    else if(CLIENTS.find(function(c){ return c.email && c.email.toLowerCase() === email.toLowerCase(); }))
+      fail('nc-email','Email déjà associé à un autre compte');
+  }
+
+  // Photo optionnelle
+  if(photo && !photo.startsWith('http'))
+    fail('nc-photo','URL photo invalide — doit commencer par https://...');
+
+  // ── 4. Si erreurs — afficher et scroller vers la 1ère ────
   if(!ok){
-    toast('⚠️ '+errors.length+' erreur(s) : '+errors.join(', '),true);
-    // Scroll the modal to show the first error
-    if(firstErrId){
-      setTimeout(function(){
-        var el=document.getElementById(firstErrId);
-        var errEl=document.getElementById(firstErrId+'-err');
-        var target=errEl||el;
-        if(target){
-          // Scroll within the modal
-          var modal=document.getElementById('md-add-cl');
-          if(modal){
-            var rect=target.getBoundingClientRect();
-            var modalRect=modal.getBoundingClientRect();
-            if(rect.top<modalRect.top||rect.bottom>modalRect.bottom){
-              modal.scrollTop=target.offsetTop-80;
-            }
-          }
-          if(el) el.focus();
-        }
-      },50);
-    }
+    toast('⚠️ ' + errCount + ' champ(s) à corriger — vérifiez les zones en rouge', true);
+    // Scroller le modal vers la 1ère erreur
+    setTimeout(function(){
+      var modal = document.getElementById('md-add-cl');
+      var el = document.getElementById(firstErrId + '-err') || document.getElementById(firstErrId);
+      if(modal && el){
+        modal.scrollTop = Math.max(0, el.offsetTop - 60);
+      }
+      var inp = document.getElementById(firstErrId);
+      if(inp) inp.focus();
+    }, 30);
     return;
   }
-  if(!photo) photo='https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128&bold=true&format=svg';
-  var lat=parseFloat((document.getElementById('nc-lat')||{}).value)||null;
-  var lng=parseFloat((document.getElementById('nc-lng')||{}).value)||null;
-  var secEl=document.getElementById('nc-sector');
-  var sector=secEl?secEl.value:'';
-  if(sector==='__autre__') sector=prompt('Entrez le secteur :','')||'';
-  CLIENTS.push({id:'C'+(100+CLIENTS.length),name:name,phone:phone,city:city,region:_fVal('nc-reg'),sector:sector,address:addr,lat:lat,lng:lng,username:user,password:pw,email:email,photo:photo,createdDate:new Date().toISOString().split('T')[0]});
-  save();if(window.saveToCloud)window.saveToCloud();
-  closeAllMd();initClientFilters();renderClients();
-  toast('✅ Client "'+name+'" créé avec succès !');
+
+  // ── 5. Auto-photo si vide ─────────────────────────────────
+  if(!photo){
+    photo = 'https://ui-avatars.com/api/?name=' + encodeURIComponent(name) +
+            '&background=C9A84C&color=0A0A0A&size=128&bold=true&format=svg';
+  }
+
+  // ── 6. Enregistrer ───────────────────────────────────────
+  var lat = parseFloat((document.getElementById('nc-lat') || {}).value) || null;
+  var lng = parseFloat((document.getElementById('nc-lng') || {}).value) || null;
+  var secEl = document.getElementById('nc-sector');
+  var sector = secEl ? secEl.value : '';
+  if(sector === '__autre__') sector = prompt('Entrez le secteur :', '') || '';
+
+  CLIENTS.push({
+    id: 'C' + (100 + CLIENTS.length),
+    name: name, phone: phone,
+    city: city, region: _fVal('nc-reg'), sector: sector,
+    address: addr, lat: lat, lng: lng,
+    username: user, password: pw, email: email,
+    photo: photo, createdDate: new Date().toISOString().split('T')[0]
+  });
+
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  closeAllMd();
+  initClientFilters();
+  renderClients();
+  toast('✅ Client "' + name + '" créé avec succès !');
 }
 function delCl(id){CLIENTS=CLIENTS.filter(function(c){return c.id!==id;});save();initClientFilters();renderClients();toast('Client supprimé');}
 
