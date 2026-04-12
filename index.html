@@ -170,9 +170,9 @@ function _fErr(id, msg){
   }
   if(!box) return;
 
-  // Forcer l'affichage avec setAttribute — impossible à contredire par CSS
+  // display:block écrase le style="display:none" inline — fonctionne toujours
   box.setAttribute('style',
-    'display:block !important;'+
+    'display:block;'+
     'color:#E05252;'+
     'font-size:12px;'+
     'font-weight:600;'+
@@ -185,7 +185,7 @@ function _fErr(id, msg){
     'box-sizing:border-box;'+
     'word-break:break-word'
   );
-  box.textContent = '⚠️ ' + msg;
+  box.textContent = '\u26a0\ufe0f ' + msg;
 }
 
 function _fClear(id){
@@ -205,7 +205,7 @@ function _fClear(id){
     el.setAttribute('style', st);
   }
   var box = document.getElementById(id+'-err');
-  if(box) box.setAttribute('style','display:none');
+  if(box) box.setAttribute('style','display:none'); // cache via inline style
 }
 
 function _fVal(id){
@@ -255,7 +255,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:var(--tx);min-h
 .fg input.field-err,.fg select.field-err,.fg textarea.field-err{border-color:var(--red)!important;animation:shake .3s ease}
 .field-err-msg{color:#E05252;font-size:12px;margin-top:4px;display:none;font-weight:500}
 .field-err-msg.show{display:block}
-.ferr{display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:6px;padding:5px 10px;background:rgba(224,82,82,0.1);border-left:3px solid #E05252;border-radius:0 6px 6px 0;line-height:1.5;box-sizing:border-box}
+.ferr{color:#E05252;font-size:12px;font-weight:600;margin-top:6px;padding:5px 10px;background:rgba(224,82,82,0.1);border-left:3px solid #E05252;border-radius:0 6px 6px 0;line-height:1.5;box-sizing:border-box}
 input.inp-err,select.inp-err{border:2px solid #E05252!important;background:rgba(224,82,82,0.04)!important}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
 .inp-err{animation:shake .3s ease}
@@ -961,14 +961,14 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Nom du produit <span style="color:var(--red)">★</span></label>
          <input type="text" id="np-name" placeholder="Ex: Huile d'Argan Premium" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
-         <div id="np-name-err" class="ferr"></div>
+         <div id="np-name-err" class="ferr" style="display:none"></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Catégorie <span style="color:var(--red)">★</span></label>
          <select id="np-cat" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
           <option value="">— Choisir —</option>
          </select>
-         <div id="np-cat-err" class="ferr"></div>
+         <div id="np-cat-err" class="ferr" style="display:none"></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Code-barres <span style="color:var(--tx3)">(optionnel)</span></label>
@@ -980,24 +980,24 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Quantité initiale <span style="color:var(--red)">★</span></label>
          <input type="number" id="np-qty" placeholder="Ex: 50" min="1" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
-         <div id="np-qty-err" class="ferr"></div>
+         <div id="np-qty-err" class="ferr" style="display:none"></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Prix d'achat MAD <span style="color:var(--red)">★</span></label>
          <input type="number" id="np-buy" placeholder="Ex: 95" min="0" step="0.01" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="calcNpMargin()">
-         <div id="np-buy-err" class="ferr"></div>
+         <div id="np-buy-err" class="ferr" style="display:none"></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Prix de vente MAD <span style="color:var(--red)">★</span></label>
          <input type="number" id="np-sell" placeholder="Ex: 185" min="0" step="0.01" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="calcNpMargin()">
-         <div id="np-sell-err" class="ferr"></div>
+         <div id="np-sell-err" class="ferr" style="display:none"></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Fournisseur <span style="color:var(--red)">★</span></label>
          <select id="np-sup" onchange="if(this.value==='__new__'){openMd('add-supplier');this.value='';}" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
           <option value="">— Choisir —</option>
          </select>
-         <div id="np-sup-err" class="ferr"></div>
+         <div id="np-sup-err" class="ferr" style="display:none"></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Mode paiement <span style="color:var(--red)">★</span></label>
@@ -1008,7 +1008,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
           <option value="cheque">📋 Chèque</option>
           <option value="credit">🔄 À crédit</option>
          </select>
-         <div id="np-pay-err" class="ferr"></div>
+         <div id="np-pay-err" class="ferr" style="display:none"></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Unité / Conditionnement</label>
@@ -1049,7 +1049,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
          <select id="appro-prod" onchange="onApproProdChange();_fClear('appro-prod')" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
           <option value="">— Sélectionner —</option>
          </select>
-         <div id="appro-prod-err" class="ferr"></div>
+         <div id="appro-prod-err" class="ferr" style="display:none"></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Code-barres (recherche)</label>
@@ -1062,19 +1062,19 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Quantité à recevoir <span style="color:var(--red)">★</span></label>
          <input type="number" id="appro-qty" placeholder="Ex: 50" min="1" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="onApproCalcCmp()">
-         <div id="appro-qty-err" class="ferr"></div>
+         <div id="appro-qty-err" class="ferr" style="display:none"></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Prix d'achat MAD <span style="color:var(--red)">★</span></label>
          <input type="number" id="appro-price" placeholder="Ex: 95" min="0" step="0.01" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="onApproCalcCmp()">
-         <div id="appro-price-err" class="ferr"></div>
+         <div id="appro-price-err" class="ferr" style="display:none"></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Fournisseur <span style="color:var(--red)">★</span></label>
          <select id="appro-sup" onchange="if(this.value==='__new__'){openMd('add-supplier');this.value='';};" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
           <option value="">— Choisir —</option>
          </select>
-         <div id="appro-sup-err" class="ferr"></div>
+         <div id="appro-sup-err" class="ferr" style="display:none"></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Mode paiement <span style="color:var(--red)">★</span></label>
@@ -1085,7 +1085,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
           <option value="cheque">📋 Chèque</option>
           <option value="credit">🔄 À crédit</option>
          </select>
-         <div id="appro-pay-err" class="ferr"></div>
+         <div id="appro-pay-err" class="ferr" style="display:none"></div>
         </div>
         <div style="display:flex;flex-direction:column;gap:3px">
          <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Notes / Numéro bon de commande</label>
@@ -1505,19 +1505,19 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
   <div class="fg">
    <label>Nom complet <span style="color:var(--red)">★</span></label>
    <input id="nc-name" placeholder="ex: Hassan Benali" autocomplete="off">
-   <span id="nc-name-err" class="ferr"></span>
+   <span id="nc-name-err" class="ferr" style="display:none"></span>
   </div>
 
   <div class="fg">
    <label>Téléphone <span style="color:var(--red)">★</span></label>
    <input id="nc-ph" inputmode="numeric" placeholder="ex: 0661234567" autocomplete="off" oninput="validatePhoneInput(this)">
-   <span id="nc-ph-err" class="ferr"></span>
+   <span id="nc-ph-err" class="ferr" style="display:none"></span>
   </div>
 
   <div class="fg">
    <label>Ville <span style="color:var(--red)">★</span></label>
    <input id="nc-city" placeholder="ex: Casablanca" autocomplete="off" oninput="updateSecteurList('nc-sector','nc-city')">
-   <span id="nc-city-err" class="ferr"></span>
+   <span id="nc-city-err" class="ferr" style="display:none"></span>
   </div>
 
   <div class="fg">
@@ -1537,7 +1537,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
   <div class="fg">
    <label>Adresse <span style="color:var(--red)">★</span></label>
    <input id="nc-addr" placeholder="ex: 12 Rue Mohammed V, Maarif" autocomplete="off">
-   <span id="nc-addr-err" class="ferr"></span>
+   <span id="nc-addr-err" class="ferr" style="display:none"></span>
   </div>
 
   <div style="background:var(--dk4);border:1px solid var(--bo2);border-radius:10px;padding:12px;margin-bottom:12px">
@@ -1556,13 +1556,13 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
   <div class="fg">
    <label>Identifiant de connexion <span style="color:var(--red)">★</span></label>
    <input id="nc-user" placeholder="ex: client01 (sans espaces ni accents)" autocomplete="off">
-   <span id="nc-user-err" class="ferr"></span>
+   <span id="nc-user-err" class="ferr" style="display:none"></span>
   </div>
 
   <div class="fg">
    <label>Mot de passe <span style="color:var(--red)">★</span></label>
    <input type="password" id="nc-pw" placeholder="Min. 8 car. — Maj. + min. + chiffre + spécial" oninput="validatePassword(this.value,'nc-pw')">
-   <span id="nc-pw-err" class="ferr"></span>
+   <span id="nc-pw-err" class="ferr" style="display:none"></span>
   </div>
 
   <div class="fg">
@@ -1576,7 +1576,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
     <input id="nc-photo" placeholder="https://exemple.com/photo.jpg" style="flex:1" oninput="previewPhoto('nc-photo','nc-photo-prev')">
     <button type="button" class="btn btn-o btn-sm" onclick="openPhotoUpload('nc-photo','nc-photo-prev','add-cl')">📁</button>
    </div>
-   <span id="nc-photo-err" class="ferr"></span>
+   <span id="nc-photo-err" class="ferr" style="display:none"></span>
    <img id="nc-photo-prev" class="photo-preview" src="" alt="" style="margin-top:8px">
   </div>
 
@@ -1625,7 +1625,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
   <div class="fg">
    <label>Nom du produit <span style="color:var(--red)">★</span></label>
    <input id="np-name" placeholder="ex: Crème hydratante 200ml" autocomplete="off">
-   <span id="np-name-err" class="ferr"></span>
+   <span id="np-name-err" class="ferr" style="display:none"></span>
   </div>
 
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
@@ -1652,12 +1652,12 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
     <div class="fg" style="margin:0">
      <label>Prix d'achat (MAD) <span style="color:var(--red)">★</span></label>
      <input type="number" id="np-buy" placeholder="0.00" min="0" step="0.01" inputmode="decimal" oninput="calcMargin('np')">
-     <span id="np-buy-err" class="ferr"></span>
+     <span id="np-buy-err" class="ferr" style="display:none"></span>
     </div>
     <div class="fg" style="margin:0">
      <label>Prix de vente (MAD) <span style="color:var(--red)">★</span></label>
      <input type="number" id="np-sell" placeholder="0.00" min="0" step="0.01" inputmode="decimal" oninput="calcMargin('np')">
-     <span id="np-sell-err" class="ferr"></span>
+     <span id="np-sell-err" class="ferr" style="display:none"></span>
     </div>
    </div>
    <div id="np-margin" class="margin-box" style="margin-top:8px"></div>
@@ -1679,7 +1679,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
    <select id="np-sup">
     <option value="">— Sélectionner un fournisseur —</option>
    </select>
-   <span id="np-sup-err" class="ferr"></span>
+   <span id="np-sup-err" class="ferr" style="display:none"></span>
   </div>
 
   <div class="fg">
@@ -1691,7 +1691,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
     <option value="cheque">📋 Chèque</option>
     <option value="credit">🔄 À crédit fournisseur</option>
    </select>
-   <span id="np-paymethod-err" class="ferr"></span>
+   <span id="np-paymethod-err" class="ferr" style="display:none"></span>
   </div>
 
   <div class="fg">
@@ -1700,7 +1700,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
     <input id="np-img" placeholder="https://exemple.com/image-produit.jpg" style="flex:1" oninput="previewPhoto('np-img','np-img-prev')">
     <button type="button" class="btn btn-o btn-sm" onclick="openPhotoUpload('np-img','np-img-prev','add-prod')">📁</button>
    </div>
-   <span id="np-img-err" class="ferr"></span>
+   <span id="np-img-err" class="ferr" style="display:none"></span>
    <img id="np-img-prev" class="photo-preview" style="border-radius:8px;width:80px;height:60px;margin-top:8px" src="" alt="">
   </div>
 
