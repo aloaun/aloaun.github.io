@@ -134,96 +134,87 @@ function clearErr(elId){
 // VALIDATION SYSTEM v3 — Simple, Guaranteed, Cross-browser
 // ═══════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════
-// SYSTÈME DE VALIDATION — v4 DÉFINITIF
-// Règle : _fErr affiche, _fClear masque, autoclear sur frappe
+// SYSTÈME DE VALIDATION — v5 FINAL
+// Pure JS inline style. Zéro dépendance CSS. Fonctionne partout.
 // ═══════════════════════════════════════════════════════════════
 
-// Stocke les fonctions de nettoyage par id pour éviter l'accumulation
-var _fClearFns = {};
+var _fListeners = {}; // stocke les listeners pour éviter accumulation
 
 function _fErr(id, msg){
-  // ── 1. Nettoyer l'ancien listener s'il existe ────────────
-  if(_fClearFns[id]){
-    var el0=document.getElementById(id);
-    if(el0){
-      el0.removeEventListener('input', _fClearFns[id]);
-      el0.removeEventListener('change', _fClearFns[id]);
-    }
-    delete _fClearFns[id];
-  }
-
-  // ── 2. Marquer le champ en rouge ─────────────────────────
+  // Supprimer ancien listener si existant
   var el = document.getElementById(id);
+  if(_fListeners[id] && el){
+    el.removeEventListener('input',  _fListeners[id]);
+    el.removeEventListener('change', _fListeners[id]);
+  }
+
+  // Bordure rouge sur le champ
   if(el){
-    el.style.border = '2px solid #E05252';
-    el.style.outline = 'none';
-    el.style.background = 'rgba(224,82,82,0.05)';
-    // Attacher le nettoyage automatique à la frappe
-    _fClearFns[id] = function(){ _fClear(id); };
-    el.addEventListener('input', _fClearFns[id]);
-    el.addEventListener('change', _fClearFns[id]);
+    el.setAttribute('style',
+      (el.getAttribute('style')||'')
+        .replace(/border\s*:[^;]+;?/gi,'')
+        .replace(/background\s*:[^;]+;?/gi,'') +
+      'border:2px solid #E05252 !important;background:rgba(224,82,82,0.04);'
+    );
+    _fListeners[id] = function(){ _fClear(id); };
+    el.addEventListener('input',  _fListeners[id]);
+    el.addEventListener('change', _fListeners[id]);
   }
 
-  // ── 3. Trouver ou créer le span d'erreur ─────────────────
-  var errEl = document.getElementById(id + '-err');
-  if(!errEl){
-    errEl = document.createElement('span');
-    errEl.id = id + '-err';
-    if(el && el.parentNode){
-      el.parentNode.insertBefore(errEl, el.nextSibling);
-    }
+  // Trouver ou créer le div d'erreur
+  var box = document.getElementById(id+'-err');
+  if(!box){
+    box = document.createElement('div');
+    box.id = id+'-err';
+    if(el && el.parentNode) el.parentNode.insertBefore(box, el.nextSibling);
   }
-  if(!errEl) return;
+  if(!box) return;
 
-  // ── 4. Afficher le message — propriétés directes ─────────
-  // removeAttribute('style') supprime display:none du HTML
-  errEl.removeAttribute('style');
-  errEl.style.display      = 'block';
-  errEl.style.color        = '#E05252';
-  errEl.style.fontSize     = '12px';
-  errEl.style.fontWeight   = '600';
-  errEl.style.marginTop    = '6px';
-  errEl.style.padding      = '6px 12px';
-  errEl.style.background   = 'rgba(224,82,82,0.1)';
-  errEl.style.borderLeft   = '3px solid #E05252';
-  errEl.style.borderRadius = '0 6px 6px 0';
-  errEl.style.lineHeight   = '1.5';
-  errEl.style.boxSizing    = 'border-box';
-  errEl.textContent        = '⚠️ ' + msg;
+  // Forcer l'affichage avec setAttribute — impossible à contredire par CSS
+  box.setAttribute('style',
+    'display:block !important;'+
+    'color:#E05252;'+
+    'font-size:12px;'+
+    'font-weight:600;'+
+    'margin-top:6px;'+
+    'padding:6px 10px;'+
+    'background:rgba(224,82,82,0.12);'+
+    'border-left:3px solid #E05252;'+
+    'border-radius:0 6px 6px 0;'+
+    'line-height:1.5;'+
+    'box-sizing:border-box;'+
+    'word-break:break-word'
+  );
+  box.textContent = '⚠️ ' + msg;
 }
 
 function _fClear(id){
-  // Retirer le listener
-  if(_fClearFns[id]){
-    var el0=document.getElementById(id);
+  if(_fListeners[id]){
+    var el0 = document.getElementById(id);
     if(el0){
-      el0.removeEventListener('input', _fClearFns[id]);
-      el0.removeEventListener('change', _fClearFns[id]);
+      el0.removeEventListener('input',  _fListeners[id]);
+      el0.removeEventListener('change', _fListeners[id]);
     }
-    delete _fClearFns[id];
+    delete _fListeners[id];
   }
-  // Restaurer le champ
   var el = document.getElementById(id);
   if(el){
-    el.style.border      = '';
-    el.style.outline     = '';
-    el.style.background  = '';
+    var st = el.getAttribute('style') || '';
+    st = st.replace(/border\s*:\s*2px solid #E05252 !important;?/gi,'')
+           .replace(/background\s*:\s*rgba\(224,82,82,[^)]+\);?/gi,'');
+    el.setAttribute('style', st);
   }
-  // Masquer le message
-  var errEl = document.getElementById(id + '-err');
-  if(errEl){
-    errEl.style.display  = 'none';
-    errEl.textContent    = '';
-  }
+  var box = document.getElementById(id+'-err');
+  if(box) box.setAttribute('style','display:none');
 }
 
 function _fVal(id){
   var el = document.getElementById(id);
-  return el ? (el.value || '') : '';
+  return el ? (el.value||'') : '';
 }
 
 function _fClearAll(ids){
-  ids.forEach(function(id){ _fClear(id); });
+  (ids||[]).forEach(function(id){ _fClear(id); });
 }
 
 
@@ -265,7 +256,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:var(--tx);min-h
 .field-err-msg{color:#E05252;font-size:12px;margin-top:4px;display:none;font-weight:500}
 .field-err-msg.show{display:block}
 .ferr{display:none;color:#E05252;font-size:12px;font-weight:600;margin-top:6px;padding:5px 10px;background:rgba(224,82,82,0.1);border-left:3px solid #E05252;border-radius:0 6px 6px 0;line-height:1.5;box-sizing:border-box}
-.ferr.on{display:block!important}
 input.inp-err,select.inp-err{border:2px solid #E05252!important;background:rgba(224,82,82,0.04)!important}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
 .inp-err{animation:shake .3s ease}
@@ -770,7 +760,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
 /* Selection */
 ::selection{background:rgba(201,168,76,.25);color:var(--tx)}
 /* Field error shake */
-.ferr.on{animation:shake .3s ease}
+
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
 /* Product card */
 .p-c{box-shadow:0 2px 8px rgba(0,0,0,.2)!important;border-radius:12px!important}
