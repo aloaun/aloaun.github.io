@@ -134,88 +134,62 @@ function clearErr(elId){
 // VALIDATION SYSTEM v3 — Simple, Guaranteed, Cross-browser
 // ═══════════════════════════════════════════════════════
 // ═══════════════════════════════════════════════════════════════
-// SYSTÈME DE VALIDATION — v5 FINAL
-// Pure JS inline style. Zéro dépendance CSS. Fonctionne partout.
+// VALIDATION — VERSION SIMPLE ET DIRECTE
+// Pas de classes CSS, pas de !important, juste du DOM pur
 // ═══════════════════════════════════════════════════════════════
 
-var _fListeners = {}; // stocke les listeners pour éviter accumulation
-
 function _fErr(id, msg){
-  // Supprimer ancien listener si existant
+  // 1. Bordure rouge sur l'input
   var el = document.getElementById(id);
-  if(_fListeners[id] && el){
-    el.removeEventListener('input',  _fListeners[id]);
-    el.removeEventListener('change', _fListeners[id]);
-  }
-
-  // Bordure rouge sur le champ
   if(el){
-    el.setAttribute('style',
-      (el.getAttribute('style')||'')
-        .replace(/border\s*:[^;]+;?/gi,'')
-        .replace(/background\s*:[^;]+;?/gi,'') +
-      'border:2px solid #E05252 !important;background:rgba(224,82,82,0.04);'
-    );
-    _fListeners[id] = function(){ _fClear(id); };
-    el.addEventListener('input',  _fListeners[id]);
-    el.addEventListener('change', _fListeners[id]);
+    el.style.border = '2px solid #E05252';
+    el.style.background = 'rgba(224,82,82,0.04)';
+    // Auto-effacer quand l'utilisateur tape
+    el.oninput = function(){ _fClear(id); };
+    el.onchange = function(){ _fClear(id); };
   }
 
-  // Trouver ou créer le div d'erreur
+  // 2. Afficher le message d'erreur — le plus simple possible
   var box = document.getElementById(id+'-err');
-  if(!box){
-    box = document.createElement('div');
-    box.id = id+'-err';
-    if(el && el.parentNode) el.parentNode.insertBefore(box, el.nextSibling);
+  if(box){
+    box.textContent = '⚠️ ' + msg;
+    box.style.display = 'block';  // écrase display:none inline du HTML
+    box.style.color = '#E05252';
+    box.style.fontSize = '12px';
+    box.style.fontWeight = '600';
+    box.style.marginTop = '6px';
+    box.style.padding = '6px 10px';
+    box.style.background = 'rgba(224,82,82,0.12)';
+    box.style.borderLeft = '3px solid #E05252';
+    box.style.borderRadius = '0 6px 6px 0';
+    box.style.lineHeight = '1.5';
   }
-  if(!box) return;
-
-  // display:block écrase le style="display:none" inline — fonctionne toujours
-  box.setAttribute('style',
-    'display:block;'+
-    'color:#E05252;'+
-    'font-size:12px;'+
-    'font-weight:600;'+
-    'margin-top:6px;'+
-    'padding:6px 10px;'+
-    'background:rgba(224,82,82,0.12);'+
-    'border-left:3px solid #E05252;'+
-    'border-radius:0 6px 6px 0;'+
-    'line-height:1.5;'+
-    'box-sizing:border-box;'+
-    'word-break:break-word'
-  );
-  box.textContent = '\u26a0\ufe0f ' + msg;
 }
 
 function _fClear(id){
-  if(_fListeners[id]){
-    var el0 = document.getElementById(id);
-    if(el0){
-      el0.removeEventListener('input',  _fListeners[id]);
-      el0.removeEventListener('change', _fListeners[id]);
-    }
-    delete _fListeners[id];
-  }
   var el = document.getElementById(id);
   if(el){
-    var st = el.getAttribute('style') || '';
-    st = st.replace(/border\s*:\s*2px solid #E05252 !important;?/gi,'')
-           .replace(/background\s*:\s*rgba\(224,82,82,[^)]+\);?/gi,'');
-    el.setAttribute('style', st);
+    el.style.border = '';
+    el.style.background = '';
+    el.oninput = null;
+    el.onchange = null;
   }
   var box = document.getElementById(id+'-err');
-  if(box) box.setAttribute('style','display:none'); // cache via inline style
+  if(box){
+    box.style.display = 'none';
+    box.textContent = '';
+  }
 }
 
 function _fVal(id){
   var el = document.getElementById(id);
-  return el ? (el.value||'') : '';
+  return el ? (el.value || '') : '';
 }
 
 function _fClearAll(ids){
-  (ids||[]).forEach(function(id){ _fClear(id); });
+  (ids || []).forEach(function(id){ _fClear(id); });
 }
+
 
 
 
@@ -256,29 +230,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:var(--tx);min-h
 .field-err-msg{color:#E05252;font-size:12px;margin-top:4px;display:none;font-weight:500}
 .field-err-msg.show{display:block}
 .ferr{color:#E05252;font-size:12px;font-weight:600;margin-top:6px;padding:5px 10px;background:rgba(224,82,82,0.1);border-left:3px solid #E05252;border-radius:0 6px 6px 0;line-height:1.5;box-sizing:border-box}
-/* NC validation badges */
-.nc-field-valid{border:2px solid #52C97A !important;background:rgba(82,201,122,0.04)}
-.nc-field-ok-icon{position:absolute;right:12px;top:50%;transform:translateY(-50%);color:#52C97A;font-size:14px;font-weight:700;pointer-events:none;z-index:5}
-#nc-err-summary{animation:nc-slide-in .25s ease}
-#nc-err-summary a{color:#E05252;text-decoration:underline dotted;cursor:pointer}
-#nc-err-summary a:hover{opacity:.75}
-#nc-progress-bar{transition:width .4s cubic-bezier(.4,0,.2,1),background .4s ease}
-#nc-submit-btn:not(:disabled):hover{filter:brightness(1.1);transform:translateY(-1px);box-shadow:0 6px 24px rgba(82,201,122,0.3) !important}
-#nc-submit-btn:disabled{opacity:.7;cursor:wait}
-/* Approvisionnement & Nouveau produit — form responsive */
-#appro-panel-reap .stk-add-box,
-#appro-panel-new .stk-add-box{padding:20px 22px}
-@media(max-width:700px){
-  #appro-panel-reap [style*="grid-template-columns:1fr 1fr"],
-  #appro-panel-new [style*="grid-template-columns:1fr 1fr"],
-  #appro-panel-new [style*="grid-template-columns:1fr 2fr"]{
-    display:flex!important;flex-direction:column!important;gap:14px!important
-  }
-}
-@media(max-width:480px){
-  #appro-panel-reap .stk-add-box,
-  #appro-panel-new .stk-add-box{padding:14px 12px}
-}
 input.inp-err,select.inp-err{border:2px solid #E05252!important;background:rgba(224,82,82,0.04)!important}
 @keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-5px)}40%{transform:translateX(5px)}60%{transform:translateX(-3px)}80%{transform:translateX(3px)}}
 .inp-err{animation:shake .3s ease}
@@ -979,108 +930,81 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
      <!-- ONGLET 1: Nouveau produit -->
      <div id="appro-panel-new">
       <div class="stk-add-box" style="margin-bottom:16px">
-       <h4 style="margin-bottom:4px">➕ Créer et ajouter un nouveau produit
-         <span style="font-size:10px;color:var(--tx3);font-weight:400"> — champs <span style="color:var(--red)">★</span> obligatoires</span>
-       </h4>
-
-       <!-- LIGNE 1 : Nom du produit (pleine largeur) -->
-       <div style="margin-top:16px;display:flex;flex-direction:column;gap:7px">
-         <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;font-weight:600">Nom du produit <span style="color:var(--red)">★</span></label>
-         <input type="text" id="np-name" placeholder="Ex: Huile d'Argan Premium 100ml" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 13px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%">
+       <h4>➕ Créer et ajouter un nouveau produit <span style="font-size:10px;color:var(--tx3);font-weight:400">— champs <span style="color:var(--red)">★</span> obligatoires</span></h4>
+       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px">
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Nom du produit <span style="color:var(--red)">★</span></label>
+         <input type="text" id="np-name" placeholder="Ex: Huile d'Argan Premium" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
          <div id="np-name-err" class="ferr" style="display:none"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Catégorie <span style="color:var(--red)">★</span></label>
+         <select id="np-cat" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+          <option value="">— Choisir —</option>
+         </select>
+         <div id="np-cat-err" class="ferr" style="display:none"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Code-barres <span style="color:var(--tx3)">(optionnel)</span></label>
+         <div style="display:flex;gap:6px">
+          <input type="text" id="np-barcode" placeholder="Ex: 6111234567890" style="flex:1;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+          <button class="btn btn-b btn-sm" onclick="startApproScanner('np-barcode')" title="Scanner avec caméra">📷</button>
+         </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Quantité initiale <span style="color:var(--red)">★</span></label>
+         <input type="number" id="np-qty" placeholder="Ex: 50" min="1" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+         <div id="np-qty-err" class="ferr" style="display:none"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Prix d'achat MAD <span style="color:var(--red)">★</span></label>
+         <input type="number" id="np-buy" placeholder="Ex: 95" min="0" step="0.01" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="calcNpMargin()">
+         <div id="np-buy-err" class="ferr" style="display:none"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Prix de vente MAD <span style="color:var(--red)">★</span></label>
+         <input type="number" id="np-sell" placeholder="Ex: 185" min="0" step="0.01" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="calcNpMargin()">
+         <div id="np-sell-err" class="ferr" style="display:none"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Fournisseur <span style="color:var(--red)">★</span></label>
+         <select id="np-sup" onchange="if(this.value==='__new__'){openMd('add-supplier');this.value='';}" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+          <option value="">— Choisir —</option>
+         </select>
+         <div id="np-sup-err" class="ferr" style="display:none"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Mode paiement <span style="color:var(--red)">★</span></label>
+         <select id="np-pay" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+          <option value="">— Choisir —</option>
+          <option value="cash">💵 Espèces</option>
+          <option value="transfer">🏦 Virement</option>
+          <option value="cheque">📋 Chèque</option>
+          <option value="credit">🔄 À crédit</option>
+         </select>
+         <div id="np-pay-err" class="ferr" style="display:none"></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Unité / Conditionnement</label>
+         <input type="text" id="np-unit" placeholder="Ex: flacon 100ml, kg, pièce..." style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Seuil alerte stock</label>
+         <input type="number" id="np-threshold" placeholder="Ex: 10" min="0" value="10" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Image (URL)</label>
+         <div style="display:flex;gap:6px">
+          <input type="text" id="appro-np-img" placeholder="https://... ou 📁" style="flex:1;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="previewPhoto('appro-np-img','appro-np-img-prev')">
+          <button class="btn btn-o btn-sm" onclick="openPhotoUpload('appro-np-img','appro-np-img-prev','appro-panel-new')">📁</button>
+         </div>
+         <img id="appro-np-img-prev" style="margin-top:6px;max-width:80px;max-height:60px;border-radius:6px;display:none">
+        </div>
        </div>
-
-       <!-- LIGNE 2 : Catégorie + Code-barres -->
-       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
-         <div style="display:flex;flex-direction:column;gap:7px">
-           <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;font-weight:600">Catégorie <span style="color:var(--red)">★</span></label>
-           <select id="np-cat" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 13px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%">
-             <option value="">— Choisir —</option>
-           </select>
-           <div id="np-cat-err" class="ferr" style="display:none"></div>
-         </div>
-         <div style="display:flex;flex-direction:column;gap:7px">
-           <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;font-weight:600">Code-barres <span style="color:var(--tx3);font-weight:400;text-transform:none">(optionnel)</span></label>
-           <div style="display:flex;gap:7px;align-items:center">
-             <input type="text" id="np-barcode" placeholder="Ex: 6111234567890" style="flex:1;min-width:0;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 13px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
-             <button class="btn btn-b btn-sm" onclick="startApproScanner('np-barcode')" title="Scanner avec caméra" style="flex-shrink:0;padding:8px 11px;font-size:13px">📷</button>
-           </div>
-         </div>
-       </div>
-
-       <!-- LIGNE 3 : Quantité + Unité -->
-       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
-         <div style="display:flex;flex-direction:column;gap:7px">
-           <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;font-weight:600">Quantité initiale <span style="color:var(--red)">★</span></label>
-           <input type="number" id="np-qty" placeholder="Ex: 50" min="1" inputmode="numeric" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 13px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%">
-           <div id="np-qty-err" class="ferr" style="display:none"></div>
-         </div>
-         <div style="display:flex;flex-direction:column;gap:7px">
-           <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;font-weight:600">Unité / Conditionnement <span style="color:var(--tx3);font-weight:400;text-transform:none">(optionnel)</span></label>
-           <input type="text" id="np-unit" placeholder="Ex: flacon, kg, pièce..." style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 13px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%">
-         </div>
-       </div>
-
-       <!-- LIGNE 4 : Prix achat + Prix vente -->
-       <div style="margin-top:16px;background:rgba(201,168,76,0.06);border:1px solid rgba(201,168,76,0.18);border-radius:10px;padding:14px 16px">
-         <div style="font-size:10px;color:var(--gold);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:12px">💰 Tarification</div>
-         <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
-           <div style="display:flex;flex-direction:column;gap:7px">
-             <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;font-weight:600">Prix d'achat (MAD) <span style="color:var(--red)">★</span></label>
-             <input type="number" id="np-buy" placeholder="Ex: 95.00" min="0" step="0.01" inputmode="decimal" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 13px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%" oninput="calcNpMargin()">
-             <div id="np-buy-err" class="ferr" style="display:none"></div>
-           </div>
-           <div style="display:flex;flex-direction:column;gap:7px">
-             <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;font-weight:600">Prix de vente (MAD) <span style="color:var(--red)">★</span></label>
-             <input type="number" id="np-sell" placeholder="Ex: 185.00" min="0" step="0.01" inputmode="decimal" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 13px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%" oninput="calcNpMargin()">
-             <div id="np-sell-err" class="ferr" style="display:none"></div>
-           </div>
-         </div>
-         <div id="np-margin-preview" style="display:none;margin-top:12px;background:rgba(155,107,219,0.07);border:1px solid rgba(155,107,219,0.18);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--pur)"></div>
-       </div>
-
-       <!-- LIGNE 5 : Fournisseur + Mode paiement -->
-       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px">
-         <div style="display:flex;flex-direction:column;gap:7px">
-           <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;font-weight:600">Fournisseur <span style="color:var(--red)">★</span></label>
-           <select id="np-sup" onchange="if(this.value==='__new__'){openMd('add-supplier');this.value'';}" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 13px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%">
-             <option value="">— Choisir —</option>
-           </select>
-           <div id="np-sup-err" class="ferr" style="display:none"></div>
-         </div>
-         <div style="display:flex;flex-direction:column;gap:7px">
-           <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;font-weight:600">Mode de paiement <span style="color:var(--red)">★</span></label>
-           <select id="np-pay" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 13px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%">
-             <option value="">— Choisir —</option>
-             <option value="cash">💵 Espèces</option>
-             <option value="transfer">🏦 Virement bancaire</option>
-             <option value="cheque">📋 Chèque</option>
-             <option value="credit">🔄 À crédit fournisseur</option>
-           </select>
-           <div id="np-pay-err" class="ferr" style="display:none"></div>
-         </div>
-       </div>
-
-       <!-- LIGNE 6 : Seuil alerte + Image (pleine largeur) -->
-       <div style="display:grid;grid-template-columns:1fr 2fr;gap:16px;margin-top:16px">
-         <div style="display:flex;flex-direction:column;gap:7px">
-           <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;font-weight:600">Seuil alerte stock</label>
-           <input type="number" id="np-threshold" placeholder="Ex: 10" min="0" value="10" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 13px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%">
-         </div>
-         <div style="display:flex;flex-direction:column;gap:7px">
-           <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;font-weight:600">Image URL <span style="color:var(--tx3);font-weight:400;text-transform:none">(optionnel)</span></label>
-           <div style="display:flex;gap:7px;align-items:center">
-             <input type="text" id="appro-np-img" placeholder="https://... ou utiliser 📁" style="flex:1;min-width:0;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 13px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="previewPhoto('appro-np-img','appro-np-img-prev')">
-             <button class="btn btn-o btn-sm" onclick="openPhotoUpload('appro-np-img','appro-np-img-prev','appro-panel-new')" style="flex-shrink:0;padding:8px 11px">📁</button>
-           </div>
-           <img id="appro-np-img-prev" style="margin-top:4px;max-width:72px;max-height:56px;border-radius:6px;display:none">
-         </div>
-       </div>
-
-       <!-- Boutons action -->
-       <div style="display:flex;gap:10px;margin-top:20px">
-         <button class="btn btn-gn" style="flex:1;padding:13px;font-size:14px;font-weight:700" onclick="doAddNewProduct()">✅ Créer le produit &amp; enregistrer le stock</button>
-         <button class="btn btn-o btn-sm" onclick="resetNewProductForm()" style="padding:10px 14px">🗑️ Effacer</button>
+       <div id="np-margin-preview" style="display:none;margin-top:10px;background:rgba(155,107,219,0.07);border:1px solid rgba(155,107,219,0.18);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--pur)"></div>
+       <div style="display:flex;gap:8px;margin-top:14px">
+        <button class="btn btn-gn" style="flex:1;padding:12px" onclick="doAddNewProduct()">✅ Créer le produit &amp; enregistrer le stock</button>
+        <button class="btn btn-o btn-sm" onclick="resetNewProductForm()">🗑️ Effacer</button>
        </div>
       </div>
       <!-- Historique récent -->
@@ -1093,66 +1017,54 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
      <div id="appro-panel-reap" style="display:none">
       <div class="stk-add-box" style="margin-bottom:16px">
        <h4>📦 Réapprovisionner un produit existant <span style="font-size:10px;color:var(--tx3);font-weight:400">— champs <span style="color:var(--red)">★</span> obligatoires</span></h4>
-
-       <!-- Ligne 1 : Produit + Recherche code-barres -->
-       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:16px">
-        <div style="display:flex;flex-direction:column;gap:6px">
-         <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.6px;font-weight:600">Produit <span style="color:var(--red)">★</span></label>
-         <select id="appro-prod" onchange="onApproProdChange();_fClear('appro-prod')" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%">
+       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:12px">
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Produit <span style="color:var(--red)">★</span></label>
+         <select id="appro-prod" onchange="onApproProdChange();_fClear('appro-prod')" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
           <option value="">— Sélectionner —</option>
          </select>
          <div id="appro-prod-err" class="ferr" style="display:none"></div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-         <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.6px;font-weight:600">Recherche par code-barres</label>
-         <div style="display:flex;gap:6px;align-items:center">
-          <input type="text" id="appro-barcode" placeholder="Saisir ou scanner..." style="flex:1;min-width:0;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')findProdByBarcode()">
-          <button class="btn btn-b btn-sm" onclick="startApproScanner('appro-barcode')" title="Caméra" style="flex-shrink:0;padding:8px 10px">📷</button>
-          <button class="btn btn-g btn-sm" onclick="findProdByBarcode()" style="flex-shrink:0;padding:8px 12px">→</button>
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Code-barres (recherche)</label>
+         <div style="display:flex;gap:6px">
+          <input type="text" id="appro-barcode" placeholder="Scanner ou saisir code-barres..." style="flex:1;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" onkeydown="if(event.key==='Enter')findProdByBarcode()">
+          <button class="btn btn-b btn-sm" onclick="startApproScanner('appro-barcode')" title="Scanner avec caméra">📷</button>
+          <button class="btn btn-g btn-sm" onclick="findProdByBarcode()">→</button>
          </div>
         </div>
-       </div>
-
-       <!-- Ligne 2 : Quantité + Prix d'achat -->
-       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
-        <div style="display:flex;flex-direction:column;gap:6px">
-         <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.6px;font-weight:600">Quantité à recevoir <span style="color:var(--red)">★</span></label>
-         <input type="number" id="appro-qty" placeholder="Ex: 50" min="1" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%" oninput="onApproCalcCmp()">
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Quantité à recevoir <span style="color:var(--red)">★</span></label>
+         <input type="number" id="appro-qty" placeholder="Ex: 50" min="1" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="onApproCalcCmp()">
          <div id="appro-qty-err" class="ferr" style="display:none"></div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-         <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.6px;font-weight:600">Prix d'achat (MAD) <span style="color:var(--red)">★</span></label>
-         <input type="number" id="appro-price" placeholder="Ex: 95.00" min="0" step="0.01" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%" oninput="onApproCalcCmp()">
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Prix d'achat MAD <span style="color:var(--red)">★</span></label>
+         <input type="number" id="appro-price" placeholder="Ex: 95" min="0" step="0.01" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none" oninput="onApproCalcCmp()">
          <div id="appro-price-err" class="ferr" style="display:none"></div>
         </div>
-       </div>
-
-       <!-- Ligne 3 : Fournisseur + Mode paiement -->
-       <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:14px">
-        <div style="display:flex;flex-direction:column;gap:6px">
-         <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.6px;font-weight:600">Fournisseur <span style="color:var(--red)">★</span></label>
-         <select id="appro-sup" onchange="if(this.value==='__new__'){openMd('add-supplier');this.value='';};" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%">
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Fournisseur <span style="color:var(--red)">★</span></label>
+         <select id="appro-sup" onchange="if(this.value==='__new__'){openMd('add-supplier');this.value='';};" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
           <option value="">— Choisir —</option>
          </select>
          <div id="appro-sup-err" class="ferr" style="display:none"></div>
         </div>
-        <div style="display:flex;flex-direction:column;gap:6px">
-         <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.6px;font-weight:600">Mode de paiement <span style="color:var(--red)">★</span></label>
-         <select id="appro-pay" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%">
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Mode paiement <span style="color:var(--red)">★</span></label>
+         <select id="appro-pay" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
           <option value="">— Choisir —</option>
           <option value="cash">💵 Espèces</option>
-          <option value="transfer">🏦 Virement bancaire</option>
+          <option value="transfer">🏦 Virement</option>
           <option value="cheque">📋 Chèque</option>
-          <option value="credit">🔄 À crédit fournisseur</option>
+          <option value="credit">🔄 À crédit</option>
          </select>
          <div id="appro-pay-err" class="ferr" style="display:none"></div>
         </div>
-       </div>
-
-       <!-- Ligne 4 : Notes (pleine largeur) -->
-       <div style="display:flex;flex-direction:column;gap:6px;margin-top:14px">
-        <label style="font-size:11px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.6px;font-weight:600">Notes / N° bon de commande <span style="font-weight:400;text-transform:none;letter-spacing:0">(optionnel)</span></label>
-        <input type="text" id="appro-note" placeholder="Ex: BC-2024-001, livraison lot A..." style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;width:100%">
+        <div style="display:flex;flex-direction:column;gap:3px">
+         <label style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:0.5px">Notes / Numéro bon de commande</label>
+         <input type="text" id="appro-note" placeholder="Ex: BC-2024-001..." style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-family:'DM Sans',sans-serif;font-size:13px;outline:none">
+        </div>
        </div>
        <!-- Preview CMP -->
        <div id="appro-cmp-preview" style="display:none;margin-top:10px;background:rgba(155,107,219,0.07);border:1px solid rgba(155,107,219,0.18);border-radius:8px;padding:9px 12px;font-size:12px;color:var(--pur)"></div>
@@ -1559,93 +1471,84 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <div id="md-confirm-pay-content"></div>
  </div> <!-- Add Client — rebuilt from scratch -->
- <div class="md" id="md-add-cl" style="display:none;max-width:540px">
+ <!-- Add Client -->
+ <!-- Add Client -->
+ <div class="md" id="md-add-cl" style="display:none;max-width:500px">
   <button class="md-x" onclick="closeAllMd()">✕</button>
-  <h2 style="margin-bottom:4px">👤 Nouveau client</h2>
-  <p style="font-size:12px;color:var(--tx3);margin-bottom:16px">Les champs <span style="color:var(--red)">★</span> sont obligatoires</p>
+  <h2 style="margin-bottom:16px">👤 Nouveau client</h2>
 
-  <div class="fg">
-   <label>Nom complet <span style="color:var(--red)">★</span></label>
-   <input id="nc-name" placeholder="ex: Hassan Benali" autocomplete="off">
-   <span id="nc-name-err" class="ferr" style="display:none"></span>
+  <div id="cl-form-err-banner" style="display:none;background:rgba(224,82,82,0.12);border:1px solid #E05252;border-radius:8px;padding:10px 14px;margin-bottom:14px;color:#E05252;font-size:13px;font-weight:600"></div>
+
+  <div style="margin-bottom:12px">
+   <label style="display:block;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Nom complet ★</label>
+   <input id="nc-name" placeholder="ex: Hassan Benali" autocomplete="off" style="width:100%;padding:10px 13px;background:#1e1e1e;border:1.5px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box">
+   <div id="nc-name-err" style="display:none;margin-top:5px;padding:5px 10px;background:rgba(224,82,82,0.12);border-left:3px solid #E05252;border-radius:0 5px 5px 0;color:#E05252;font-size:12px;font-weight:600"></div>
   </div>
 
-  <div class="fg">
-   <label>Téléphone <span style="color:var(--red)">★</span></label>
-   <input id="nc-ph" inputmode="numeric" placeholder="ex: 0661234567" autocomplete="off" oninput="validatePhoneInput(this)">
-   <span id="nc-ph-err" class="ferr" style="display:none"></span>
+  <div style="margin-bottom:12px">
+   <label style="display:block;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Téléphone ★</label>
+   <input id="nc-ph" inputmode="numeric" placeholder="ex: 0661234567" autocomplete="off" style="width:100%;padding:10px 13px;background:#1e1e1e;border:1.5px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box">
+   <div id="nc-ph-err" style="display:none;margin-top:5px;padding:5px 10px;background:rgba(224,82,82,0.12);border-left:3px solid #E05252;border-radius:0 5px 5px 0;color:#E05252;font-size:12px;font-weight:600"></div>
   </div>
 
-  <div class="fg">
-   <label>Ville <span style="color:var(--red)">★</span></label>
-   <input id="nc-city" placeholder="ex: Casablanca" autocomplete="off" oninput="updateSecteurList('nc-sector','nc-city')">
-   <span id="nc-city-err" class="ferr" style="display:none"></span>
+  <div style="margin-bottom:12px">
+   <label style="display:block;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Ville ★</label>
+   <input id="nc-city" placeholder="ex: Casablanca" autocomplete="off" oninput="updateSecteurList('nc-sector','nc-city')" style="width:100%;padding:10px 13px;background:#1e1e1e;border:1.5px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box">
+   <div id="nc-city-err" style="display:none;margin-top:5px;padding:5px 10px;background:rgba(224,82,82,0.12);border-left:3px solid #E05252;border-radius:0 5px 5px 0;color:#E05252;font-size:12px;font-weight:600"></div>
   </div>
 
-  <div class="fg">
-   <label>Région</label>
-   <select id="nc-reg">
+  <div style="margin-bottom:12px">
+   <label style="display:block;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Région</label>
+   <select id="nc-reg" style="width:100%;padding:10px 13px;background:#1e1e1e;border:1.5px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box">
     <option>Grand Casablanca</option><option>Rabat-Salé</option><option>Marrakech-Safi</option>
     <option>Fès-Meknès</option><option>Tanger-Tétouan</option><option>Souss-Massa</option>
     <option>Oriental</option><option>Béni Mellal</option><option>Drâa-Tafilalet</option>
    </select>
   </div>
 
-  <div class="fg">
-   <label>Secteur / Quartier</label>
-   <select id="nc-sector"><option value="">— Choisir ville d'abord —</option></select>
+  <div style="margin-bottom:12px">
+   <label style="display:block;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Secteur / Quartier</label>
+   <select id="nc-sector" style="width:100%;padding:10px 13px;background:#1e1e1e;border:1.5px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box"><option value="">— Choisir ville d'abord —</option></select>
   </div>
 
-  <div class="fg">
-   <label>Adresse <span style="color:var(--red)">★</span></label>
-   <input id="nc-addr" placeholder="ex: 12 Rue Mohammed V, Maarif" autocomplete="off">
-   <span id="nc-addr-err" class="ferr" style="display:none"></span>
+  <div style="margin-bottom:12px">
+   <label style="display:block;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Adresse ★</label>
+   <input id="nc-addr" placeholder="ex: 12 Rue Mohammed V, Maarif" autocomplete="off" style="width:100%;padding:10px 13px;background:#1e1e1e;border:1.5px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box">
+   <div id="nc-addr-err" style="display:none;margin-top:5px;padding:5px 10px;background:rgba(224,82,82,0.12);border-left:3px solid #E05252;border-radius:0 5px 5px 0;color:#E05252;font-size:12px;font-weight:600"></div>
   </div>
 
-  <div style="background:var(--dk4);border:1px solid var(--bo2);border-radius:10px;padding:12px;margin-bottom:12px">
-   <div style="font-size:11px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">📍 Localisation (optionnel)</div>
-   <div style="display:flex;gap:7px;margin-bottom:8px">
-    <button type="button" class="btn btn-b btn-sm" onclick="openMapModal('nc','add-cl')">🗺️ Carte</button>
-    <button type="button" class="btn btn-gn btn-sm" onclick="geolocate('nc')">📍 Ma position</button>
-   </div>
-   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-    <div class="fg" style="margin:0"><label>Latitude</label><input id="nc-lat" type="number" step="any" placeholder="33.5731" oninput="updateLocBadge('nc')"></div>
-    <div class="fg" style="margin:0"><label>Longitude</label><input id="nc-lng" type="number" step="any" placeholder="-7.5898" oninput="updateLocBadge('nc')"></div>
-   </div>
-   <div id="nc-loc-badge" class="map-coords-badge" style="margin-top:7px"></div>
+  <div style="margin-bottom:12px">
+   <label style="display:block;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Identifiant connexion ★</label>
+   <input id="nc-user" placeholder="ex: client01" autocomplete="off" style="width:100%;padding:10px 13px;background:#1e1e1e;border:1.5px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box">
+   <div id="nc-user-err" style="display:none;margin-top:5px;padding:5px 10px;background:rgba(224,82,82,0.12);border-left:3px solid #E05252;border-radius:0 5px 5px 0;color:#E05252;font-size:12px;font-weight:600"></div>
   </div>
 
-  <div class="fg">
-   <label>Identifiant de connexion <span style="color:var(--red)">★</span></label>
-   <input id="nc-user" placeholder="ex: client01 (sans espaces ni accents)" autocomplete="off">
-   <span id="nc-user-err" class="ferr" style="display:none"></span>
+  <div style="margin-bottom:12px">
+   <label style="display:block;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Mot de passe ★</label>
+   <input type="password" id="nc-pw" placeholder="Minimum 6 caractères" style="width:100%;padding:10px 13px;background:#1e1e1e;border:1.5px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box">
+   <div id="nc-pw-err" style="display:none;margin-top:5px;padding:5px 10px;background:rgba(224,82,82,0.12);border-left:3px solid #E05252;border-radius:0 5px 5px 0;color:#E05252;font-size:12px;font-weight:600"></div>
   </div>
 
-  <div class="fg">
-   <label>Mot de passe <span style="color:var(--red)">★</span></label>
-   <input type="password" id="nc-pw" placeholder="Min. 8 car. — Maj. + min. + chiffre + spécial" oninput="validatePassword(this.value,'nc-pw')">
-   <span id="nc-pw-err" class="ferr" style="display:none"></span>
+  <div style="margin-bottom:12px">
+   <label style="display:block;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Email (optionnel)</label>
+   <input id="nc-email" type="email" placeholder="ex: client@email.com" style="width:100%;padding:10px 13px;background:#1e1e1e;border:1.5px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box">
+   <div id="nc-email-err" style="display:none;margin-top:5px;padding:5px 10px;background:rgba(224,82,82,0.12);border-left:3px solid #E05252;border-radius:0 5px 5px 0;color:#E05252;font-size:12px;font-weight:600"></div>
   </div>
 
-  <div class="fg">
-   <label>Email (optionnel — pour récupération)</label>
-   <input id="nc-email" type="email" placeholder="ex: client@email.com">
-  </div>
-
-  <div class="fg">
-   <label>Photo du client — URL image <span style="color:var(--red)">★</span></label>
+  <div style="margin-bottom:20px">
+   <label style="display:block;font-size:11px;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px">Photo URL (optionnel)</label>
    <div style="display:flex;gap:6px">
-    <input id="nc-photo" placeholder="https://exemple.com/photo.jpg" style="flex:1" oninput="previewPhoto('nc-photo','nc-photo-prev')">
+    <input id="nc-photo" placeholder="https://..." style="flex:1;padding:10px 13px;background:#1e1e1e;border:1.5px solid #333;border-radius:8px;color:#fff;font-size:13px;outline:none;box-sizing:border-box" oninput="previewPhoto('nc-photo','nc-photo-prev')">
     <button type="button" class="btn btn-o btn-sm" onclick="openPhotoUpload('nc-photo','nc-photo-prev','add-cl')">📁</button>
    </div>
-   <span id="nc-photo-err" class="ferr" style="display:none"></span>
-   <img id="nc-photo-prev" class="photo-preview" src="" alt="" style="margin-top:8px">
+   <div id="nc-photo-err" style="display:none;margin-top:5px;padding:5px 10px;background:rgba(224,82,82,0.12);border-left:3px solid #E05252;border-radius:0 5px 5px 0;color:#E05252;font-size:12px;font-weight:600"></div>
+   <img id="nc-photo-prev" src="" alt="" style="display:none;margin-top:8px;width:56px;height:56px;border-radius:50%;object-fit:cover;border:2px solid #C9A84C">
   </div>
 
-  <button class="btn btn-g" id="nc-submit-btn" style="width:100%;padding:14px;font-size:14px;margin-top:8px;border-radius:10px;font-weight:700;letter-spacing:.3px;transition:.25s;box-shadow:0 4px 18px rgba(82,201,122,0.2)" onclick="saveClient()">✅ Créer le client</button>
+  <button id="btn-save-client" style="width:100%;padding:13px;background:linear-gradient(135deg,#C9A84C,#E8C670);color:#0A0A0A;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer" onclick="saveClient()">✅ Créer le client</button>
  </div>
 
- <!-- Edit Client -->
+  <!-- Edit Client -->
  <div class="md" id="md-edit-cl" style="display:none">
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <h2>Modifier le client</h2>
@@ -3919,380 +3822,107 @@ function updateClient(){
   if(window.saveToCloud) window.saveToCloud();
   closeAllMd();initClientFilters();renderClients();toast('✅ Client mis à jour avec succès !');
 }
-// ══════════════════════════════════════════════════════════════════════
-// _ncErr / _ncClear / _ncOK — v8 FINAL
-// setAttribute('style') pour ECRASER le style inline display:none existant
-// ══════════════════════════════════════════════════════════════════════
-var _NC_ERR_STYLE = 'display:block;color:#E05252;font-size:12px;font-weight:600;' +
-  'margin-top:7px;padding:7px 11px;background:rgba(224,82,82,0.13);' +
-  'border-left:3px solid #E05252;border-radius:0 6px 6px 0;' +
-  'line-height:1.5;box-sizing:border-box;word-break:break-word;width:100%;min-height:28px';
+function saveClient(){
+  // Lire les valeurs
+  var g = function(id){ var e=document.getElementById(id); return e?e.value:''; };
+  var name  = g('nc-name').trim();
+  var phone = g('nc-ph').trim();
+  var city  = g('nc-city').trim();
+  var addr  = g('nc-addr').trim();
+  var user  = g('nc-user').trim();
+  var pw    = g('nc-pw');
+  var email = g('nc-email').trim();
+  var photo = g('nc-photo').trim();
 
-function _ncErr(id, msg) {
-  var el = document.getElementById(id);
-  if (el) {
-    var cur = el.getAttribute('style') || '';
-    cur = cur.replace(/border[^:]*:[^;]*;?/gi,'').replace(/background[^:]*:[^;]*;?/gi,'').replace(/box-shadow[^:]*:[^;]*;?/gi,'').replace(/animation[^:]*:[^;]*;?/gi,'');
-    el.setAttribute('style', cur + 'border:2px solid #E05252!important;background:rgba(224,82,82,0.05)!important;box-shadow:0 0 0 3px rgba(224,82,82,0.15);animation:shake .35s ease;');
+  // Réinitialiser tous les champs et messages
+  var fieldIds = ['nc-name','nc-ph','nc-city','nc-addr','nc-user','nc-pw','nc-email','nc-photo'];
+  for(var i=0; i<fieldIds.length; i++){
+    var inp = document.getElementById(fieldIds[i]);
+    if(inp){ inp.style.border = '1.5px solid #333'; inp.style.background = '#1e1e1e'; }
+    var errDiv = document.getElementById(fieldIds[i]+'-err');
+    if(errDiv){ errDiv.style.display = 'none'; errDiv.innerHTML = ''; }
   }
-  var okEl = document.getElementById(id + '-ok');
-  if (okEl) okEl.setAttribute('style','display:none');
-  var box = document.getElementById(id + '-err');
-  if (!box) {
-    box = document.createElement('div');
-    box.id = id + '-err';
-    if (el && el.parentNode) el.parentNode.appendChild(box);
-  }
-  if (box) {
-    box.setAttribute('style', _NC_ERR_STYLE);
-    box.textContent = '⚠️ ' + msg;
-  }
-}
+  var banner = document.getElementById('cl-form-err-banner');
+  if(banner) banner.style.display = 'none';
 
-function _ncClear(id) {
-  var el = document.getElementById(id);
-  if (el) {
-    var cur = el.getAttribute('style') || '';
-    cur = cur.replace(/border[^:]*:[^;]*!important;?/gi,'').replace(/border[^:]*:[^;]*;?/gi,'').replace(/background[^:]*:[^;]*!important;?/gi,'').replace(/background[^:]*:[^;]*;?/gi,'').replace(/box-shadow[^:]*:[^;]*;?/gi,'').replace(/animation[^:]*:[^;]*;?/gi,'');
-    el.setAttribute('style', cur);
-  }
-  var box = document.getElementById(id + '-err');
-  if (box) { box.setAttribute('style','display:none'); box.textContent = ''; }
-}
+  // Afficher une erreur sous un champ
+  var errList = [];
+  var firstErrField = null;
+  var affErr = function(fieldId, msg){
+    var inp = document.getElementById(fieldId);
+    if(inp){ inp.style.border = '2px solid #E05252'; inp.style.background = 'rgba(224,82,82,0.05)'; }
+    var box = document.getElementById(fieldId+'-err');
+    if(box){
+      box.innerHTML = '<b>⚠️</b> ' + msg;
+      box.style.display = 'block';
+    }
+    if(!firstErrField) firstErrField = fieldId;
+    errList.push(msg);
+  };
 
-function _ncOK(id) {
-  var el = document.getElementById(id);
-  if (el) {
-    var cur = el.getAttribute('style') || '';
-    cur = cur.replace(/border[^:]*:[^;]*!important;?/gi,'').replace(/border[^:]*:[^;]*;?/gi,'').replace(/background[^:]*:[^;]*!important;?/gi,'').replace(/background[^:]*:[^;]*;?/gi,'').replace(/box-shadow[^:]*:[^;]*;?/gi,'').replace(/animation[^:]*:[^;]*;?/gi,'');
-    el.setAttribute('style', cur + 'border:2px solid #52C97A!important;background:rgba(82,201,122,0.04)!important;');
-  }
-  var box = document.getElementById(id + '-err');
-  if (box) { box.setAttribute('style','display:none'); }
-  var ok = document.getElementById(id + '-ok');
-  if (!ok && el) {
-    ok = document.createElement('span');
-    ok.id = id + '-ok';
-    ok.textContent = '✓';
-    var par = el.parentNode;
-    if (par) { if(getComputedStyle(par).position==='static') par.style.position='relative'; par.appendChild(ok); }
-  }
-  if (ok) ok.setAttribute('style','display:inline-block;color:#52C97A;font-size:12px;font-weight:800;margin-top:5px;margin-left:4px;vertical-align:middle');
-}
-// ── Barre de progression ──────────────────────────────────────────────
-function _ncUpdateProgress() {
-  var fields = ['nc-name','nc-ph','nc-city','nc-addr','nc-user','nc-pw'];
-  var filled = fields.filter(function(id) {
-    var el = document.getElementById(id);
-    return el && (el.value || '').trim().length > 0;
-  }).length;
-  var pct = Math.round((filled / fields.length) * 100);
-  var bar = document.getElementById('nc-progress-bar');
-  var lbl = document.getElementById('nc-progress-pct');
-  if (bar) {
-    bar.style.width = pct + '%';
-    bar.style.background = pct < 40 ? '#E05252' : pct < 80 ? '#E8834A' : '#52C97A';
-  }
-  if (lbl) lbl.textContent = pct + '%';
-}
+  // Validations
+  if(!name)               affErr('nc-name', 'Nom complet obligatoire');
+  else if(name.length<2)  affErr('nc-name', 'Nom trop court');
 
-// ── Récapitulatif d'erreurs ───────────────────────────────────────────
-function _ncShowSummary(errors) {
-  var box = document.getElementById('nc-err-summary');
-  if (!box) {
-    box = document.createElement('div');
-    box.id = 'nc-err-summary';
-    var modal = document.getElementById('md-add-cl');
-    var p = modal ? modal.querySelector('p') : null;
-    if (p && p.parentNode) p.parentNode.insertBefore(box, p.nextSibling);
-  }
-  if (!errors || !errors.length) { if (box) box.style.display = 'none'; return; }
-  box.setAttribute('style',
-    'display:block;margin-bottom:14px;background:rgba(224,82,82,0.1);' +
-    'border:1.5px solid #E05252;border-radius:10px;padding:12px 14px;' +
-    'animation:nc-slide-in .25s ease'
-  );
-  box.innerHTML =
-    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
-    '<span style="font-size:17px">⚠️</span>' +
-    '<strong style="color:#E05252;font-size:13px">' + errors.length +
-    ' champ' + (errors.length > 1 ? 's' : '') + ' à corriger avant de créer le client</strong></div>' +
-    '<ul style="margin:0;padding-left:18px;color:#E05252;font-size:12px;line-height:2">' +
-    errors.map(function(e) {
-      return '<li><a href="#" onclick="(function(){' +
-        'var el=document.getElementById(\'' + e.id + '\');' +
-        'if(el){el.focus();el.scrollIntoView({block:\'center\',behavior:\'smooth\'});}' +
-        '})();return false;" style="color:#E05252;text-decoration:underline dotted;cursor:pointer">' +
-        '<strong>' + e.label + '</strong></a> — ' + e.msg + '</li>';
-    }).join('') + '</ul>';
-}
-function _ncHideSummary() {
-  var box = document.getElementById('nc-err-summary');
-  if (box) box.style.display = 'none';
-}
+  if(!phone)              affErr('nc-ph', 'Téléphone obligatoire — ex: 0661234567');
+  else if(phone.replace(/[\d\s\+\-\.]/g,'').length>0) affErr('nc-ph', 'Chiffres uniquement — ex: 0661234567');
 
-// ── Validation temps réel — s'attache une seule fois par champ ───────
-function _ncSetupRealtime() {
-  var defs = [
-    { id: 'nc-name',  req: true,  label: 'Nom complet',
-      check: function(v) {
-        if (!v) return 'Champ obligatoire';
-        if (v.length < 3) return 'Minimum 3 caractères';
-        if (/\d/.test(v)) return 'Le nom ne doit pas contenir de chiffres';
-        return '';
-      }
-    },
-    { id: 'nc-ph',    req: true,  label: 'Téléphone',
-      check: function(v) {
-        if (!v) return 'Champ obligatoire';
-        if (!/^[\d\s\+\-\.]{6,15}$/.test(v)) return 'Format invalide (ex: 0661234567)';
-        if (typeof CLIENTS !== 'undefined' && CLIENTS.find(function(c){ return c.phone === v; }))
-          return 'Numéro déjà utilisé';
-        return '';
-      }
-    },
-    { id: 'nc-city',  req: true,  label: 'Ville',
-      check: function(v) {
-        if (!v) return 'Champ obligatoire';
-        if (v.length < 2) return 'Trop court';
-        return '';
-      }
-    },
-    { id: 'nc-addr',  req: true,  label: 'Adresse',
-      check: function(v) {
-        if (!v) return 'Champ obligatoire';
-        if (v.length < 5) return 'Adresse trop courte — soyez plus précis';
-        return '';
-      }
-    },
-    { id: 'nc-user',  req: true,  label: 'Identifiant',
-      check: function(v) {
-        if (!v) return 'Champ obligatoire';
-        if (/\s/.test(v)) return "Pas d'espaces autorisés";
-        if (v.length < 3) return 'Minimum 3 caractères';
-        if (!/^[a-zA-Z0-9_\-\.]+$/.test(v)) return 'Caractères non autorisés (lettres, chiffres, _, -)';
-        if (typeof CLIENTS !== 'undefined' && CLIENTS.find(function(c){ return c.username && c.username.toLowerCase() === v.toLowerCase(); }))
-          return 'Identifiant déjà pris';
-        return '';
-      }
-    },
-    { id: 'nc-pw',    req: true,  label: 'Mot de passe',
-      check: function(v) {
-        if (!v) return 'Champ obligatoire';
-        if (v.length < 6) return 'Minimum 6 caractères';
-        var s = 0;
-        if (/[A-Z]/.test(v)) s++; if (/[a-z]/.test(v)) s++;
-        if (/[0-9]/.test(v)) s++; if (/[^A-Za-z0-9]/.test(v)) s++;
-        if (s < 2) return 'Trop faible — ajoutez majuscule, chiffre ou symbole';
-        return '';
-      }
-    },
-    { id: 'nc-email', req: false, label: 'Email',
-      check: function(v) {
-        if (!v) return '';
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return 'Format invalide (ex: nom@domaine.com)';
-        if (typeof CLIENTS !== 'undefined' && CLIENTS.find(function(c){ return c.email && c.email.toLowerCase() === v.toLowerCase(); }))
-          return 'Email déjà associé à un autre compte';
-        return '';
-      }
-    },
-    { id: 'nc-photo', req: false, label: 'Photo',
-      check: function(v) {
-        if (!v) return '';
-        if (!v.startsWith('http')) return 'URL invalide — doit commencer par https://';
-        return '';
+  if(!city)               affErr('nc-city', 'Ville obligatoire — ex: Casablanca');
+
+  if(!addr)               affErr('nc-addr', 'Adresse obligatoire');
+  else if(addr.length<4)  affErr('nc-addr', 'Adresse trop courte');
+
+  if(!user)               affErr('nc-user', 'Identifiant obligatoire — ex: client01');
+  else if(user.indexOf(' ')>=0) affErr('nc-user', "Pas d'espaces dans l'identifiant");
+  else if(user.length<3)  affErr('nc-user', 'Identifiant trop court — min 3 car.');
+  else {
+    for(var ci=0; ci<CLIENTS.length; ci++){
+      if(CLIENTS[ci].username && CLIENTS[ci].username.toLowerCase()===user.toLowerCase()){
+        affErr('nc-user', 'Identifiant déjà utilisé'); break;
       }
     }
-  ];
-
-  defs.forEach(function(d) {
-    var el = document.getElementById(d.id);
-    if (!el || el._ncRTv7) return;
-    el._ncRTv7 = true;
-    var run = function() {
-      var v = (el.value || '').trim();
-      var err = d.check(v);
-      if (err === '') { _ncClear(d.id); _ncOK(d.id); }
-      else if (v || !d.req) { if (err) _ncErr(d.id, err); else _ncClear(d.id); }
-      else _ncClear(d.id);
-      _ncUpdateProgress();
-    };
-    el.addEventListener('input', run);
-    el.addEventListener('change', run);
-    el.addEventListener('blur', function() {
-      var v = (el.value || '').trim();
-      if (!v && d.req) _ncErr(d.id, 'Ce champ est obligatoire');
-      else run();
-    });
-  });
-}
-
-// ── Injecter la barre de progression dans le modal ───────────────────
-function _ncInjectUI() {
-  var modal = document.getElementById('md-add-cl');
-  if (!modal || document.getElementById('nc-progress-wrap')) return;
-  var container = document.createElement('div');
-  container.id = 'nc-progress-wrap';
-  container.setAttribute('style', 'margin-bottom:14px');
-  container.innerHTML =
-    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px">' +
-    '<span style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px">Progression</span>' +
-    '<span id="nc-progress-pct" style="font-size:10px;color:var(--tx3);font-weight:700">0%</span></div>' +
-    '<div style="height:5px;background:rgba(255,255,255,0.06);border-radius:20px;overflow:hidden">' +
-    '<div id="nc-progress-bar" style="height:100%;width:0%;background:#E05252;border-radius:20px;transition:width .4s ease,background .4s ease"></div></div>';
-  var p = modal.querySelector('p');
-  if (p && p.nextSibling) modal.insertBefore(container, p.nextSibling);
-  else modal.appendChild(container);
-}
-
-// ── CSS animations (injecté une seule fois) ───────────────────────────
-(function() {
-  if (document.getElementById('nc-anim-style')) return;
-  var s = document.createElement('style');
-  s.id = 'nc-anim-style';
-  s.textContent =
-    '@keyframes nc-slide-in{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}' +
-    '#nc-err-summary a:hover{opacity:.75}' +
-    '#nc-submit-btn:not(:disabled):hover{filter:brightness(1.08);transform:translateY(-1px);box-shadow:0 6px 22px rgba(82,201,122,0.35)!important}' +
-    '#nc-submit-btn:disabled{opacity:.65;cursor:wait}';
-  document.head.appendChild(s);
-})();
-
-function saveClient() {
-  // ── 0. Init UI ────────────────────────────────────────────
-  _ncInjectUI();
-  _ncSetupRealtime();
-
-  // ── 1. Lire les valeurs ───────────────────────────────────
-  var name  = (_fVal('nc-name') || '').trim();
-  var phone = (_fVal('nc-ph')   || '').trim();
-  var city  = (_fVal('nc-city') || '').trim();
-  var addr  = (_fVal('nc-addr') || '').trim();
-  var user  = (_fVal('nc-user') || '').trim();
-  var pw    = (_fVal('nc-pw')   || '');
-  var photo = (_fVal('nc-photo')|| '').trim();
-  var email = (_fVal('nc-email')|| '').trim();
-
-  // ── 2. Effacer SILENCIEUSEMENT les états précédents ──────
-  //    (sans passer par _fClear qui déclenche les listeners)
-  var allIds = ['nc-name','nc-ph','nc-city','nc-addr','nc-user','nc-pw','nc-photo','nc-email'];
-  allIds.forEach(function(id) {
-    var el = document.getElementById(id);
-    if (el) { el.style.border = ''; el.style.background = ''; el.style.boxShadow = ''; }
-    var sp = document.getElementById(id + '-err');
-    if (sp) { sp.style.display = 'none'; sp.textContent = ''; }
-    var ok = document.getElementById(id + '-ok');
-    if (ok) ok.style.display = 'none';
-  });
-
-  // ── 3. Validation ─────────────────────────────────────────
-  var errors = [];
-  var firstId = null;
-
-  function fail(id, label, msg) {
-    _ncErr(id, msg);
-    errors.push({ id: id, label: label, msg: msg });
-    if (!firstId) firstId = id;
-  }
-  function pass(id) { _ncOK(id); }
-
-  // Nom
-  if (!name)                              fail('nc-name','Nom complet','Ce champ est obligatoire — ex: Hassan Benali');
-  else if (name.length < 3)              fail('nc-name','Nom complet','Trop court — minimum 3 caractères');
-  else if (/\d/.test(name))             fail('nc-name','Nom complet','Le nom ne doit pas contenir de chiffres');
-  else if (name.length > 60)            fail('nc-name','Nom complet','Trop long — maximum 60 caractères');
-  else                                   pass('nc-name');
-
-  // Téléphone
-  if (!phone)                                            fail('nc-ph','Téléphone','Champ obligatoire — ex: 0661234567');
-  else if (!/^[\d\s\+\-\.]{6,15}$/.test(phone))        fail('nc-ph','Téléphone','Format invalide — chiffres uniquement, 6 à 15 car.');
-  else if (CLIENTS.find(function(c){return c.phone===phone;})) fail('nc-ph','Téléphone','Ce numéro est déjà associé à un autre client');
-  else                                                   pass('nc-ph');
-
-  // Ville
-  if (!city)              fail('nc-city','Ville','Champ obligatoire — ex: Casablanca');
-  else if (city.length<2) fail('nc-city','Ville','Nom de ville trop court');
-  else                    pass('nc-city');
-
-  // Adresse
-  if (!addr)              fail('nc-addr','Adresse','Champ obligatoire — ex: 12 Rue Mohammed V, Maarif');
-  else if (addr.length<5) fail('nc-addr','Adresse','Adresse trop courte — soyez plus précis (min. 5 car.)');
-  else                    pass('nc-addr');
-
-  // Identifiant
-  if (!user)                                                       fail('nc-user','Identifiant','Champ obligatoire — ex: hassan01 (sans espaces)');
-  else if (/\s/.test(user))                                        fail('nc-user','Identifiant',"Pas d'espaces autorisés dans l'identifiant");
-  else if (user.length < 3)                                        fail('nc-user','Identifiant','Minimum 3 caractères');
-  else if (!/^[a-zA-Z0-9_\-\.]+$/.test(user))                    fail('nc-user','Identifiant','Caractères non autorisés — lettres, chiffres, _ ou -');
-  else if (CLIENTS.find(function(c){return c.username&&c.username.toLowerCase()===user.toLowerCase();})) fail('nc-user','Identifiant','Identifiant déjà pris — choisissez-en un autre');
-  else                                                             pass('nc-user');
-
-  // Mot de passe
-  if (!pw)              fail('nc-pw','Mot de passe','Champ obligatoire — minimum 6 caractères');
-  else if (pw.length<6) fail('nc-pw','Mot de passe','Trop court — minimum 6 caractères');
-  else {
-    var st=0; if(/[A-Z]/.test(pw))st++; if(/[a-z]/.test(pw))st++; if(/[0-9]/.test(pw))st++; if(/[^A-Za-z0-9]/.test(pw))st++;
-    if (st < 2) fail('nc-pw','Mot de passe','Trop faible — combinez majuscules, chiffres et symboles');
-    else        pass('nc-pw');
   }
 
-  // Email (optionnel)
-  if (email) {
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))                    fail('nc-email','Email','Format invalide — ex: nom@domaine.com');
-    else if (CLIENTS.find(function(c){return c.email&&c.email.toLowerCase()===email.toLowerCase();})) fail('nc-email','Email','Email déjà associé à un autre compte');
-    else pass('nc-email');
-  }
+  if(!pw)                 affErr('nc-pw', 'Mot de passe obligatoire');
+  else if(pw.length<6)    affErr('nc-pw', 'Mot de passe trop court — min 6 car.');
 
-  // Photo (optionnelle)
-  if (photo) {
-    if (!photo.startsWith('http')) fail('nc-photo','Photo','URL invalide — doit commencer par https://...');
-    else                           pass('nc-photo');
-  }
+  if(email && email.indexOf('@')<0) affErr('nc-email', 'Email invalide');
+  if(photo && photo.indexOf('http')!==0) affErr('nc-photo', 'URL invalide — commencer par https://');
 
-  // ── 4. Si erreurs ─────────────────────────────────────────
-  if (errors.length > 0) {
-    _ncShowSummary(errors);
-    _ncUpdateProgress();
-    var nb = errors.length;
-    toast('⚠️ ' + nb + ' champ' + (nb > 1 ? 's' : '') + ' invalide' + (nb > 1 ? 's' : '') + ' — corrigez les zones en rouge', true);
-    setTimeout(function() {
+  // S'il y a des erreurs → afficher banner et arrêter
+  if(errList.length > 0){
+    if(banner){
+      banner.innerHTML = '⚠️ ' + errList.length + ' champ(s) à corriger';
+      banner.style.display = 'block';
+    }
+    // Scroller vers la première erreur
+    if(firstErrField){
       var modal = document.getElementById('md-add-cl');
-      var sum   = document.getElementById('nc-err-summary');
-      if (modal && sum) modal.scrollTop = Math.max(0, sum.offsetTop - 10);
-      setTimeout(function() {
-        var el = document.getElementById(firstId);
-        if (el) el.focus();
-      }, 350);
-    }, 40);
-    return;
+      var errEl = document.getElementById(firstErrField+'-err');
+      if(modal && errEl) modal.scrollTop = errEl.offsetTop - 30;
+    }
+    return; // BLOQUER ici
   }
 
-  // ── 5. Tout OK ────────────────────────────────────────────
-  _ncHideSummary();
-  _ncUpdateProgress();
-
-  // ── 6. Enregistrer ───────────────────────────────────────
-  var lat = parseFloat((document.getElementById('nc-lat') || {}).value) || null;
-  var lng = parseFloat((document.getElementById('nc-lng') || {}).value) || null;
-  var secEl = document.getElementById('nc-sector');
-  var sector = secEl ? secEl.value : '';
-  if(sector === '__autre__') sector = prompt('Entrez le secteur :', '') || '';
-
+  // Pas d'erreurs → enregistrer
+  if(!photo) photo='https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128';
+  var lat=parseFloat(g('nc-lat'))||null;
+  var lng=parseFloat(g('nc-lng'))||null;
+  var sec=document.getElementById('nc-sector'); var sector=sec?sec.value:'';
+  var reg=document.getElementById('nc-reg'); var region=reg?reg.value:'';
   CLIENTS.push({
-    id: 'C' + (100 + CLIENTS.length),
-    name: name, phone: phone,
-    city: city, region: _fVal('nc-reg'), sector: sector,
-    address: addr, lat: lat, lng: lng,
-    username: user, password: pw, email: email,
-    photo: photo, createdDate: new Date().toISOString().split('T')[0]
+    id:'C'+(100+CLIENTS.length),name:name,phone:phone,
+    city:city,region:region,sector:sector,
+    address:addr,lat:lat,lng:lng,
+    username:user,password:pw,email:email,photo:photo,
+    createdDate:new Date().toISOString().split('T')[0]
   });
-
   save();
   if(window.saveToCloud) window.saveToCloud();
   closeAllMd();
   initClientFilters();
   renderClients();
-  toast('✅ Client "' + name + '" créé avec succès !');
+  toast('Client "'+name+'" créé !');
 }
 function delCl(id){CLIENTS=CLIENTS.filter(function(c){return c.id!==id;});save();initClientFilters();renderClients();toast('Client supprimé');}
 
@@ -4525,25 +4155,6 @@ function openMd(name){
     var nr=document.getElementById('nc-reg');if(nr)nr.selectedIndex=0;
     var np=document.getElementById('nc-photo-prev');if(np){np.src='';np.style.display='none';}
     var nb=document.getElementById('nc-loc-badge');if(nb)nb.innerHTML='';
-    // Masquer le récapitulatif et réinitialiser tous les états visuels
-    _ncHideSummary();
-    ['nc-name','nc-ph','nc-city','nc-addr','nc-user','nc-pw','nc-email','nc-photo'].forEach(function(id){
-      if(typeof _ncClear==='function') _ncClear(id);
-      var ok=document.getElementById(id+'-ok'); if(ok) ok.style.display='none';
-    });
-    // Supprimer la barre de progression pour la recréer proprement
-    var prog = document.getElementById('nc-progress-wrap');
-    if(prog) prog.parentNode.removeChild(prog);
-    // Injecter l'UI de progression et attacher la validation temps réel
-    setTimeout(function(){
-      _ncInjectUI();
-      // Réinitialiser les flags d'attachement pour reattacher les listeners
-      ['nc-name','nc-ph','nc-city','nc-addr','nc-user','nc-pw','nc-email','nc-photo'].forEach(function(id){
-        var el=document.getElementById(id); if(el) el._ncRTv7=false;
-      });
-      _ncSetupRealtime();
-      _ncUpdateProgress();
-    }, 80);
   }
   // When opening add-prod, build cat options and reset form
   if(name==='add-prod'){
@@ -9388,57 +8999,6 @@ function _markCouponsUsed(cr, amountToUse, today){
 }
 
 // ── Validation blur sur champs obligatoires ─────────────────────
-// Informe l'utilisateur dès qu'il quitte un champ vide
-(function setupBlurValidation(){
-  // Champs obligatoires du formulaire nouveau client
-  var clientRequiredFields = [
-    {id:'nc-name', label:'Nom complet'},
-    {id:'nc-ph', label:'Téléphone', type:'phone'},
-    {id:'nc-city', label:'Ville'},
-    {id:'nc-user', label:'Identifiant'},
-    {id:'nc-addr', label:'Adresse'}
-  ];
-  // Champs obligatoires réclamation
-  var complaintRequiredFields = [
-    {id:'cmp-type', label:'Type de réclamation'},
-    {id:'cmp-order', label:'Commande concernée'},
-    {id:'cmp-msg', label:'Message'}
-  ];
-  // Champs obligatoires contact
-  var contactRequiredFields = [
-    {id:'contact-subj', label:'Sujet'},
-    {id:'contact-msg', label:'Message'}
-  ];
-
-  function attachBlurToField(f){
-    var el = document.getElementById(f.id);
-    if(!el || el._blurAttached) return;
-    el._blurAttached = true;
-    el.addEventListener('blur', function(){
-      var val = (el.value||'').trim();
-      if(!val){
-        showErr(f.id, '⚠️ ' + f.label + ' est obligatoire');
-      } else if(f.type==='phone' && !/^[\d\s\+\-\.]{6,15}$/.test(val)){
-        showErr(f.id, '⚠️ ' + f.label + ' : numéro invalide (chiffres uniquement)');
-      } else {
-        clearErr(f.id);
-      }
-    });
-  }
-
-  function attachAll(){
-    clientRequiredFields.forEach(attachBlurToField);
-    complaintRequiredFields.forEach(attachBlurToField);
-    contactRequiredFields.forEach(attachBlurToField);
-  }
-
-  // Observer les changements DOM pour attacher aux nouveaux éléments
-  var blurObs = new MutationObserver(function(){
-    attachAll();
-  });
-  blurObs.observe(document.body, {childList:true, subtree:true});
-  attachAll();
-})();
 </script>
 </body>
 </html>
