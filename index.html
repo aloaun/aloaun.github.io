@@ -747,6 +747,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
 <input type="file" id="hidden-file-input" accept="image/*" style="display:none" onchange="handleFileUpload(event)">
 
 <!-- LOGIN -->
+<div id="progress-bar" style="position:fixed;top:0;left:0;width:0%;height:3px;background:linear-gradient(90deg,#C9A84C,#E8C670);z-index:99999;transition:width .3s ease;box-shadow:0 0 8px rgba(201,168,76,0.6)"></div>
 <div id="pg-login">
   <div>
     <div class="logo-big"><h1>ALITOS</h1><p>Gestion des ventes</p></div>
@@ -1107,7 +1108,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
        </div>
        <div style="display:flex;gap:8px">
         <input type="text" id="appro-scan-manual" placeholder="Ou saisissez le code-barres manuellement..." style="flex:1;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:10px 14px;color:var(--tx);font-size:13px;outline:none" onkeydown="if(event.key==='Enter')processApproBarcode(this.value)">
-        <button class="btn btn-g" onclick="processApproBarcode(document.getElementById('appro-scan-manual').value)">→ Chercher</button>
+        <button class="btn btn-g" onclick="processApproBarcode(document.getElementById('appro-scan-manual').value)" style="padding:10px 16px">🔍 Chercher</button>
        </div>
        <div id="appro-scan-result" style="display:none;margin-top:14px;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:14px"></div>
       </div>
@@ -1138,7 +1139,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
         <div style="display:flex;gap:7px;flex-wrap:wrap">
          <button class="btn btn-b btn-sm" onclick="selectAllForLabels()">✅ Tout sélectionner</button>
          <button class="btn btn-o btn-sm" onclick="clearLabelSelection()">✕ Désélectionner</button>
-         <button class="btn btn-g" onclick="printBarcodeLabels()" style="font-weight:600">🖨️ Imprimer les étiquettes</button>
+         <button class="btn btn-g" onclick="printBarcodeLabels()" style="font-weight:700;padding:9px 16px">🖨️ Imprimer les étiquettes sélectionnées</button>
         </div>
        </div>
        <!-- Filter -->
@@ -2254,6 +2255,19 @@ function payB(ps,pm,o){
 }
 function stkSt(p){var t=p.threshold||10;if(p.stock===0)return{cls:'sx',lbl:'⚠️ Rupture',col:'#E05252'};if(p.stock<=t)return{cls:'sp',lbl:'⚠️ Bas ('+p.stock+')',col:'#E8834A'};return{cls:'sd',lbl:'✅ '+p.stock+' en stock',col:'#52C97A'};}
 function calcProfit(o){return o.items.reduce(function(s,it){var bp=it.buyPrice!==undefined?it.buyPrice:(getP(it.productId).buyPrice||0);return s+(it.price-bp)*it.quantity;},0);}
+// ── Progress Bar ──────────────────────────────────────────────
+var _pbTimer=null;
+function showProgress(pct){
+  var bar=document.getElementById('progress-bar');
+  if(!bar) return;
+  bar.style.width=pct+'%';
+  bar.style.opacity='1';
+  clearTimeout(_pbTimer);
+  if(pct>=100){ _pbTimer=setTimeout(function(){bar.style.opacity='0';bar.style.width='0%';},400); }
+}
+function startProgress(){showProgress(20);setTimeout(function(){showProgress(60);},200);}
+function endProgress(){showProgress(100);}
+
 function toast(msg,err){var t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(err?' err':'');t.classList.add('on');setTimeout(function(){t.classList.remove('on');},3000);}
 function clientAvatar(c){return (c.photo&&(c.photo.startsWith('http')||c.photo.startsWith('data:')))?c.photo:('https://ui-avatars.com/api/?name='+encodeURIComponent(c.name||'?')+'&background=C9A84C&color=0A0A0A&size=128');}
 function prodImg(p){return (p.image&&p.image.length>0)?p.image:'https://via.placeholder.com/200x130?text=Photo';}
@@ -2648,6 +2662,7 @@ function goBack(){
   }
 }
 function goSec(n,el){
+  startProgress();
   // Update browser tab title
   var T={dash:'Tableau de bord',orders:'Commandes',prods:'Produits',stock:'Stock & Prix',clients:'Clients',analytics:'Analytique',regional:'Régions & Villes',invoices:'Factures',credits:'Crédits clients',suppliers:'Fournisseurs',complaints:'Réclamations',company:'Mon entreprise',purchases:'Historique achats',coupons:'Coupons'};
   document.title='ALITOS — '+(T[n]||n);
@@ -2678,6 +2693,7 @@ function goSec(n,el){
   if(n==='credits')renderCredits();
   if(n==='complaints')renderComplaints();
   if(n==='coupons')renderCouponsSection();
+  setTimeout(endProgress,300);
 }
 
 // ═══════════ CATEGORIES ═══════════
@@ -3823,105 +3839,102 @@ function updateClient(){
   closeAllMd();initClientFilters();renderClients();toast('✅ Client mis à jour avec succès !');
 }
 function saveClient(){
-  // Lire les valeurs
-  var g = function(id){ var e=document.getElementById(id); return e?e.value:''; };
-  var name  = g('nc-name').trim();
-  var phone = g('nc-ph').trim();
-  var city  = g('nc-city').trim();
-  var addr  = g('nc-addr').trim();
-  var user  = g('nc-user').trim();
-  var pw    = g('nc-pw');
-  var email = g('nc-email').trim();
-  var photo = g('nc-photo').trim();
+  // EXACT same pattern as saveProduct — _fErr + _fClearAll + firstErrId
+  _fClearAll(['nc-name','nc-ph','nc-city','nc-addr','nc-user','nc-pw','nc-email','nc-photo']);
+  var ok = true;
+  var firstErrId = null;
 
-  // Réinitialiser tous les champs et messages
-  var fieldIds = ['nc-name','nc-ph','nc-city','nc-addr','nc-user','nc-pw','nc-email','nc-photo'];
-  for(var i=0; i<fieldIds.length; i++){
-    var inp = document.getElementById(fieldIds[i]);
-    if(inp){ inp.style.border = '1.5px solid #333'; inp.style.background = '#1e1e1e'; }
-    var errDiv = document.getElementById(fieldIds[i]+'-err');
-    if(errDiv){ errDiv.style.display = 'none'; errDiv.innerHTML = ''; }
+  var name  = _fVal('nc-name').trim();
+  var phone = _fVal('nc-ph').trim();
+  var city  = _fVal('nc-city').trim();
+  var addr  = _fVal('nc-addr').trim();
+  var user  = _fVal('nc-user').trim();
+  var pw    = _fVal('nc-pw');
+  var email = _fVal('nc-email').trim();
+  var photo = _fVal('nc-photo').trim();
+
+  if(!name){
+    _fErr('nc-name','Nom complet obligatoire — ex: Hassan Benali');
+    if(!firstErrId) firstErrId='nc-name'; ok=false;
   }
-  var banner = document.getElementById('cl-form-err-banner');
-  if(banner) banner.style.display = 'none';
-
-  // Afficher une erreur sous un champ
-  var errList = [];
-  var firstErrField = null;
-  var affErr = function(fieldId, msg){
-    var inp = document.getElementById(fieldId);
-    if(inp){ inp.style.border = '2px solid #E05252'; inp.style.background = 'rgba(224,82,82,0.05)'; }
-    var box = document.getElementById(fieldId+'-err');
-    if(box){
-      box.innerHTML = '<b>⚠️</b> ' + msg;
-      box.style.display = 'block';
-    }
-    if(!firstErrField) firstErrField = fieldId;
-    errList.push(msg);
-  };
-
-  // Validations
-  if(!name)               affErr('nc-name', 'Nom complet obligatoire');
-  else if(name.length<2)  affErr('nc-name', 'Nom trop court');
-
-  if(!phone)              affErr('nc-ph', 'Téléphone obligatoire — ex: 0661234567');
-  else if(phone.replace(/[\d\s\+\-\.]/g,'').length>0) affErr('nc-ph', 'Chiffres uniquement — ex: 0661234567');
-
-  if(!city)               affErr('nc-city', 'Ville obligatoire — ex: Casablanca');
-
-  if(!addr)               affErr('nc-addr', 'Adresse obligatoire');
-  else if(addr.length<4)  affErr('nc-addr', 'Adresse trop courte');
-
-  if(!user)               affErr('nc-user', 'Identifiant obligatoire — ex: client01');
-  else if(user.indexOf(' ')>=0) affErr('nc-user', "Pas d'espaces dans l'identifiant");
-  else if(user.length<3)  affErr('nc-user', 'Identifiant trop court — min 3 car.');
-  else {
-    for(var ci=0; ci<CLIENTS.length; ci++){
-      if(CLIENTS[ci].username && CLIENTS[ci].username.toLowerCase()===user.toLowerCase()){
-        affErr('nc-user', 'Identifiant déjà utilisé'); break;
-      }
-    }
+  if(!phone){
+    _fErr('nc-ph','Téléphone obligatoire — ex: 0661234567');
+    if(!firstErrId) firstErrId='nc-ph'; ok=false;
+  } else if(phone.replace(/[\d\s\+\-\.]/g,'').length>0){
+    _fErr('nc-ph','Téléphone invalide — chiffres uniquement (ex: 0661234567)');
+    if(!firstErrId) firstErrId='nc-ph'; ok=false;
   }
-
-  if(!pw)                 affErr('nc-pw', 'Mot de passe obligatoire');
-  else if(pw.length<6)    affErr('nc-pw', 'Mot de passe trop court — min 6 car.');
-
-  if(email && email.indexOf('@')<0) affErr('nc-email', 'Email invalide');
-  if(photo && photo.indexOf('http')!==0) affErr('nc-photo', 'URL invalide — commencer par https://');
-
-  // S'il y a des erreurs → afficher banner et arrêter
-  if(errList.length > 0){
-    if(banner){
-      banner.innerHTML = '⚠️ ' + errList.length + ' champ(s) à corriger';
-      banner.style.display = 'block';
-    }
-    // Scroller vers la première erreur
-    if(firstErrField){
-      var modal = document.getElementById('md-add-cl');
-      var errEl = document.getElementById(firstErrField+'-err');
-      if(modal && errEl) modal.scrollTop = errEl.offsetTop - 30;
-    }
-    return; // BLOQUER ici
+  if(!city){
+    _fErr('nc-city','Ville obligatoire — ex: Casablanca');
+    if(!firstErrId) firstErrId='nc-city'; ok=false;
+  }
+  if(!addr){
+    _fErr('nc-addr','Adresse obligatoire — ex: 12 Rue Mohammed V');
+    if(!firstErrId) firstErrId='nc-addr'; ok=false;
+  } else if(addr.length<4){
+    _fErr('nc-addr','Adresse trop courte — soyez plus précis');
+    if(!firstErrId) firstErrId='nc-addr'; ok=false;
+  }
+  if(!user){
+    _fErr('nc-user','Identifiant obligatoire — ex: client01');
+    if(!firstErrId) firstErrId='nc-user'; ok=false;
+  } else if(user.indexOf(' ')>=0){
+    _fErr('nc-user',"Pas d'espaces dans l'identifiant");
+    if(!firstErrId) firstErrId='nc-user'; ok=false;
+  } else if(user.length<3){
+    _fErr('nc-user','Identifiant trop court — minimum 3 caractères');
+    if(!firstErrId) firstErrId='nc-user'; ok=false;
+  } else if(CLIENTS.find(function(c){return c.username&&c.username.toLowerCase()===user.toLowerCase();})){
+    _fErr('nc-user','Identifiant déjà utilisé — choisissez-en un autre');
+    if(!firstErrId) firstErrId='nc-user'; ok=false;
+  }
+  if(!pw){
+    _fErr('nc-pw','Mot de passe obligatoire — minimum 6 caractères');
+    if(!firstErrId) firstErrId='nc-pw'; ok=false;
+  } else if(pw.length<6){
+    _fErr('nc-pw','Mot de passe trop court — minimum 6 caractères');
+    if(!firstErrId) firstErrId='nc-pw'; ok=false;
+  }
+  if(email && email.indexOf('@')<0){
+    _fErr('nc-email','Email invalide — ex: nom@domaine.com');
+    if(!firstErrId) firstErrId='nc-email'; ok=false;
+  }
+  if(photo && photo.indexOf('http')!==0){
+    _fErr('nc-photo','URL photo invalide — doit commencer par https://');
+    if(!firstErrId) firstErrId='nc-photo'; ok=false;
   }
 
-  // Pas d'erreurs → enregistrer
+  if(!ok){
+    var n=['nc-name','nc-ph','nc-city','nc-addr','nc-user','nc-pw','nc-email','nc-photo'].filter(function(id){
+      var e=document.getElementById(id+'-err'); return e&&e.style.display!=='none'&&e.textContent;
+    }).length;
+    toast('⚠️ '+n+' champ(s) à corriger — zones en rouge',true);
+    if(firstErrId){ setTimeout(function(){
+      var el=document.getElementById(firstErrId);
+      if(el){ el.scrollIntoView({behavior:'smooth',block:'center'}); el.focus(); }
+    },80); }
+    return;
+  }
+
+  if(CLIENTS.find(function(c){return c.phone===phone;})){
+    _fErr('nc-ph','Ce numéro de téléphone existe déjà');
+    document.getElementById('nc-ph').scrollIntoView({behavior:'smooth',block:'center'});
+    return;
+  }
   if(!photo) photo='https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=128';
-  var lat=parseFloat(g('nc-lat'))||null;
-  var lng=parseFloat(g('nc-lng'))||null;
-  var sec=document.getElementById('nc-sector'); var sector=sec?sec.value:'';
-  var reg=document.getElementById('nc-reg'); var region=reg?reg.value:'';
+  var lat=parseFloat((document.getElementById('nc-lat')||{}).value)||null;
+  var lng=parseFloat((document.getElementById('nc-lng')||{}).value)||null;
+  var secEl=document.getElementById('nc-sector'); var sector=secEl?secEl.value:'';
+  if(sector==='__autre__') sector=prompt('Secteur :','')||'';
   CLIENTS.push({
     id:'C'+(100+CLIENTS.length),name:name,phone:phone,
-    city:city,region:region,sector:sector,
+    city:city,region:_fVal('nc-reg'),sector:sector,
     address:addr,lat:lat,lng:lng,
     username:user,password:pw,email:email,photo:photo,
     createdDate:new Date().toISOString().split('T')[0]
   });
-  save();
-  if(window.saveToCloud) window.saveToCloud();
-  closeAllMd();
-  initClientFilters();
-  renderClients();
+  save(); if(window.saveToCloud) window.saveToCloud();
+  closeAllMd(); initClientFilters(); renderClients();
   toast('Client "'+name+'" créé !');
 }
 function delCl(id){CLIENTS=CLIENTS.filter(function(c){return c.id!==id;});save();initClientFilters();renderClients();toast('Client supprimé');}
@@ -4188,6 +4201,7 @@ function closeAllMd(){
 // ═══════════ CLIENT APP ═══════════
 var cart={},activeCat='Tous',activeOF='';
 function initClient(){
+  endProgress();
   var s=SESSION;
   function setEl(id,val){ var e=document.getElementById(id);if(e)e.textContent=val; }
   function setSrc(id,src){ var e=document.getElementById(id);if(e)e.src=src||''; }
@@ -5836,9 +5850,19 @@ function onApproProdChange(){
     (lastPur?'<div style="font-size:11px;color:var(--tx3)">Dernier appro : '+lastPur.date+' · '+lastPur.qty+' u · '+fm(lastPur.unitBuy||0)+'/u'+(lastSup?' · '+lastSup.name:'')+'</div>':'')+
     '</div></div>';
   infoEl.style.display='block';
-  // Pre-fill buy price and last supplier
-  if(p.buyPrice){var pr=document.getElementById('appro-price');if(pr&&!pr.value)pr.value=p.buyPrice;}
-  if(lastSup){var sp=document.getElementById('appro-sup');if(sp&&!sp.value)sp.value=lastSup.id;}
+  // Pre-fill buy price, quantity hint, and last supplier — ALWAYS overwrite
+  var prEl=document.getElementById('appro-price');
+  if(prEl) prEl.value=p.buyPrice||0;
+  if(lastSup){
+    fillApproSuppliers(); // ensure dropdown is populated
+    var sp=document.getElementById('appro-sup');
+    if(sp) setTimeout(function(){sp.value=lastSup.id;},50);
+  }
+  // Also fill pay method if last purchase has it
+  if(lastPur&&lastPur.payMethod){
+    var pm=document.getElementById('appro-pay');
+    if(pm) pm.value=lastPur.payMethod;
+  }
   onApproCalcCmp();
 }
 
@@ -6078,8 +6102,16 @@ function findProdByBarcode(){
 
 function processApproBarcode(code){
   code=(code||'').trim();
-  if(!code) return;
-  var p=PRODUCTS.find(function(x){return x.barcode===code;});
+  if(!code){toast('Saisissez un code-barres',true);return;}
+  // Search by barcode, by id, or by name (case insensitive)
+  var codeLow=code.toLowerCase();
+  var p=PRODUCTS.find(function(x){
+    return x.barcode===code ||
+           x.id===code ||
+           (x.barcode&&x.barcode.toLowerCase()===codeLow) ||
+           x.name.toLowerCase()===codeLow ||
+           x.name.toLowerCase().includes(codeLow);
+  });
   var res=document.getElementById('appro-scan-result');
   if(!res) return;
   if(p){
@@ -6089,7 +6121,11 @@ function processApproBarcode(code){
       '<div><div style="font-weight:600;color:var(--gold);font-size:15px">'+p.name+'</div>'+
       '<div style="font-size:12px;color:var(--tx3)">Stock : <strong style="color:'+(p.stock===0?'var(--red)':'var(--grn)')+'">'+p.stock+'</strong> u · Prix vente : '+fm(p.price)+'</div>'+
       '<div style="font-size:11px;color:var(--tx3)">Code-barres : '+code+'</div></div></div>'+
-      '<button class="btn btn-gn" style="width:100%" onclick="switchApproTab(\'reap\');setTimeout(function(){document.getElementById(\'appro-prod\').value=\''+p.id+'\';onApproProdChange();},200)">📦 Réapprovisionner ce produit →</button>';
+      '<button class="btn btn-gn" style="width:100%;padding:12px;font-size:13px" onclick="switchApproTab(\'reap\');setTimeout(function(){'+
+      'fillApproProdSel();'+
+      'var sel=document.getElementById(\'appro-prod\');'+
+      'if(sel){sel.value=\''+p.id+'\';onApproProdChange();}'+
+      '},300)">📦 Réapprovisionner ce produit →</button>';
     res.style.display='block';
     toast('✅ Produit : '+p.name+' — Stock: '+p.stock);
   } else {
@@ -8004,6 +8040,7 @@ function fbShow(state, msg){
 var _offlineQueue = false; // true si une sauvegarde est en attente (hors ligne)
 
 async function saveToCloud(){
+  startProgress();
   fbShow('syncing','☁️ Sauvegarde...');
   try{
     const data={
@@ -8728,55 +8765,112 @@ function printBarcodeLabels(){
   if(_selectedLabels.size===0){toast('⚠️ Sélectionnez au moins un produit',true);return;}
   var copies=parseInt((document.getElementById('label-copies')||{}).value)||1;
   var prods=PRODUCTS.filter(function(p){return _selectedLabels.has(p.id);});
-  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Étiquettes Alitos</title><style>'+
-    'body{margin:0;padding:10px;background:#fff;font-family:Arial,sans-serif;}'+
-    '.labels{display:flex;flex-wrap:wrap;gap:8px;padding:10px;}'+
-    '.label{width:170px;border:1px solid #ddd;border-radius:6px;padding:8px;text-align:center;page-break-inside:avoid;background:#fff;}'+
-    '.label-name{font-size:9px;font-weight:bold;color:#111;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}'+
-    '.label-price{font-size:13px;font-weight:bold;color:#111;margin-top:3px;}'+
-    '.label-code{font-size:8px;color:#555;letter-spacing:0.5px;margin-top:2px;}'+
-    '.barcode{display:flex;height:32px;gap:0.5px;justify-content:center;margin:4px 0;}'+
-    '.barcode div{display:inline-block;}'+
-    '.company{font-size:7px;color:#999;margin-top:1px;}'+
-    '@media print{body{margin:0;padding:5px;}.no-print{display:none}'+
-    '@page{margin:5mm;size:A4;}}'+
-    '</head><body>'+
-    '<div class="no-print" style="padding:10px;text-align:center;margin-bottom:10px;background:#f5f5f5;border-radius:8px">'+
-    '<strong>Aperçu — '+prods.length+' produit(s) × '+copies+' exemplaire(s)</strong> &nbsp;'+
-    '<button onclick="window.print()" style="background:#C9A84C;color:#000;border:none;padding:8px 20px;border-radius:6px;cursor:pointer;font-weight:600;font-size:13px">🖨️ Imprimer</button>'+
-    '</div>'+
-    '<div class="labels">';
+  if(!prods.length){toast('Aucun produit sélectionné',true);return;}
+
+  // Build barcode bars using Code128-like pattern
+  function makeBars(code){
+    var bars='';
+    var seed=0;
+    for(var i=0;i<code.length;i++) seed=(seed*31+code.charCodeAt(i))&0xFFFF;
+    // Deterministic bar pattern from code
+    var pattern=[1,2,1,3,2,1,1,2,3,1,2,2,1,1,3,1,2,1,2,1,3,2,1,3,1,1,2,1,2,3];
+    for(var j=0;j<40;j++){
+      var w=pattern[(seed*17+j*13)%pattern.length];
+      var isBar=(seed+j)%2===0;
+      bars+='<div style="display:inline-block;width:'+w+'px;height:36px;background:'+(isBar?'#000':'#fff')+';vertical-align:top"></div>';
+    }
+    return '<div style="display:flex;justify-content:center;align-items:flex-end;background:#fff;padding:2px 0">'+bars+'</div>';
+  }
 
   var allPrints=[];
-  prods.forEach(function(p){
-    for(var c=0;c<copies;c++) allPrints.push(p);
-  });
+  prods.forEach(function(p){ for(var c=0;c<copies;c++) allPrints.push(p); });
 
-  allPrints.forEach(function(p){
-    var bcode=p.barcode||('ALT-'+p.id);
-    var widths=[1,2,3,1,2,1,3,1,2,2,1,3,1,1,2,3,1,2,1,1,2,3,1,2,3,1,2,1,2,3];
-    var seed=0; for(var i=0;i<bcode.length;i++) seed+=bcode.charCodeAt(i);
-    var barHtml='<div class="barcode">';
-    for(var j=0;j<30;j++){
-      var w=widths[(seed+j*7)%widths.length];
-      var black=(j+seed)%3!==0;
-      barHtml+='<div style="width:'+w+'px;background:'+(black?'#111':'#fff')+'"></div>';
-    }
-    barHtml+='</div>';
-    html+='<div class="label">'+
-      '<div class="label-name">'+p.name+'</div>'+
-      barHtml+
-      '<div class="label-code">'+bcode+'</div>'+
-      '<div class="label-price">'+fm(p.price)+'</div>'+
-      '<div class="company">ALITOS</div>'+
+  var labels=allPrints.map(function(p){
+    var bcode=p.barcode||(p.id);
+    var name=p.name.length>22?p.name.substring(0,22)+'…':p.name;
+    return '<div class="label">'+
+      '<div class="lname">'+name+'</div>'+
+      '<div class="lcat">'+p.category+'</div>'+
+      makeBars(bcode)+
+      '<div class="lcode">'+bcode+'</div>'+
+      '<div class="lprice">'+fm(p.price)+' MAD</div>'+
+      '<div class="lco">ALITOS</div>'+
     '</div>';
-  });
+  }).join('');
 
-  html+='</div></body></html>';
-  var win=window.open('','_blank','width=900,height=700');
-  if(win){ win.document.write(html); win.document.close(); }
-  else{ toast('⚠️ Autorisez les popups pour imprimer',true); }
+  var html='<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Étiquettes — ALITOS</title>'+
+  '<style>'+
+  '*{box-sizing:border-box;margin:0;padding:0}'+
+  'body{font-family:Arial,Helvetica,sans-serif;background:#f5f5f5;padding:12px}'+
+  '.toolbar{background:#fff;border:1px solid #ddd;border-radius:8px;padding:12px 16px;margin-bottom:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px}'+
+  '.toolbar strong{font-size:14px;color:#333}'+
+  '.print-btn{background:#C9A84C;color:#000;border:none;padding:10px 24px;border-radius:6px;cursor:pointer;font-weight:700;font-size:14px}'+
+  '.labels{display:flex;flex-wrap:wrap;gap:6px;background:#f5f5f5}'+
+  '.label{width:160px;border:1px solid #bbb;border-radius:6px;padding:8px 6px;text-align:center;background:#fff;page-break-inside:avoid;break-inside:avoid}'+
+  '.lname{font-size:9px;font-weight:700;color:#111;margin-bottom:2px;line-height:1.2;max-height:22px;overflow:hidden}'+
+  '.lcat{font-size:7px;color:#888;margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px}'+
+  '.lcode{font-size:8px;color:#444;letter-spacing:1px;margin-top:2px;font-family:monospace}'+
+  '.lprice{font-size:14px;font-weight:700;color:#000;margin-top:2px}'+
+  '.lco{font-size:7px;color:#aaa;margin-top:1px;letter-spacing:2px}'+
+  '@media print{'+
+  'body{background:#fff;padding:4mm}'+
+  '.toolbar{display:none!important}'+
+  '.labels{gap:4px}'+
+  '.label{width:155px;border:0.5px solid #999}'+
+  '@page{margin:5mm;size:A4}'+
+  '}'+
+  '</style></head><body>'+
+  '<div class="toolbar">'+
+  '<div><strong>🏷️ Étiquettes ALITOS</strong> — '+prods.length+' produit(s) × '+copies+' ex. = '+allPrints.length+' étiquette(s)</div>'+
+  '<button class="print-btn" onclick="window.print()">🖨️ Imprimer</button>'+
+  '</div>'+
+  '<div class="labels">'+labels+'</div>'+
+  '</body></html>';
+
+  var win=window.open('','_blank');
+  if(win){
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    // Auto-trigger print after load
+    win.onload=function(){ setTimeout(function(){win.focus();}, 300); };
+  } else {
+    // Fallback: create download link
+    var blob=new Blob([html],{type:'text/html'});
+    var url=URL.createObjectURL(blob);
+    var a=document.createElement('a');
+    a.href=url; a.download='etiquettes-alitos.html'; a.click();
+    URL.revokeObjectURL(url);
+    toast('📄 Fichier étiquettes téléchargé — ouvrez-le pour imprimer',false);
+  }
 }
+// ── Filter reapprovisionnement product list by barcode/name ──
+function filterReapProdList(q){
+  var sel=document.getElementById('appro-prod');
+  if(!sel) return;
+  q=(q||'').trim().toLowerCase();
+  var cur=sel.value;
+  var html='<option value="">— Sélectionner un produit —</option>';
+  PRODUCTS.forEach(function(p){
+    var match=!q||
+      p.name.toLowerCase().includes(q)||
+      (p.barcode&&p.barcode.toLowerCase().includes(q))||
+      p.id.toLowerCase()===q;
+    if(match){
+      var badge=p.stock===0?' 🚨':p.stock<=(p.threshold||10)?' ⚠️':'';
+      html+='<option value="'+p.id+'">'+(p.barcode?'['+p.barcode+'] ':'')+p.name+badge+' (stock:'+p.stock+')</option>';
+    }
+  });
+  sel.innerHTML=html;
+  if(cur&&sel.querySelector('option[value="'+cur+'"]')) sel.value=cur;
+  // If exactly one product matches and barcode was typed, auto-select it
+  var opts=sel.querySelectorAll('option[value]');
+  if(q&&opts.length===2){ // 1 real option + the empty one
+    sel.selectedIndex=1;
+    onApproProdChange();
+  }
+}
+
 window._fbLoad = loadFromCloud;
 window._fbRefresh = refreshUI;
 console.log('🔥 Firebase Realtime DB — sync temps réel');
