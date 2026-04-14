@@ -9899,7 +9899,7 @@ toast = function(msg, err){
   _origToast(msg,err);
 };
 
-
+function _markCouponsUsed(cr, amountToUse, today){
   var used=0; var usedCodes=[];
   (cr.coupons||[]).filter(function(c){return !c.used&&!c.cancelled&&c.amount>0;}).forEach(function(c){
     if(used<amountToUse){
@@ -10067,7 +10067,7 @@ document.addEventListener('keydown',function(e){
   obs.observe(document.body,{childList:true,subtree:true});
 })();
 
-
+(function(){
   // Champs obligatoires du formulaire nouveau client
   var clientRequiredFields = [
     {id:'nc-name', label:'Nom complet'},
