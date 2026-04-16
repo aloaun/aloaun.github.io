@@ -651,36 +651,33 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
 #pr-quick-stats > div{transition:.15s}
 #pr-quick-stats > div:hover{border-color:var(--gold);transform:translateY(-1px)}
 
-/* ══ BOUTONS DE PAIEMENT — Design moderne différencié ══ */
-.pay-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px 10px;border:none;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;cursor:pointer;transition:.2s;width:100%;position:relative;overflow:hidden;letter-spacing:.3px}
-.pay-btn::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:.2s}
-.pay-btn:hover::after{background:rgba(255,255,255,0.08)}
-.pay-btn:active{transform:scale(.97)}
-.pay-btn-icon{font-size:20px;flex-shrink:0}
+/* ══ BOUTONS DE PAIEMENT — Design moderne ══ */
+.pay-btn{
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:14px 12px;border:none;border-radius:14px;
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;
+  cursor:pointer;transition:.18s;width:100%;
+  letter-spacing:.3px;line-height:1;
+}
+.pay-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
+.pay-btn:active{transform:scale(.97);filter:brightness(.95)}
+.pay-btn .pi{font-size:22px;line-height:1;flex-shrink:0}
+.pay-btn .pt{display:flex;flex-direction:column;align-items:flex-start}
+.pay-btn .pt-main{font-size:13px;font-weight:700}
+.pay-btn .pt-sub{font-size:10px;opacity:.8;margin-top:1px;font-weight:400}
 
-/* Espèces — vert naturel */
-.pay-cash{background:linear-gradient(135deg,#1a6b3c,#27a15a);color:#fff;box-shadow:0 4px 16px rgba(39,161,90,0.3)}
-.pay-cash .pay-btn-icon::before{content:'💵'}
-
-/* Virement — bleu bancaire */
-.pay-transfer{background:linear-gradient(135deg,#1a3a6b,#2563c4);color:#fff;box-shadow:0 4px 16px rgba(37,99,196,0.3)}
-.pay-transfer .pay-btn-icon::before{content:'🏦'}
-
-/* Chèque — gris ardoise */
-.pay-cheque{background:linear-gradient(135deg,#3a3a4a,#5a5a7a);color:#fff;box-shadow:0 4px 16px rgba(90,90,122,0.3)}
-.pay-cheque .pay-btn-icon::before{content:'📋'}
-
-/* Carte / CMI — violet premium */
-.pay-cmi{background:linear-gradient(135deg,#5b1a7a,#9b32c8);color:#fff;box-shadow:0 4px 16px rgba(155,50,200,0.3)}
-.pay-cmi .pay-btn-icon::before{content:'💳'}
-
-/* Crédit — orange ambré */
-.pay-credit{background:linear-gradient(135deg,#7a3a00,#c86a00);color:#fff;box-shadow:0 4px 16px rgba(200,106,0,0.3)}
-.pay-credit .pay-btn-icon::before{content:'🔄'}
-
-/* Coupon — or doré */
-.pay-coupon{background:linear-gradient(135deg,#7a5a00,#c9a84c);color:#0A0A0A;box-shadow:0 4px 16px rgba(201,168,76,0.3)}
-.pay-coupon .pay-btn-icon::before{content:'🎟️'}
+/* Espèces — vert */
+.pay-cash{background:linear-gradient(135deg,#1b5e35,#2e9d5a);color:#fff;box-shadow:0 4px 14px rgba(46,157,90,.35)}
+/* Virement — bleu */
+.pay-transfer{background:linear-gradient(135deg,#1a3a7a,#2e6bc8);color:#fff;box-shadow:0 4px 14px rgba(46,107,200,.35)}
+/* Chèque — ardoise */
+.pay-cheque{background:linear-gradient(135deg,#2d2d3d,#4a4a6a);color:#fff;box-shadow:0 4px 14px rgba(74,74,106,.35)}
+/* CMI/Carte — violet */
+.pay-cmi{background:linear-gradient(135deg,#4a1060,#8b28b8);color:#fff;box-shadow:0 4px 14px rgba(139,40,184,.35)}
+/* Crédit — orange */
+.pay-credit{background:linear-gradient(135deg,#6a2e00,#c06000);color:#fff;box-shadow:0 4px 14px rgba(192,96,0,.35)}
+/* Coupon — or */
+.pay-coupon{background:linear-gradient(135deg,#6a4800,#c9a84c);color:#0A0A0A;box-shadow:0 4px 14px rgba(201,168,76,.35)}
 
 /* ══ CLIENT APP — Layout responsive complet ══ */
 /* Base mobile (< 480px) */
@@ -1839,8 +1836,8 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
 
   <div class="fg">
    <label>Téléphone <span style="color:var(--red)">★</span></label>
-   <div style="display:flex;gap:6px;align-items:stretch">
-    <select id="nc-ph-country" onchange="ncPhUpdate()" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:13px;outline:none;min-width:120px;cursor:pointer;flex-shrink:0">
+   <div style="display:flex;border:1px solid var(--bo);border-radius:8px;overflow:hidden;background:var(--dk4)">
+    <select id="nc-ph-country" onchange="ncPhUpdate()" style="background:transparent;border:none;border-right:1px solid var(--bo);padding:10px 8px;color:var(--tx);font-size:13px;outline:none;cursor:pointer;min-width:110px">
      <option value="+212" data-len="9" selected>🇲🇦 +212</option>
      <option value="+213" data-len="9">🇩🇿 +213</option>
      <option value="+216" data-len="8">🇹🇳 +216</option>
@@ -1851,9 +1848,9 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
      <option value="+971" data-len="9">🇦🇪 +971</option>
      <option value="+966" data-len="9">🇸🇦 +966</option>
     </select>
-    <input id="nc-ph" inputmode="numeric" placeholder="661234567" autocomplete="off" oninput="ncPhUpdate()" style="flex:1">
+    <input id="nc-ph" inputmode="numeric" placeholder="6 61 23 45 67" autocomplete="off" oninput="ncPhUpdate()" style="flex:1;border:none;background:transparent;padding:10px 12px;color:var(--tx);font-size:13px;outline:none;min-width:0">
    </div>
-   <div id="nc-ph-preview" style="font-size:11px;color:var(--tx3);margin-top:4px;min-height:16px"></div>
+   <div id="nc-ph-preview" style="font-size:11px;color:var(--grn);margin-top:4px;min-height:16px;font-weight:600"></div>
    <span id="nc-ph-err" class="ferr" style="display:none"></span>
   </div>
 
@@ -2748,7 +2745,22 @@ function doLogin(){
         document.getElementById('pg-login').style.display='none';
         document.getElementById('pg-admin').style.display='block';
         document.getElementById('adate').textContent=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
-        updateAdminSidebar();initAdminFilters();renderDashboard();return;
+        // Record login time for super admin tracking
+        var _loginUser = u;
+        if(ADMIN.username===u){ ADMIN.lastLogin=Date.now(); try{localStorage.setItem('al_admin',JSON.stringify(ADMIN));}catch(e){} }
+        else { for(var _ai=0;_ai<ADMINS.length;_ai++){if(ADMINS[_ai].username===u){ADMINS[_ai].lastLogin=Date.now();break;}} }
+        SESSION.username = u;
+        if(!window._loginHB) window._loginHB=setInterval(function(){
+          if(SESSION&&SESSION.role==='admin'){
+            if(ADMIN.username===SESSION.username){ADMIN.lastLogin=Date.now();}
+            else{var _a=ADMINS.find(function(a){return a.username===SESSION.username;});if(_a)_a.lastLogin=Date.now();}
+            save();
+          }
+        },60000);
+        // Notification super admin: show toast with who logged in (if notifications enabled)
+        updateAdminSidebar();initAdminFilters();renderDashboard();
+        renderOnlineAccounts();
+        return;
       }
       LOGIN_ATTEMPTS[u]=(LOGIN_ATTEMPTS[u]||0)+1;
       var left=3-LOGIN_ATTEMPTS[u];
@@ -2770,6 +2782,15 @@ function doLogin(){
       SESSION={role:'client',id:found.id,name:found.name,city:found.city,region:found.region,phone:found.phone,photo:clientAvatar(found),address:found.address||'',lat:found.lat||null,lng:found.lng||null,email:found.email||''};
       document.getElementById('pg-login').style.display='none';
       document.getElementById('pg-client').style.display='block';
+      // Record client login time
+      var _cl=CLIENTS.find(function(c){return c.id===found.id;});
+      if(_cl){ _cl.lastLogin=Date.now(); try{localStorage.setItem('al_cl_ts_'+found.id, Date.now());}catch(e){} }
+      if(!window._loginHB) window._loginHB=setInterval(function(){
+        if(SESSION&&SESSION.role==='client'){
+          var _cc=CLIENTS.find(function(c){return c.id===SESSION.id;});
+          if(_cc) _cc.lastLogin=Date.now();
+        }
+      },60000);
       initClient();return;
     }
     LOGIN_ATTEMPTS[u]=(LOGIN_ATTEMPTS[u]||0)+1;
@@ -5081,12 +5102,12 @@ function refreshCart(){
         '<button class="btn-main" style="background:linear-gradient(135deg,#7d5a00,#C9A84C);color:#000;margin-top:0;padding:11px 6px;font-size:12px;grid-column:1/-1;border:1px solid var(--gold)" onclick="openCouponPay('+tot+')">🎟️ Coupon avoir — '+fm(totalCouponVal2||activeCoupons2.reduce(function(s,c){return s+c.amount;},0))+'</button>':'';
       return couponBtn;
     })()+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:6px">'+
-    '<button class="pay-btn pay-cmi" onclick="openCMI('+tot+')" style="border-radius:10px;padding:12px 8px;font-size:12px"><span style="font-size:18px">💳</span><span>CMI / Carte</span></button>'+
-    '<button class="pay-btn pay-cash" onclick="openAltPay(\'cash\','+tot+')" style="border-radius:10px;padding:12px 8px;font-size:12px"><span style="font-size:18px">💵</span><span>Espèces</span></button>'+
-    '<button class="pay-btn pay-transfer" onclick="openAltPay(\'transfer\','+tot+')" style="border-radius:10px;padding:12px 8px;font-size:12px"><span style="font-size:18px">🏦</span><span>Virement</span></button>'+
-    '<button class="pay-btn pay-cheque" onclick="openAltPay(\'cheque\','+tot+')" style="border-radius:10px;padding:12px 8px;font-size:12px"><span style="font-size:18px">📋</span><span>Chèque</span></button>'+
-    '<button class="pay-btn pay-credit" onclick="openAltPay(\'credit\','+tot+')" style="border-radius:10px;padding:12px 8px;font-size:12px;grid-column:1/-1"><span style="font-size:18px">🔄</span><span>À crédit (solde client)</span></button>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">'+
+    '<button class="pay-btn pay-cash" onclick="openAltPay(\'cash\','+tot+')" style="grid-column:1"><span class="pi">💵</span><div class="pt"><span class="pt-main">Espèces</span><span class="pt-sub">Paiement comptant</span></div></button>'+
+    '<button class="pay-btn pay-cmi" onclick="openCMI('+tot+')" style="grid-column:2"><span class="pi">💳</span><div class="pt"><span class="pt-main">CMI / Carte</span><span class="pt-sub">Paiement électronique</span></div></button>'+
+    '<button class="pay-btn pay-transfer" onclick="openAltPay(\'transfer\','+tot+')"><span class="pi">🏦</span><div class="pt"><span class="pt-main">Virement</span><span class="pt-sub">Virement bancaire</span></div></button>'+
+    '<button class="pay-btn pay-cheque" onclick="openAltPay(\'cheque\','+tot+')"><span class="pi">📋</span><div class="pt"><span class="pt-main">Chèque</span><span class="pt-sub">Chèque bancaire</span></div></button>'+
+    '<button class="pay-btn pay-credit" onclick="openAltPay(\'credit\','+tot+')" style="grid-column:1/-1"><span class="pi">🔄</span><div class="pt"><span class="pt-main">À crédit</span><span class="pt-sub">Ajouter au solde client — règlement différé</span></div></button>'+
     '</div>'+
     '</div>';
 }
@@ -9484,23 +9505,33 @@ function ncPhUpdate(){
   if(!sel||!inp) return;
   var code = sel.value;
   var digits = parseInt(sel.options[sel.selectedIndex].getAttribute('data-len'))||9;
+  // Clean: only digits
   var raw = (inp.value||'').replace(/\D/g,'');
-  // Auto-remove leading 0 for international format
-  if(raw.startsWith('0') && code==='+212') raw = raw.substring(1);
-  // Show full number preview
-  var full = raw ? (code + ' ' + raw) : '';
-  if(preview) preview.textContent = full ? ('Numéro complet : ' + full) : '';
-  // Auto-limit length
-  if(raw.length > digits) { inp.value = raw.substring(0,digits); raw = inp.value; }
+  // Auto-strip leading 0 for Morocco
+  if(code==='+212' && raw.startsWith('0')) raw = raw.substring(1);
+  // Limit to max digits for this country
+  if(raw.length > digits) raw = raw.substring(0, digits);
+  inp.value = raw;
+  // Preview
+  if(preview){
+    if(!raw){
+      preview.textContent='';preview.style.color='var(--tx3)';
+    } else {
+      var err = ncValidatePhone(raw, code, digits);
+      preview.textContent = err ? '⚠️ ' + err : '✅ ' + code + ' ' + raw;
+      preview.style.color = err ? '#E05252' : '#52C97A';
+    }
+  }
 }
 
 function ncGetFullPhone(){
   var sel = document.getElementById('nc-ph-country');
   var inp = document.getElementById('nc-ph');
-  if(!sel||!inp) return inp ? inp.value : '';
-  var code = sel.value;
+  if(!inp) return '';
   var raw = (inp.value||'').replace(/\D/g,'');
-  if(raw.startsWith('0') && code==='+212') raw = raw.substring(1);
+  if(!sel) return raw;
+  var code = sel.value;
+  if(code==='+212' && raw.startsWith('0')) raw = raw.substring(1);
   return raw ? (code + raw) : '';
 }
 
@@ -9525,14 +9556,24 @@ function isSuperAdmin(){ return SESSION && SESSION.role === 'admin' && SESSION.u
 
 function renderAdmins(){
   var isSA = isSuperAdmin();
-  var html = '<tr style="background:rgba(201,168,76,0.06)">'+
-    '<td><strong>'+ADMIN.username+'</strong>&nbsp;'+
-    '<span style="background:linear-gradient(135deg,#C9A84C,#E8C670);color:#0A0A0A;font-size:9px;padding:2px 8px;border-radius:10px;font-weight:700;letter-spacing:.5px">SUPER ADMIN</span></td>'+
-    '<td>'+ADMIN.username+'</td>'+
-    '<td>'+(ADMIN.email||'—')+'</td>'+
+  // Super admin row
+  var html = '<tr style="background:rgba(201,168,76,0.07);border-left:3px solid var(--gold)">'+
+    '<td>'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+        '<div style="width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#C9A84C,#E8C670);display:flex;align-items:center;justify-content:center;font-size:16px">👑</div>'+
+        '<div>'+
+          '<div style="font-size:13px;font-weight:700">'+(ADMIN.name||ADMIN.username)+'</div>'+
+          '<span style="background:linear-gradient(135deg,#C9A84C,#E8C670);color:#0A0A0A;font-size:9px;padding:1px 7px;border-radius:8px;font-weight:700;letter-spacing:.5px">SUPER ADMIN</span>'+
+        '</div>'+
+      '</div>'+
+    '</td>'+
+    '<td style="font-family:monospace;font-size:12px">'+ADMIN.username+'</td>'+
+    '<td style="font-size:12px;color:var(--tx3)">'+(ADMIN.email||'—')+'</td>'+
     '<td>'+formatLastLogin(ADMIN.lastLogin)+'</td>'+
     '<td>'+
-    (isSA?'<button class="btn btn-b btn-sm" onclick="openEditSuperAdmin()">✏️ Modifier</button>':'<span style="color:var(--tx3);font-size:11px">Compte principal</span>')+
+      (isSA?
+        '<button class="btn btn-b btn-sm" onclick="openEditSuperAdmin()">✏️ Modifier</button>':
+        '<span style="color:var(--tx3);font-size:11px">—</span>')+
     '</td>'+
   '</tr>';
   html += ADMINS.map(function(a,ai){
@@ -9579,14 +9620,24 @@ function renderOnlineAccounts(){
   var box = document.getElementById('online-accounts-box');
   if(!box) return;
   var total = onlineClients.length + onlineAdmins.length + ((Date.now()-(ADMIN.lastLogin||0))<300000?1:0);
-  box.innerHTML = total > 0 ?
-    '<div style="background:rgba(82,201,122,0.08);border:1px solid rgba(82,201,122,0.3);border-radius:10px;padding:10px 14px;margin-bottom:14px">'+
-    '<div style="font-size:12px;font-weight:600;color:#52C97A;margin-bottom:6px">🟢 '+total+' compte(s) connecté(s) en ce moment</div>'+
-    [...(onlineAdmins.map(function(a){return'<span style="font-size:11px;background:rgba(74,158,232,0.1);padding:2px 8px;border-radius:10px;margin:2px;display:inline-block">⚙️ '+a.name+'</span>';})),
-    ...(onlineClients.map(function(c){return'<span style="font-size:11px;background:rgba(82,201,122,0.08);padding:2px 8px;border-radius:10px;margin:2px;display:inline-block">👤 '+c.name+'</span>';}))]
-    .join('')+
-    '</div>':
-    '<div style="font-size:11px;color:var(--tx3);margin-bottom:10px">Aucun autre compte connecté actuellement</div>';
+  var now = Date.now();
+  box.innerHTML = '<div style="background:var(--dk3);border:1px solid var(--bo);border-radius:12px;padding:14px;margin-bottom:16px">'+
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">'+
+      '<div style="font-size:12px;font-weight:700;color:var(--gold);text-transform:uppercase;letter-spacing:1px">🔴 Comptes actifs en temps réel</div>'+
+      '<span style="font-size:11px;color:var(--tx3)">Mis à jour: '+new Date().toLocaleTimeString('fr-FR')+'</span>'+
+    '</div>'+
+    (total>0?
+      '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
+      [
+        // Show super admin if online
+        ((now-(ADMIN.lastLogin||0))<300000?'<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,0.12);border:1px solid rgba(201,168,76,0.3);padding:4px 10px;border-radius:20px;font-size:11px;font-weight:600"><span style=\"width:7px;height:7px;background:#52C97A;border-radius:50%;display:inline-block\"></span>👑 '+(ADMIN.name||ADMIN.username)+'</span>':''),
+        ...onlineAdmins.map(function(a){return'<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(74,158,232,0.1);border:1px solid rgba(74,158,232,0.3);padding:4px 10px;border-radius:20px;font-size:11px"><span style=\"width:7px;height:7px;background:#52C97A;border-radius:50%;display:inline-block\"></span>⚙️ '+a.name+'</span>';}),
+        ...onlineClients.map(function(c){return'<span style="display:inline-flex;align-items:center;gap:5px;background:rgba(82,201,122,0.08);border:1px solid rgba(82,201,122,0.2);padding:4px 10px;border-radius:20px;font-size:11px"><span style=\"width:7px;height:7px;background:#52C97A;border-radius:50%;display:inline-block\"></span>👤 '+c.name+'</span>';})
+      ].filter(Boolean).join('')+
+      '</div>':
+      '<div style="font-size:12px;color:var(--tx3);text-align:center;padding:6px">Aucun autre compte connecté</div>'
+    )+
+    '</div>';
 }
 
 function openEditSuperAdmin(){
@@ -9745,20 +9796,8 @@ applySiteSettings();
 // ════════════════════════════════════════════════════════════════
 // Record login time on session start
 function recordLogin(userId, role){
-  var ts = Date.now();
-  if(role === 'admin'){
-    ADMIN.lastLogin = ts;
-    try{localStorage.setItem('al_admin',JSON.stringify(ADMIN));}catch(e){}
-  } else if(role === 'client'){
-    var cl = CLIENTS.find(function(c){return c.id===userId;});
-    if(cl){ cl.lastLogin = ts; try{localStorage.setItem('al_clients',JSON.stringify(CLIENTS));}catch(e){} }
-  }
-  // Periodic heartbeat
-  if(!window._loginHB) window._loginHB = setInterval(function(){
-    if(SESSION) recordLogin(SESSION.id, SESSION.role);
-  }, 60000);
-  // Notify super admin via Firebase (if available)
-  if(window.saveToCloud) saveToCloud();
+  // This function is now handled directly in doLogin
+  // Kept for compatibility
 }
 
 // Hook into existing login
