@@ -652,32 +652,27 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
 #pr-quick-stats > div:hover{border-color:var(--gold);transform:translateY(-1px)}
 
 /* ══ BOUTONS DE PAIEMENT — Design moderne ══ */
+/* ══ PAYMENT BUTTONS — Modern Card Style ══ */
+.pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
 .pay-btn{
-  display:flex;align-items:center;justify-content:center;gap:10px;
-  padding:14px 12px;border:none;border-radius:14px;
-  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:700;
-  cursor:pointer;transition:.18s;width:100%;
-  letter-spacing:.3px;line-height:1;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:5px;padding:14px 10px;border:none;border-radius:14px;
+  font-family:'DM Sans',sans-serif;cursor:pointer;transition:.18s;width:100%;
+  min-height:80px;position:relative;overflow:hidden;
 }
-.pay-btn:hover{filter:brightness(1.1);transform:translateY(-1px)}
-.pay-btn:active{transform:scale(.97);filter:brightness(.95)}
-.pay-btn .pi{font-size:22px;line-height:1;flex-shrink:0}
-.pay-btn .pt{display:flex;flex-direction:column;align-items:flex-start}
-.pay-btn .pt-main{font-size:13px;font-weight:700}
-.pay-btn .pt-sub{font-size:10px;opacity:.8;margin-top:1px;font-weight:400}
-
-/* Espèces — vert */
-.pay-cash{background:linear-gradient(135deg,#1b5e35,#2e9d5a);color:#fff;box-shadow:0 4px 14px rgba(46,157,90,.35)}
-/* Virement — bleu */
-.pay-transfer{background:linear-gradient(135deg,#1a3a7a,#2e6bc8);color:#fff;box-shadow:0 4px 14px rgba(46,107,200,.35)}
-/* Chèque — ardoise */
-.pay-cheque{background:linear-gradient(135deg,#2d2d3d,#4a4a6a);color:#fff;box-shadow:0 4px 14px rgba(74,74,106,.35)}
-/* CMI/Carte — violet */
-.pay-cmi{background:linear-gradient(135deg,#4a1060,#8b28b8);color:#fff;box-shadow:0 4px 14px rgba(139,40,184,.35)}
-/* Crédit — orange */
-.pay-credit{background:linear-gradient(135deg,#6a2e00,#c06000);color:#fff;box-shadow:0 4px 14px rgba(192,96,0,.35)}
-/* Coupon — or */
-.pay-coupon{background:linear-gradient(135deg,#6a4800,#c9a84c);color:#0A0A0A;box-shadow:0 4px 14px rgba(201,168,76,.35)}
+.pay-btn::before{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:.15s}
+.pay-btn:hover::before{background:rgba(255,255,255,0.1)}
+.pay-btn:active{transform:scale(.96)}
+.pay-btn .pay-icon{font-size:26px;line-height:1;display:block}
+.pay-btn .pay-label{font-size:12px;font-weight:700;color:inherit;text-align:center;line-height:1.2}
+.pay-btn .pay-desc{font-size:10px;opacity:0.75;text-align:center;margin-top:1px}
+/* Couleurs */
+.pay-cash{background:linear-gradient(145deg,#14532d,#22c55e);color:#fff;box-shadow:0 4px 16px rgba(34,197,94,.3)}
+.pay-transfer{background:linear-gradient(145deg,#1e3a8a,#3b82f6);color:#fff;box-shadow:0 4px 16px rgba(59,130,246,.3)}
+.pay-cheque{background:linear-gradient(145deg,#374151,#6b7280);color:#fff;box-shadow:0 4px 16px rgba(107,114,128,.3)}
+.pay-cmi{background:linear-gradient(145deg,#581c87,#a855f7);color:#fff;box-shadow:0 4px 16px rgba(168,85,247,.3)}
+.pay-credit{background:linear-gradient(145deg,#7c2d12,#f97316);color:#fff;box-shadow:0 4px 16px rgba(249,115,22,.3)}
+.pay-coupon{background:linear-gradient(145deg,#78350f,#f59e0b);color:#0A0A0A;box-shadow:0 4px 16px rgba(245,158,11,.3)}
 
 /* ══ CLIENT APP — Layout responsive complet ══ */
 /* Base mobile (< 480px) */
@@ -3579,26 +3574,37 @@ function confirmReturn(id){
   var paidPartial = payStatus==='partial';
 
   if(paidByCashOrCheque){
-    // Réduire d'abord le solde crédit existant, puis coupon pour le reste
-    var existingBalance=cr.balance||0;
-    if(existingBalance>0){
-      var reduction=Math.min(existingBalance,retTotal);
-      cr.balance=Math.max(0,existingBalance-reduction);
-      creditReduced=reduction;
-      cr.transactions.push({date:today,type:'return_credit_reduce',amount:reduction,note:'Retour cmd '+id+' — solde crédit réduit de '+fm(reduction)});
-      var restAvoir=retTotal-reduction;
-      if(restAvoir>0){
-        var couponCode='AV-'+id+'-'+Math.random().toString(36).substr(2,4).toUpperCase();
-        cr.coupons.push({code:couponCode,amount:restAvoir,originalAmount:restAvoir,date:today,orderId:id,used:false,cancelled:false,type:'avoir',reason:'Avoir retour commande '+id+' ('+o.payMethod+')'});
-        couponGenerated=restAvoir;
-        cr.transactions.push({date:today,type:'coupon',amount:restAvoir,note:'Coupon avoir '+couponCode+' — '+fm(restAvoir)});
-      }
-    } else {
-      // Pas de solde crédit → tout en coupon
-      var couponCode2='AV-'+id+'-'+Math.random().toString(36).substr(2,4).toUpperCase();
-      cr.coupons.push({code:couponCode2,amount:retTotal,originalAmount:retTotal,date:today,orderId:id,used:false,cancelled:false,type:'avoir',reason:'Avoir retour commande '+id+' ('+o.payMethod+')'});
-      couponGenerated=retTotal;
-      cr.transactions.push({date:today,type:'coupon',amount:retTotal,note:'Coupon avoir '+couponCode2+' — '+fm(retTotal)});
+    // RÈGLE: 1) Réduire d'abord le solde crédit (si le client a un crédit existant)
+    //         2) Le montant restant après réduction du crédit → coupon avoir
+    var existingBalance = cr.balance||0;
+    var remainingForCoupon = retTotal;
+
+    if(existingBalance > 0){
+      // Réduire le crédit client en priorité
+      var creditReduction = Math.min(existingBalance, retTotal);
+      cr.balance = Math.max(0, existingBalance - creditReduction);
+      creditReduced = creditReduction;
+      remainingForCoupon = retTotal - creditReduction;
+      cr.transactions.push({
+        date:today, type:'return_credit_reduce', amount:creditReduction,
+        note:'Retour cmd '+id+' — crédit client réduit de '+fm(creditReduction)
+      });
+    }
+
+    // Coupon seulement pour ce qui reste après réduction du crédit
+    if(remainingForCoupon > 0.01){
+      var couponCode = 'AV-'+id+'-'+Math.random().toString(36).substr(2,4).toUpperCase();
+      cr.coupons.push({
+        code:couponCode, amount:remainingForCoupon, originalAmount:remainingForCoupon,
+        date:today, orderId:id, used:false, cancelled:false, type:'avoir',
+        reason:'Avoir retour commande '+id+' — '+fm(remainingForCoupon)+
+          (creditReduced>0?' (crédit réduit: '+fm(creditReduced)+')':'')
+      });
+      couponGenerated = remainingForCoupon;
+      cr.transactions.push({
+        date:today, type:'coupon', amount:remainingForCoupon,
+        note:'Coupon avoir '+couponCode+' — '+fm(remainingForCoupon)
+      });
     }
   } else if(paidByCredit){
     // Commande à crédit → réduire le solde
@@ -5102,13 +5108,24 @@ function refreshCart(){
         '<button class="btn-main" style="background:linear-gradient(135deg,#7d5a00,#C9A84C);color:#000;margin-top:0;padding:11px 6px;font-size:12px;grid-column:1/-1;border:1px solid var(--gold)" onclick="openCouponPay('+tot+')">🎟️ Coupon avoir — '+fm(totalCouponVal2||activeCoupons2.reduce(function(s,c){return s+c.amount;},0))+'</button>':'';
       return couponBtn;
     })()+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">'+
-    '<button class="pay-btn pay-cash" onclick="openAltPay(\'cash\','+tot+')" style="grid-column:1"><span class="pi">💵</span><div class="pt"><span class="pt-main">Espèces</span><span class="pt-sub">Paiement comptant</span></div></button>'+
-    '<button class="pay-btn pay-cmi" onclick="openCMI('+tot+')" style="grid-column:2"><span class="pi">💳</span><div class="pt"><span class="pt-main">CMI / Carte</span><span class="pt-sub">Paiement électronique</span></div></button>'+
-    '<button class="pay-btn pay-transfer" onclick="openAltPay(\'transfer\','+tot+')"><span class="pi">🏦</span><div class="pt"><span class="pt-main">Virement</span><span class="pt-sub">Virement bancaire</span></div></button>'+
-    '<button class="pay-btn pay-cheque" onclick="openAltPay(\'cheque\','+tot+')"><span class="pi">📋</span><div class="pt"><span class="pt-main">Chèque</span><span class="pt-sub">Chèque bancaire</span></div></button>'+
-    '<button class="pay-btn pay-credit" onclick="openAltPay(\'credit\','+tot+')" style="grid-column:1/-1"><span class="pi">🔄</span><div class="pt"><span class="pt-main">À crédit</span><span class="pt-sub">Ajouter au solde client — règlement différé</span></div></button>'+
+    '<div class="pay-grid">'+
+    '<button class="pay-btn pay-cash" onclick="openAltPay(\'cash\','+tot+')" title="Paiement en espèces">'+
+      '<span class="pay-icon">💵</span><span class="pay-label">Espèces</span><span class="pay-desc">Comptant</span>'+
+    '</button>'+
+    '<button class="pay-btn pay-cmi" onclick="openCMI('+tot+')" title="Paiement par carte">'+
+      '<span class="pay-icon">💳</span><span class="pay-label">CMI / Carte</span><span class="pay-desc">Paiement électronique</span>'+
+    '</button>'+
+    '<button class="pay-btn pay-transfer" onclick="openAltPay(\'transfer\','+tot+')" title="Virement bancaire">'+
+      '<span class="pay-icon">🏦</span><span class="pay-label">Virement</span><span class="pay-desc">Bancaire</span>'+
+    '</button>'+
+    '<button class="pay-btn pay-cheque" onclick="openAltPay(\'cheque\','+tot+')" title="Paiement par chèque">'+
+      '<span class="pay-icon">📋</span><span class="pay-label">Chèque</span><span class="pay-desc">Bancaire</span>'+
+    '</button>'+
     '</div>'+
+    '<button class="pay-btn pay-credit" style="margin-top:8px;min-height:54px;flex-direction:row;gap:10px;width:100%" onclick="openAltPay(\'credit\','+tot+')" title="Paiement à crédit">'+
+      '<span class="pay-icon" style="font-size:22px">🔄</span>'+
+      '<div style="text-align:left"><div class="pay-label" style="font-size:13px">À crédit</div><div class="pay-desc" style="opacity:.75">Ajouter au solde client — règlement différé</div></div>'+
+    '</button>'+
     '</div>';
 }
 
@@ -5404,6 +5421,76 @@ function openAltPay(mode,total){
   document.getElementById('cart-ov').classList.remove('on');
   openMd('pay-alt');
 }
+// ── Payment choice modal — show when amount is insufficient ──────
+function openPaymentChoice(total){
+  // Close current modal, reopen cart payment selection
+  closeAllMd();
+  // Reopen the cart panel
+  document.getElementById('cart-pn').classList.add('on');
+  document.getElementById('cart-ov').classList.add('on');
+  toast('Choisissez un autre mode de paiement', false);
+}
+
+// ── Partial payment — let user choose how much to pay now ─────────
+function openPartialPayment(total, mode){
+  var cr = SESSION ? getClientCredit(SESSION.id) : null;
+  var availCredit = cr ? Math.max(0,(cr.limit||0)-(cr.balance||0)) : 0;
+  var html =
+    '<h3 style="margin-bottom:14px">💳 Paiement partiel</h3>'+
+    '<div style="background:var(--dk4);border-radius:10px;padding:12px;margin-bottom:14px;font-size:13px">'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:6px">'+
+        '<span>Total commande :</span><strong style="color:var(--gold)">'+fm(total)+'</strong>'+
+      '</div>'+
+      (availCredit>0?'<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--tx3)">'+
+        '<span>Crédit disponible :</span><strong style="color:var(--blu)">'+fm(availCredit)+'</strong>'+
+      '</div>':'')+
+    '</div>'+
+    '<div class="fg"><label>Montant à payer maintenant ('+mode+')</label>'+
+      '<input type="number" id="partial-amount" value="'+total+'" min="1" max="'+total+'" step="0.01" inputmode="decimal" style="font-size:16px" oninput="updatePartialPreview('+total+')">'+
+    '</div>'+
+    '<div id="partial-preview" style="background:var(--dk4);border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px"></div>'+
+    '<div class="fg"><label>Reste à payer par</label>'+
+      '<select id="partial-rest-mode" style="width:100%">'+
+        '<option value="credit">🔄 À crédit (si plafond disponible)</option>'+
+        '<option value="cash">💵 Espèces (à remettre plus tard)</option>'+
+        '<option value="coupon">🎟️ Coupon avoir</option>'+
+      '</select>'+
+    '</div>'+
+    '<button class="btn btn-g" style="width:100%;padding:13px;font-size:14px" onclick="confirmPartialPayment(&quot;'+mode+'&quot;,'+total+')">✅ Confirmer le paiement partiel</button>';
+  document.getElementById('ord-content').innerHTML = html;
+  openMd('ord');
+  updatePartialPreview(total);
+}
+
+function updatePartialPreview(total){
+  var inp = document.getElementById('partial-amount');
+  var prev = document.getElementById('partial-preview');
+  if(!inp||!prev) return;
+  var amt = parseFloat(inp.value)||0;
+  var rest = total - amt;
+  prev.innerHTML =
+    '<div style="display:flex;justify-content:space-between;margin-bottom:5px">'+
+      '<span>Paiement immédiat :</span><strong style="color:var(--grn)">'+fm(amt)+'</strong>'+
+    '</div>'+
+    (rest>0?'<div style="display:flex;justify-content:space-between">'+
+      '<span>Reste :</span><strong style="color:var(--ora)">'+fm(rest)+'</strong>'+
+    '</div>':'<div style="color:var(--grn);font-weight:600">✅ Montant total couvert</div>');
+}
+
+function confirmPartialPayment(mode, total){
+  var amt = parseFloat((document.getElementById('partial-amount')||{}).value)||0;
+  var restMode = (document.getElementById('partial-rest-mode')||{}).value||'credit';
+  if(amt<=0||amt>total){toast('⚠️ Montant invalide',true);return;}
+  var rest = total - amt;
+  _altPayMode = mode;
+  _altPendingOrder = _altPendingOrder || {total:total};
+  _altPendingOrder._partialAmount = amt;
+  _altPendingOrder._partialRest = rest;
+  _altPendingOrder._partialRestMode = restMode;
+  closeAllMd();
+  processAltPay();
+}
+
 function calcChange(){
   var total=_altPendingOrder?_altPendingOrder.total:0;
   var cashEl=document.getElementById('pay-cash-given');
@@ -7567,10 +7654,32 @@ processAltPay = function(){
 
   // Vérifier plafond crédit si reste à crédit
   if(reste > 0){
-    var newBal = (cr.balance || 0) + reste;
-    if(cr.limit > 0 && newBal > cr.limit){
-      toast('❌ Plafond crédit dépassé ! Vous ne pouvez pas mettre '+fm(reste)+' en crédit. Plafond restant : '+fm(Math.max(0, cr.limit - (cr.balance||0))), true);
-      return;
+    var creditDispo = cr.limit > 0 ? Math.max(0, cr.limit - (cr.balance||0)) : Infinity;
+    if(cr.limit > 0 && reste > creditDispo){
+      if(creditDispo <= 0){
+        // Aucun crédit disponible — proposer alternatives
+        var msg = '🔒 Plafond de crédit atteint !\n\nSolde actuel : '+fm(cr.balance||0)+'\nPlafond : '+fm(cr.limit)+'\n\nVoulez-vous choisir un autre mode de paiement pour les '+fm(reste)+' restants ?';
+        if(confirm(msg)){
+          // Save partial payment info and redirect
+          _altPendingOrder._pendingReste = reste;
+          _altPendingOrder._pendingPaid = paidAmount;
+          closeAllMd();
+          setTimeout(function(){
+            // Re-open payment panel to choose another mode for the rest
+            toast('Choisissez un mode de paiement pour les '+fm(reste)+' restants', false);
+            document.getElementById('cart-pn').classList.add('on');
+            document.getElementById('cart-ov').classList.add('on');
+          }, 300);
+        }
+        return;
+      } else {
+        // Crédit partiel possible
+        var useCredit = creditDispo;
+        var msgP = '⚠️ Crédit insuffisant pour couvrir '+fm(reste)+'.\n\nCrédit disponible : '+fm(useCredit)+'\nReste non couvert : '+fm(reste - useCredit)+'\n\nPayer '+fm(useCredit)+' à crédit et choisir un autre mode pour le reste ('+fm(reste-useCredit)+') ?';
+        if(!confirm(msgP)){ return; }
+        reste = useCredit; // Only add available credit
+        paidAmount = total - reste;
+      }
     }
   }
 
@@ -9602,15 +9711,19 @@ function renderAdmins(){
 }
 
 function formatLastLogin(ts){
-  if(!ts) return '<span style="color:var(--tx3);font-size:11px">Jamais</span>';
-  var d = new Date(ts);
+  if(!ts) return '<span style="color:var(--tx3);font-size:11px">—</span>';
   var diff = Date.now() - ts;
   var mins = Math.floor(diff/60000);
-  var dot = '<span style="width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;background:'+(mins<5?'#52C97A':mins<60?'#E8834A':'#6B6560')+'"></span>';
-  if(mins < 1) return dot+'<span style="color:#52C97A;font-size:11px;font-weight:600">En ligne</span>';
-  if(mins < 60) return dot+'<span style="font-size:11px">Il y a '+mins+'min</span>';
-  if(mins < 1440) return dot+'<span style="font-size:11px">Il y a '+Math.floor(mins/60)+'h</span>';
-  return dot+'<span style="font-size:11px">'+d.toLocaleDateString('fr-FR')+'</span>';
+  var online = mins < 5; // considéré en ligne si heartbeat < 5min
+  var recent = mins < 60;
+  var dotColor = online ? '#52C97A' : recent ? '#E8834A' : '#555';
+  var dot = '<span style="width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;flex-shrink:0;background:'+dotColor+'"></span>';
+  var label;
+  if(online) label = '<strong style="color:#52C97A">🟢 En ligne</strong>';
+  else if(mins < 60) label = '<span style="color:#E8834A">🟡 Il y a '+mins+'min</span>';
+  else if(mins < 1440) label = '<span style="color:var(--tx3)">⚫ Il y a '+Math.floor(mins/60)+'h</span>';
+  else label = '<span style="color:var(--tx3)">⚫ '+new Date(ts).toLocaleDateString('fr-FR')+'</span>';
+  return '<div style="display:flex;align-items:center">'+dot+label+'</div>';
 }
 
 function renderOnlineAccounts(){
@@ -9639,6 +9752,18 @@ function renderOnlineAccounts(){
     )+
     '</div>';
 }
+
+// Auto-refresh online status every 30 seconds
+(function(){
+  setInterval(function(){
+    var sec=document.getElementById('sec-admins');
+    if(sec&&sec.classList&&sec.classList.contains('on')&&typeof renderAdmins==='function'){
+      renderAdmins(); // refreshes lastLogin indicators
+    }
+  }, 30000);
+})();
+
+function isAccountOnline(ts){ return ts && (Date.now()-ts)<300000; }
 
 function openEditSuperAdmin(){
   var html = '<h3 style="margin-bottom:14px">✏️ Modifier le Super Admin</h3>'+
