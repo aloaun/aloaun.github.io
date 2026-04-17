@@ -18,7 +18,7 @@
 @keyframes float-in{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:translateY(0)}}
 @keyframes logo-glow{0%,100%{text-shadow:0 0 20px rgba(201,168,76,.3)}50%{text-shadow:0 0 40px rgba(201,168,76,.6),0 0 60px rgba(201,168,76,.2)}}
 .logo-big h1{animation:logo-glow 3s ease-in-out infinite}
-.card{animation:float-in .5s ease both .1s;opacity:0}
+.card{animation:float-in .5s ease forwards;}
 </style>
 <!-- Resend via Cloudflare Worker -->
 <script>
@@ -654,25 +654,85 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
 /* ══ BOUTONS DE PAIEMENT — Design moderne ══ */
 /* ══ PAYMENT BUTTONS — Modern Card Style ══ */
 .pay-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px}
+/* ══ PAYMENT BUTTONS — Design premium inspiré de l'image ══ */
+.pay-grid-top{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
+.pay-grid-bottom{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .pay-btn{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:5px;padding:14px 10px;border:none;border-radius:14px;
-  font-family:'DM Sans',sans-serif;cursor:pointer;transition:.18s;width:100%;
-  min-height:80px;position:relative;overflow:hidden;
+  display:flex;align-items:center;justify-content:center;
+  gap:8px;padding:13px 10px;border:none;border-radius:14px;
+  font-family:'DM Sans',sans-serif;cursor:pointer;transition:.2s cubic-bezier(.34,1.56,.64,1);
+  width:100%;position:relative;overflow:hidden;
+  font-size:13px;font-weight:700;letter-spacing:.2px;
+  box-shadow:0 4px 16px rgba(0,0,0,.3);
 }
-.pay-btn::before{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:.15s}
-.pay-btn:hover::before{background:rgba(255,255,255,0.1)}
-.pay-btn:active{transform:scale(.96)}
-.pay-btn .pay-icon{font-size:26px;line-height:1;display:block}
-.pay-btn .pay-label{font-size:12px;font-weight:700;color:inherit;text-align:center;line-height:1.2}
-.pay-btn .pay-desc{font-size:10px;opacity:0.75;text-align:center;margin-top:1px}
-/* Couleurs */
-.pay-cash{background:linear-gradient(145deg,#14532d,#22c55e);color:#fff;box-shadow:0 4px 16px rgba(34,197,94,.3)}
-.pay-transfer{background:linear-gradient(145deg,#1e3a8a,#3b82f6);color:#fff;box-shadow:0 4px 16px rgba(59,130,246,.3)}
-.pay-cheque{background:linear-gradient(145deg,#374151,#6b7280);color:#fff;box-shadow:0 4px 16px rgba(107,114,128,.3)}
-.pay-cmi{background:linear-gradient(145deg,#581c87,#a855f7);color:#fff;box-shadow:0 4px 16px rgba(168,85,247,.3)}
-.pay-credit{background:linear-gradient(145deg,#7c2d12,#f97316);color:#fff;box-shadow:0 4px 16px rgba(249,115,22,.3)}
-.pay-coupon{background:linear-gradient(145deg,#78350f,#f59e0b);color:#0A0A0A;box-shadow:0 4px 16px rgba(245,158,11,.3)}
+.pay-btn::after{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(255,255,255,.15),transparent 60%);
+  pointer-events:none;border-radius:inherit;
+}
+.pay-btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 24px rgba(0,0,0,.4);}
+.pay-btn:active{transform:scale(.96);}
+.pay-btn .pay-icon{font-size:20px;line-height:1;flex-shrink:0;}
+.pay-btn .pay-label{font-size:12px;font-weight:700;color:inherit;text-align:center;}
+.pay-btn .pay-desc{font-size:9px;opacity:.75;text-align:center;}
+
+/* CMI — Violet/Purple */
+.pay-cmi{
+  background:linear-gradient(145deg,#4a1080,#8b2fc9,#a855f7);
+  color:#fff;border:1px solid rgba(168,85,247,.4);
+  box-shadow:0 4px 18px rgba(168,85,247,.35);
+}
+.pay-cmi:hover{box-shadow:0 8px 28px rgba(168,85,247,.5);}
+
+/* Espèces — Vert émeraude */
+.pay-cash{
+  background:linear-gradient(145deg,#0a4d20,#16a34a,#22c55e);
+  color:#fff;border:1px solid rgba(34,197,94,.4);
+  box-shadow:0 4px 18px rgba(34,197,94,.3);
+}
+.pay-cash:hover{box-shadow:0 8px 28px rgba(34,197,94,.45);}
+
+/* Virement — Bleu saphir */
+.pay-transfer{
+  background:linear-gradient(145deg,#0f2d7a,#1d4ed8,#3b82f6);
+  color:#fff;border:1px solid rgba(59,130,246,.4);
+  box-shadow:0 4px 18px rgba(59,130,246,.3);
+}
+.pay-transfer:hover{box-shadow:0 8px 28px rgba(59,130,246,.45);}
+
+/* Chèque — Gris ardoise */
+.pay-cheque{
+  background:linear-gradient(145deg,#1f2937,#374151,#6b7280);
+  color:#fff;border:1px solid rgba(107,114,128,.4);
+  box-shadow:0 4px 18px rgba(107,114,128,.25);
+}
+.pay-cheque:hover{box-shadow:0 8px 28px rgba(107,114,128,.4);}
+
+/* Crédit — Orange doré (pleine largeur) */
+.pay-credit{
+  background:linear-gradient(145deg,#92400e,#d97706,#f59e0b);
+  color:#0A0A0A;border:1px solid rgba(245,158,11,.4);
+  box-shadow:0 4px 18px rgba(245,158,11,.3);
+  width:100%;
+}
+.pay-credit:hover{box-shadow:0 8px 28px rgba(245,158,11,.45);}
+
+/* Coupon — Or ambré */
+.pay-coupon{
+  background:linear-gradient(145deg,#78350f,#b45309,#C9A84C);
+  color:#0A0A0A;border:1px solid rgba(201,168,76,.5);
+  box-shadow:0 4px 18px rgba(201,168,76,.3);
+}
+/* Fallback pay grid for existing pay-grid selector */
+.pay-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-top:7px}
+@media(max-width:380px){
+  .pay-grid-top{grid-template-columns:1fr 1fr 1fr}
+  .pay-grid-bottom{grid-template-columns:1fr 1fr}
+}
+/* Login notification animation */
+@keyframes notif-slide{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
+/* Online pulse */
+@keyframes online-pulse{0%,100%{box-shadow:0 0 4px #52C97A}50%{box-shadow:0 0 12px #52C97A,0 0 24px rgba(82,201,122,.4)}}
 
 /* ══ CLIENT APP — Layout responsive complet ══ */
 /* Base mobile (< 480px) */
@@ -1070,7 +1130,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
     <div class="ni" id="ni-scanner" onclick="goSec('scanner',this)"><span>📷</span>Scanner code-barres</div>
     <div class="ni" id="ni-settings" onclick="openSiteSettings()" style="margin-bottom:2px"><span>⚙️</span>Paramètres du site</div>
     <div class="ni" id="ni-company" onclick="goSec('company',this)"><span>🏢</span>Mon entreprise</div>
-    <div class="ni" id="ni-admins" onclick="goSec('admins',this)"><span>👤</span>Admins</div>
+    <div class="ni" id="ni-admins" onclick="goSec('admins',this)"><span>👤</span>Admins<span id="live-conn-badge" style="margin-left:auto;background:var(--grn);color:#000;border-radius:50%;font-size:9px;padding:1px 5px;display:none;font-weight:700"></span></div>
    </nav>
    <div class="side-foot">
     <div style="display:flex;align-items:center;gap:8px;cursor:pointer" onclick="openAdminProfileMenu()">
@@ -1767,6 +1827,11 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
        <h3 style="font-size:13px;color:var(--tx2);text-transform:uppercase;letter-spacing:1px">👤 Gestion des administrateurs</h3>
        <button class="btn btn-g" onclick="openMd('add-admin')">+ Ajouter un admin</button>
       </div>
+      <!-- Comptes connectés en temps réel -->
+      <div id="live-connections-panel" style="background:var(--dk3);border:1px solid var(--bo);border-radius:14px;padding:16px;margin-bottom:16px">
+       <div style="text-align:center;padding:10px;color:var(--tx3);font-size:12px">Chargement...</div>
+      </div>
+
       <div class="tc">
        <table><thead><tr><th>Nom</th><th>Identifiant</th><th>Email</th><th>Dernière connexion</th><th>Actions</th></tr></thead>
        <tbody id="admins-tb"></tbody></table>
@@ -1831,19 +1896,26 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
 
   <div class="fg">
    <label>Téléphone <span style="color:var(--red)">★</span></label>
-   <div style="display:flex;border:1px solid var(--bo);border-radius:8px;overflow:hidden;background:var(--dk4)">
-    <select id="nc-ph-country" onchange="ncPhUpdate()" style="background:transparent;border:none;border-right:1px solid var(--bo);padding:10px 8px;color:var(--tx);font-size:13px;outline:none;cursor:pointer;min-width:110px">
-     <option value="+212" data-len="9" selected>🇲🇦 +212</option>
-     <option value="+213" data-len="9">🇩🇿 +213</option>
-     <option value="+216" data-len="8">🇹🇳 +216</option>
-     <option value="+33" data-len="9">🇫🇷 +33</option>
-     <option value="+34" data-len="9">🇪🇸 +34</option>
-     <option value="+44" data-len="10">🇬🇧 +44</option>
-     <option value="+1" data-len="10">🇺🇸 +1</option>
-     <option value="+971" data-len="9">🇦🇪 +971</option>
-     <option value="+966" data-len="9">🇸🇦 +966</option>
+   <div style="display:flex;border:1.5px solid var(--bo);border-radius:10px;overflow:hidden;background:var(--dk4);transition:.2s" onfocusin="this.style.borderColor='rgba(201,168,76,.5)'" onfocusout="this.style.borderColor='var(--bo)'">
+    <!-- Petit sélecteur pays -->
+    <select id="nc-ph-country" onchange="ncPhUpdate()" title="Indicatif pays"
+     style="background:rgba(201,168,76,0.07);border:none;border-right:1px solid var(--bo);padding:10px 6px;color:var(--gold);font-size:12px;font-weight:700;outline:none;cursor:pointer;min-width:0;width:78px;flex-shrink:0">
+     <option value="+212" data-len="9" data-pattern="[567]" selected>🇲🇦 +212</option>
+     <option value="+213" data-len="9" data-pattern="[567]">🇩🇿 +213</option>
+     <option value="+216" data-len="8" data-pattern="[2-9]">🇹🇳 +216</option>
+     <option value="+33" data-len="9" data-pattern="[1-9]">🇫🇷 +33</option>
+     <option value="+34" data-len="9" data-pattern="[6789]">🇪🇸 +34</option>
+     <option value="+44" data-len="10" data-pattern="[1-9]">🇬🇧 +44</option>
+     <option value="+1" data-len="10" data-pattern="[2-9]">🇺🇸 +1</option>
+     <option value="+971" data-len="9" data-pattern="[5]">🇦🇪 +971</option>
+     <option value="+966" data-len="9" data-pattern="[5]">🇸🇦 +966</option>
+     <option value="+32" data-len="9" data-pattern="[1-9]">🇧🇪 +32</option>
+     <option value="+49" data-len="10" data-pattern="[1-9]">🇩🇪 +49</option>
     </select>
-    <input id="nc-ph" inputmode="numeric" placeholder="6 61 23 45 67" autocomplete="off" oninput="ncPhUpdate()" style="flex:1;border:none;background:transparent;padding:10px 12px;color:var(--tx);font-size:13px;outline:none;min-width:0">
+    <!-- Grand champ numéro -->
+    <input id="nc-ph" inputmode="numeric" placeholder="6 12 34 56 78" autocomplete="off"
+     oninput="ncPhUpdate()" maxlength="15"
+     style="flex:1;border:none;background:transparent;padding:11px 14px;color:var(--tx);font-size:16px;font-weight:600;outline:none;min-width:0;letter-spacing:.5px;font-family:'DM Sans',monospace">
    </div>
    <div id="nc-ph-preview" style="font-size:11px;color:var(--grn);margin-top:4px;min-height:16px;font-weight:600"></div>
    <span id="nc-ph-err" class="ferr" style="display:none"></span>
@@ -1915,7 +1987,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
    <img id="nc-photo-prev" class="photo-preview" src="" alt="" style="margin-top:8px">
   </div>
 
-  <button id="nc-submit-btn" style="width:100%;padding:14px;background:linear-gradient(135deg,#52C97A,#3ab368);color:#0A0A0A;border:none;border-radius:10px;font-size:14px;font-weight:700;letter-spacing:.3px;cursor:pointer;transition:.2s;box-shadow:0 4px 18px rgba(82,201,122,0.2)" onclick="saveClient()">✅ Créer le client</button>
+  <button id="nc-submit-btn" style="width:100%;padding:14px;background:linear-gradient(135deg,#52C97A,#3ab368);color:#0A0A0A;border:none;border-radius:10px;font-size:14px;font-weight:700;letter-spacing:.3px;cursor:pointer;transition:.2s;box-shadow:0 4px 18px rgba(82,201,122,0.2);position:relative;overflow:hidden" onclick="saveClient()" title="Cliquez pour vérifier et créer le client">✅ Créer le client</button>
  </div>
 
  <!-- Edit Client -->
@@ -2733,7 +2805,9 @@ function doLogin(){
     if(isAdminTab){
       var aFound=null;
       if(ADMIN.username&&u===ADMIN.username&&p===ADMIN.password) aFound={name:ADMIN.name||'Administrateur'};
-      if(!aFound){for(var ai=0;ai<ADMINS.length;ai++){if(ADMINS[ai].username===u&&ADMINS[ai].password===p){aFound=ADMINS[ai];break;}}}
+      if(!aFound){for(var ai=0;ai<ADMINS.length;ai++){if(ADMINS[ai].username===u&&ADMINS[ai].password===p&&!ADMINS[ai].disabled){aFound=ADMINS[ai];break;}}}
+      // Block disabled admin
+      if(!aFound){var disabledAdmin=ADMINS.find(function(a){return a.username===u&&a.password===p&&a.disabled;});if(disabledAdmin){err.innerHTML='⛔ Compte désactivé par le Super Admin. Contactez l\'administrateur.';err.style.display='block';if(btn){btn.disabled=false;btn.textContent='Se connecter →';}return;}}
       if(aFound){
         delete LOGIN_ATTEMPTS[u];
         SESSION={role:'admin',adminName:aFound.name||'Administrateur'};
@@ -2755,6 +2829,21 @@ function doLogin(){
         // Notification super admin: show toast with who logged in (if notifications enabled)
         updateAdminSidebar();initAdminFilters();renderDashboard();
         renderOnlineAccounts();
+        // Notify super admin via Firebase about new login
+        var loginRecord = {name:aFound.name||u, role:'admin', time:Date.now(), username:u};
+        try{
+          var al_sessions = JSON.parse(localStorage.getItem('al_sessions')||'{}');
+          al_sessions[u] = loginRecord;
+          localStorage.setItem('al_sessions', JSON.stringify(al_sessions));
+        }catch(e){}
+        if(window.patchFirebase) window.patchFirebase({sessions: JSON.parse(localStorage.getItem('al_sessions')||'{}')});
+        // Show self notification (for the one who logged in)
+        setTimeout(function(){
+          var displayName = aFound.name||u;
+          var isSA2 = (ADMIN.username===u);
+          var notifMsg = isSA2 ? '👑 Bienvenue Super Admin : '+displayName : '⚙️ Connexion admin : '+displayName;
+          toast(notifMsg);
+        }, 500);
         return;
       }
       LOGIN_ATTEMPTS[u]=(LOGIN_ATTEMPTS[u]||0)+1;
@@ -2786,6 +2875,29 @@ function doLogin(){
           if(_cc) _cc.lastLogin=Date.now();
         }
       },60000);
+      // Heartbeat for client
+      if(!window._clientHB) window._clientHB=setInterval(function(){
+        if(SESSION&&SESSION.role==='client'){
+          var _cc=CLIENTS.find(function(c){return c.id===SESSION.id;});
+          if(_cc){_cc.lastLogin=Date.now();save();}
+          // Update Firebase sessions
+          try{
+            var al_sessions=JSON.parse(localStorage.getItem('al_sessions')||'{}');
+            al_sessions['client_'+SESSION.id]={name:SESSION.name,role:'client',time:Date.now(),id:SESSION.id};
+            localStorage.setItem('al_sessions',JSON.stringify(al_sessions));
+          }catch(e){}
+        }
+      },60000);
+      // Record session in Firebase for real-time viewing
+      var clientSession={name:found.name,role:'client',time:Date.now(),id:found.id,city:found.city};
+      try{
+        var al_sess=JSON.parse(localStorage.getItem('al_sessions')||'{}');
+        al_sess['client_'+found.id]=clientSession;
+        localStorage.setItem('al_sessions',JSON.stringify(al_sess));
+      }catch(e){}
+      if(window.patchFirebase) window.patchFirebase({sessions:JSON.parse(localStorage.getItem('al_sessions')||'{}')});
+      // Toast greeting
+      setTimeout(function(){ toast('👋 Bienvenue ' + found.name + ' !'); }, 500);
       initClient();return;
     }
     LOGIN_ATTEMPTS[u]=(LOGIN_ATTEMPTS[u]||0)+1;
@@ -3169,6 +3281,24 @@ function initClientFilters(){
 }
 
 // ═══════════ DASHBOARD ═══════════
+function checkLowStockAlerts(){
+  var lowProds = PRODUCTS.filter(function(p){return p.stock<=p.threshold&&p.stock>0;});
+  var outProds = PRODUCTS.filter(function(p){return p.stock===0;});
+  var banner = document.getElementById('low-stock-banner');
+  if(!banner) return;
+  if(outProds.length>0||lowProds.length>0){
+    var msg='';
+    if(outProds.length>0) msg+='<strong>🚨 '+outProds.length+' produit(s) en rupture</strong>: '+outProds.map(function(p){return p.name;}).slice(0,3).join(', ')+(outProds.length>3?'...':'');
+    if(lowProds.length>0) msg+=(msg?'&nbsp;&nbsp;|&nbsp;&nbsp;':'')+'<strong>⚠️ '+lowProds.length+' stock bas</strong>: '+lowProds.map(function(p){return p.name+' ('+p.stock+')';}).slice(0,3).join(', ')+(lowProds.length>3?'...':'');
+    banner.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center">'+
+      '<span>'+msg+'</span>'+
+      '<button onclick="goSec(&quot;stock&quot;,document.getElementById(&quot;ni-stock&quot;))" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:600">Voir stock →</button>'+
+    '</div>';
+    banner.style.display='block';
+  } else {
+    banner.style.display='none';
+  }
+}
 function renderDashboard(){
   var O=ORDERS,today=new Date().toISOString().split('T')[0];
   // CA aujourd'hui = seulement les commandes LIVRÉES aujourd'hui
@@ -3222,6 +3352,7 @@ function renderDashboard(){
   dC('ch-prod');CH['ch-prod']=new Chart(document.getElementById('ch-prod'),{type:'bar',data:{labels:sp.map(function(x){return getP(x[0]).name.substring(0,13);}),datasets:[{data:sp.map(function(x){return x[1];}),backgroundColor:'#C9A84C',borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6B6560'},grid:{display:false}},y:{ticks:{color:'#6B6560'},grid:{color:'rgba(255,255,255,0.04)'}}}}});
   var cnt={pending:0,confirmed:0,shipped:0,delivered:0};O.forEach(function(o){if(cnt[o.status]!==undefined)cnt[o.status]++;});
   dC('ch-stat');CH['ch-stat']=new Chart(document.getElementById('ch-stat'),{type:'pie',data:{labels:['En attente','Confirmée','Expédiée','Livrée'],datasets:[{data:[cnt.pending,cnt.confirmed,cnt.shipped,cnt.delivered],backgroundColor:['#C9A84C','#4A9EE8','#9B6BDB','#52C97A'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{color:'#B0A898',font:{size:10},padding:5}}}}});
+  checkLowStockAlerts();
 }
 function qVal(id){
   var o=ORDERS.find(function(x){return x.id===id;});
@@ -3607,11 +3738,34 @@ function confirmReturn(id){
       });
     }
   } else if(paidByCredit){
-    // Commande à crédit → réduire le solde
+    // Commande à crédit ou partielle crédit
     if(retTotal>0){
-      cr.balance=Math.max(0,(cr.balance||0)-retTotal);
-      creditReduced=retTotal;
-      cr.transactions.push({date:today,type:'return',amount:retTotal,note:'Retour marchandise cmd '+id+' — crédit réduit de '+fm(retTotal)});
+      var creditPortion = o.creditAmount || (payMethod==='credit' ? retTotal : 0);
+      var cashPortion = retTotal - creditPortion;
+      
+      // Réduire la part crédit du solde
+      if(creditPortion > 0){
+        cr.balance = Math.max(0,(cr.balance||0) - creditPortion);
+        creditReduced = creditPortion;
+        cr.transactions.push({date:today, type:'return_credit', amount:creditPortion, note:'Retour cmd '+id+' — crédit réduit de '+fm(creditPortion)});
+      }
+      // Pour la part payée en cash/virement, vérifier crédit existant et créer coupon
+      if(cashPortion > 0){
+        var existBal2 = cr.balance||0;
+        if(existBal2 > 0){
+          var reduce2 = Math.min(existBal2, cashPortion);
+          cr.balance = Math.max(0, existBal2 - reduce2);
+          creditReduced += reduce2;
+          cashPortion -= reduce2;
+          cr.transactions.push({date:today, type:'return_credit_reduce', amount:reduce2, note:'Retour cmd '+id+' — solde crédit réduit de '+fm(reduce2)});
+        }
+        if(cashPortion > 0.01){
+          var cc2='AV-'+id+'-'+Math.random().toString(36).substr(2,4).toUpperCase();
+          cr.coupons.push({code:cc2, amount:cashPortion, originalAmount:cashPortion, date:today, orderId:id, used:false, cancelled:false, type:'avoir', reason:'Avoir retour partiel cmd '+id});
+          couponGenerated = cashPortion;
+          cr.transactions.push({date:today, type:'coupon', amount:cashPortion, note:'Coupon avoir '+cc2+' — '+fm(cashPortion)});
+        }
+      }
     }
   }
   // Si CMI ou autre → aucune action crédit (remboursement géré hors app)
@@ -4155,7 +4309,52 @@ function exportClientsCSV(){
   toast('✅ Export CSV — '+CLIENTS.length+' clients');
 }
 
-function renderClients(){
+function filterClients(){
+  var q = (document.getElementById('cl-global-search')||{value:''}).value.toLowerCase();
+  var F = q ? CLIENTS.filter(function(c){
+    return c.name.toLowerCase().includes(q)||
+           c.phone.toLowerCase().includes(q)||
+           c.city.toLowerCase().includes(q)||
+           (c.username&&c.username.toLowerCase().includes(q));
+  }) : CLIENTS;
+  renderClientsFiltered(F);
+}
+
+function renderClientsFiltered(F){
+  if(!F) F=CLIENTS;
+  var tb=document.getElementById('cl-tb');
+  if(!tb) return;
+  tb.innerHTML=F.map(function(c,ci){
+    var myOrds=ORDERS.filter(function(o){return o.clientId===c.id;});
+    var cr=getClientCredit(c.id);
+    var online=c.lastLogin&&(Date.now()-c.lastLogin)<300000;
+    return'<tr>'+
+      '<td><div style="display:flex;align-items:center;gap:8px">'+
+        '<div style="position:relative">'+
+          '<img src="'+(c.photo||getClientAvatar(c.name))+'" style="width:36px;height:36px;border-radius:50%;object-fit:cover;border:2px solid var(--bo)" onerror="this.remove()">'+
+          (online?'<span style="position:absolute;bottom:0;right:0;width:10px;height:10px;background:#52C97A;border-radius:50%;border:2px solid var(--dk2)"></span>':'')+
+        '</div>'+
+        '<div>'+
+          '<div style="font-weight:600">'+c.name+'</div>'+
+          '<div style="font-size:11px;color:var(--tx3)">'+c.username+'</div>'+
+        '</div>'+
+      '</div></td>'+
+      '<td>'+c.city+(c.region?'<span style="font-size:10px;color:var(--tx3)"> · '+c.region+'</span>':'')+'</td>'+
+      '<td>'+myOrds.length+'<span style="font-size:10px;color:var(--tx3)"> cmd</span></td>'+
+      '<td>'+(cr.balance>0?'<span style="color:var(--ora);font-weight:600">'+fm(cr.balance)+'</span>':
+              '<span style="color:var(--tx3)">—</span>')+'</td>'+
+      '<td>'+formatLastLogin(c.lastLogin)+'</td>'+
+      '<td><div class="cl-acts">'+
+        '<button class="btn btn-b btn-sm" onclick="openEditCl('+ci+')">✏️</button>'+
+        '<button class="btn btn-gn btn-sm" onclick="openClOrders(&quot;'+c.id+'&quot;)">📦</button>'+
+        '<button class="btn btn-p btn-sm" onclick="openClCredit(&quot;'+c.id+'&quot;)">💳</button>'+
+        '<button class="btn btn-r btn-sm" onclick="delCl('+ci+')">🗑️</button>'+
+      '</div></td>'+
+    '</tr>';
+  }).join('');
+}
+function renderClients(){ filterClients(); }
+function renderClientsOld(){
   var q=(document.getElementById('clf-q').value||'').toLowerCase();
   var reg=document.getElementById('clf-region').value;
   var city=document.getElementById('clf-city').value;
@@ -5523,6 +5722,102 @@ function calcChange(){
     box.style.display='block';
   } else {box.style.display='none';}
 }
+// ════════════════════════════════════════════════════════
+// 💰 PAIEMENT PARTIEL — Propose autres moyens pour le reste
+// ════════════════════════════════════════════════════════
+function openPartialRestModal(alreadyPaid, reste, firstMode){
+  // Save what was already paid
+  _altPendingOrder._partialPaid = alreadyPaid;
+  _altPendingOrder._partialPaidMode = firstMode;
+  _altPendingOrder._partialReste = reste;
+
+  var cr = SESSION ? getClientCredit(SESSION.id) : null;
+  var creditAvail = cr ? Math.max(0,(cr.limit||0)-(cr.balance||0)) : 0;
+
+  var html =
+    '<h3 style="color:var(--gold);margin-bottom:4px">💳 Paiement partiel</h3>'+
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Montant insuffisant — choisissez comment couvrir le reste</p>'+
+    '<div style="background:var(--dk4);border-radius:10px;padding:12px 14px;margin-bottom:14px">'+
+      '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">'+
+        '<span style="color:var(--tx2)">Déjà payé ('+firstMode+') :</span>'+
+        '<strong style="color:var(--grn)">'+fm(alreadyPaid)+'</strong>'+
+      '</div>'+
+      '<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700">'+
+        '<span>Reste à payer :</span>'+
+        '<span style="color:var(--ora)">'+fm(reste)+'</span>'+
+      '</div>'+
+    '</div>'+
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:10px">Comment voulez-vous payer les <strong style="color:var(--ora)">'+fm(reste)+'</strong> restants ?</p>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
+    (firstMode!=='cmi'?'<button class="pay-btn pay-cmi" style="min-height:56px" onclick="completePartialPayment(&quot;cmi&quot;,'+reste+','+alreadyPaid+',&quot;'+firstMode+'&quot;)"><span class="pay-icon" style="font-size:18px">💳</span><span class="pay-label">CMI</span></button>':'<div></div>')+
+    (firstMode!=='cash'?'<button class="pay-btn pay-cash" style="min-height:56px" onclick="completePartialPayment(&quot;cash&quot;,'+reste+','+alreadyPaid+',&quot;'+firstMode+'&quot;)"><span class="pay-icon" style="font-size:18px">💵</span><span class="pay-label">Espèces</span></button>':'<div></div>')+
+    (firstMode!=='transfer'?'<button class="pay-btn pay-transfer" style="min-height:56px" onclick="completePartialPayment(&quot;transfer&quot;,'+reste+','+alreadyPaid+',&quot;'+firstMode+'&quot;)"><span class="pay-icon" style="font-size:18px">🏦</span><span class="pay-label">Virement</span></button>':'<div></div>')+
+    (firstMode!=='cheque'?'<button class="pay-btn pay-cheque" style="min-height:56px" onclick="completePartialPayment(&quot;cheque&quot;,'+reste+','+alreadyPaid+',&quot;'+firstMode+'&quot;)"><span class="pay-icon" style="font-size:18px">📋</span><span class="pay-label">Chèque</span></button>':'<div></div>')+
+    '</div>'+
+    (creditAvail>0?
+      '<button class="pay-btn pay-credit" style="min-height:54px;width:100%;margin-bottom:8px" onclick="completePartialPayment(&quot;credit&quot;,'+reste+','+alreadyPaid+',&quot;'+firstMode+'&quot;)">'+
+        '<span class="pay-icon" style="font-size:18px">🔄</span>'+
+        '<div><div class="pay-label">Ajouter au crédit</div><div class="pay-desc">Crédit dispo: '+fm(creditAvail)+'</div></div>'+
+      '</button>':''+
+    '')+
+    '<button class="btn btn-o" style="width:100%;padding:11px" onclick="closeAllMd()">↩ Annuler et reprendre</button>';
+
+  document.getElementById('ord-content').innerHTML = html;
+  openMd('ord');
+}
+
+function completePartialPayment(restMode, reste, alreadyPaid, firstMode){
+  closeAllMd();
+  // Build the combined order
+  var items2=[];
+  for(var id in cart){
+    var p=PRODUCTS.find(function(x){return x.id===id;});
+    if(p) items2.push({productId:id,quantity:cart[id],price:p.price,buyPrice:p.buyPrice||0});
+  }
+  var total = _altPendingOrder.total;
+  var profit=items2.reduce(function(s,it){return s+(it.price-(it.buyPrice||0))*it.quantity;},0);
+  var today = new Date().toISOString().split('T')[0];
+
+  var o = {
+    id:'ORD'+(1000+ORDERS.length),
+    clientId:SESSION.id,
+    items:items2,
+    total:total,
+    profit:profit,
+    note:_altPendingOrder.note||'',
+    payStatus:'partial',
+    payMethod:firstMode,          // first payment method
+    payMethod2:restMode,          // second method for remainder
+    paidAmount:alreadyPaid,
+    resteAmount:reste,
+    status:'pending',
+    date:today
+  };
+
+  // Handle credit portion
+  if(restMode==='credit'){
+    var cr = getClientCredit(SESSION.id);
+    if(!cr.transactions) cr.transactions=[];
+    // Check credit limit
+    var creditAvail2 = Math.max(0,(cr.limit||0)-(cr.balance||0));
+    var creditToUse = Math.min(reste, creditAvail2);
+    if(creditToUse < reste && cr.limit > 0){
+      toast('⚠️ Crédit insuffisant : '+fm(creditToUse)+' appliqués sur '+fm(reste), true);
+    }
+    cr.balance = (cr.balance||0) + creditToUse;
+    cr.transactions.push({date:today, type:'credit', amount:creditToUse, note:'Paiement partiel cmd '+o.id+' ('+firstMode+'+crédit)'});
+    o.creditAmount = creditToUse;
+    o.payStatus = 'partial';
+    try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
+  }
+
+  ORDERS.unshift(o);
+  save();if(window.saveToCloud)window.saveToCloud();
+  cart={};updCartUI();_altPendingOrder=null;
+  toast('✅ Paiement partiel : '+fm(alreadyPaid)+' ('+firstMode+') + '+fm(reste)+' ('+restMode+')');
+  clRenderProds();renderClOrds();
+}
+
 function processAltPay(){
   if(!_altPendingOrder)return;
   if(_altPayMode==='cash'){
@@ -5544,7 +5839,10 @@ function processAltPay(){
     }
     if(given<total){
       if(cashInput){cashInput.style.border='2px solid #E8834A';}
-      toast('⚠️ Montant insuffisant — il manque '+fm(total-given)+' pour couvrir la commande',true);return;
+      // Propose other payment methods for the remainder
+      var manque = total - given;
+      openPartialRestModal(given, manque, 'cash');
+      return;
     }
     if(cashInput) cashInput.style.border='2px solid #52C97A';
   } else {
@@ -7210,6 +7508,7 @@ function delSupBtn(btn){
 // ══════════════════════════════════════════
 // renderAdmins moved to enhanced version
 function saveNewAdmin(){
+  if(!isSuperAdmin()){toast('⚠️ Seul le Super Admin peut créer des comptes administrateurs',true);closeAllMd();return;}
   var name=document.getElementById('na-name').value.trim();
   var user=document.getElementById('na-user').value.trim();
   var pw=document.getElementById('na-pw').value;
@@ -7237,10 +7536,141 @@ function saveNewAdmin(){
   toast('✅ '+name+' ajouté comme admin');
 }
 function delAdmin(idx){
+  if(!isSuperAdmin()){toast('⚠️ Accès réservé au Super Admin',true);return;}
   if(!confirm('Supprimer cet administrateur ?'))return;
   ADMINS.splice(idx,1);
-  save();renderAdmins();toast('Admin supprimé');
+  save();if(window.saveToCloud)window.saveToCloud();
+  renderAdmins();toast('Admin supprimé');
 }
+
+function toggleAdminStatus(idx){
+  if(!isSuperAdmin()){toast('⚠️ Accès réservé au Super Admin',true);return;}
+  var a=ADMINS[idx];if(!a)return;
+  a.disabled=!a.disabled;
+  save();if(window.saveToCloud)window.saveToCloud();
+  renderAdmins();
+  toast(a.disabled?'⏸ Admin "'+a.name+'" désactivé':'✅ Admin "'+a.name+'" réactivé');
+}
+
+// ════════════════════════════════════════════════════════
+// 🔔 NOTIFICATIONS DE CONNEXION EN TEMPS RÉEL
+// ════════════════════════════════════════════════════════
+var _notifQueue = [];
+var _notifShowing = false;
+
+function showLoginNotification(name, role, photo){
+  _notifQueue.push({name:name, role:role, photo:photo, time:Date.now()});
+  if(!_notifShowing) _processNotifQueue();
+}
+
+function _processNotifQueue(){
+  if(!_notifQueue.length){_notifShowing=false;return;}
+  _notifShowing=true;
+  var n=_notifQueue.shift();
+  var roleIcon = n.role==='admin' ? '⚙️' : '👤';
+  var roleColor = n.role==='admin' ? 'var(--gold)' : 'var(--grn)';
+  var av = n.photo || 'https://ui-avatars.com/api/?name='+encodeURIComponent(n.name||'U')+'&background='+(n.role==='admin'?'C9A84C':'4A9EE8')+'&color='+(n.role==='admin'?'0A0A0A':'fff')+'&size=64';
+
+  var box = document.createElement('div');
+  box.id = 'login-notif-'+Date.now();
+  box.style.cssText =
+    'position:fixed;bottom:80px;right:16px;z-index:99999;'+
+    'background:linear-gradient(145deg,#1a1a1a,#111);'+
+    'border:1px solid '+roleColor+';border-radius:16px;'+
+    'padding:14px 16px;min-width:260px;max-width:320px;'+
+    'box-shadow:0 8px 32px rgba(0,0,0,.6);'+
+    'display:flex;align-items:center;gap:12px;'+
+    'animation:float-in .4s cubic-bezier(.34,1.56,.64,1);'+
+    'backdrop-filter:blur(12px);cursor:pointer;';
+  box.onclick=function(){box.remove();_processNotifQueue();};
+  box.innerHTML=
+    '<img src="'+av+'" style="width:44px;height:44px;border-radius:50%;border:2px solid '+roleColor+';object-fit:cover;flex-shrink:0" onerror="this.remove()">'+
+    '<div style="flex:1;min-width:0">'+
+      '<div style="font-size:12px;color:var(--tx3);margin-bottom:2px">'+roleIcon+' Connexion détectée</div>'+
+      '<div style="font-size:15px;font-weight:700;color:var(--tx)">'+n.name+'</div>'+
+      '<div style="font-size:11px;color:'+roleColor+';margin-top:2px">'+
+        (n.role==='admin'?'Administrateur':'Client')+' — '+new Date().toLocaleTimeString('fr-FR')+
+      '</div>'+
+    '</div>'+
+    '<span style="color:var(--tx3);font-size:18px;cursor:pointer" onclick="this.parentNode.remove();_processNotifQueue()">✕</span>';
+
+  document.body.appendChild(box);
+  setTimeout(function(){
+    if(box.parentNode){box.remove();}
+    setTimeout(_processNotifQueue, 300);
+  }, 4500);
+}
+
+// ════════════════════════════════════════════════════════
+// 🟢 COMPTES CONNECTÉS EN TEMPS RÉEL (ADMIN PANEL)
+// ════════════════════════════════════════════════════════
+var _onlineRefreshTimer = null;
+
+function getConnectedClients(){
+  var threshold = 5 * 60 * 1000; // 5 minutes
+  var now = Date.now();
+  return CLIENTS.filter(function(c){ return c.lastLogin && (now - c.lastLogin) < threshold; });
+}
+function getConnectedAdmins(){
+  var threshold = 5 * 60 * 1000;
+  var now = Date.now();
+  var list = [];
+  if(ADMIN.lastLogin && (now-ADMIN.lastLogin)<threshold) list.push({name:ADMIN.name||ADMIN.username, role:'superadmin'});
+  ADMINS.forEach(function(a){
+    if(!a.disabled && a.lastLogin && (now-a.lastLogin)<threshold) list.push({name:a.name, role:'admin'});
+  });
+  return list;
+}
+
+function renderLiveConnections(){
+  var box = document.getElementById('live-connections-panel');
+  if(!box) return;
+  var clients = getConnectedClients();
+  var admins = getConnectedAdmins();
+  var total = clients.length + admins.length;
+
+  // Update badge
+  var badge = document.getElementById('live-conn-badge');
+  if(badge){badge.textContent=total;badge.style.display=total>0?'inline':'none';}
+
+  if(!isSuperAdmin()){box.innerHTML='<div style="text-align:center;padding:20px;color:var(--tx3);font-size:12px">🔒 Accès réservé au Super Admin</div>';return;}
+
+  box.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'+
+    '<div style="font-size:13px;font-weight:700;color:var(--gold)">🟢 En ligne maintenant</div>'+
+    '<div style="display:flex;align-items:center;gap:6px">'+
+      '<span style="background:rgba(82,201,122,.15);color:var(--grn);border:1px solid rgba(82,201,122,.3);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700">'+total+' connecté'+(total>1?'s':'')+'</span>'+
+      '<button class="btn btn-o btn-sm" onclick="renderLiveConnections()" style="padding:4px 8px;font-size:11px">🔄</button>'+
+    '</div>'+
+    '</div>'+
+    (total===0?
+      '<div style="text-align:center;padding:14px;color:var(--tx3);font-size:12px">Aucun compte actif en ce moment</div>' :
+      '<div style="display:flex;flex-wrap:wrap;gap:6px">'+
+      admins.map(function(a){
+        return '<div style="display:flex;align-items:center;gap:7px;background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.2);border-radius:12px;padding:6px 12px">'+
+          '<span style="width:8px;height:8px;background:#52C97A;border-radius:50%;box-shadow:0 0 6px #52C97A;flex-shrink:0"></span>'+
+          '<span style="font-size:12px;font-weight:600;color:var(--gold)">'+(a.role==='superadmin'?'👑 ':'⚙️ ')+a.name+'</span>'+
+        '</div>';
+      }).join('')+
+      clients.map(function(cl){
+        return '<div style="display:flex;align-items:center;gap:7px;background:rgba(82,201,122,.06);border:1px solid rgba(82,201,122,.18);border-radius:12px;padding:6px 12px">'+
+          '<span style="width:8px;height:8px;background:#52C97A;border-radius:50%;box-shadow:0 0 6px #52C97A;flex-shrink:0"></span>'+
+          '<span style="font-size:12px;color:var(--tx)">👤 '+cl.name+'</span>'+
+          '<span style="font-size:10px;color:var(--tx3)">'+cl.city+'</span>'+
+        '</div>';
+      }).join('')+
+      '</div>'
+    );
+}
+
+// Auto-refresh live connections every 30s when admins section is open
+(function startLiveRefresh(){
+  setInterval(function(){
+    if(typeof _currentSec!=='undefined' && _currentSec==='admins'){
+      renderLiveConnections();
+    }
+  }, 30000);
+})();
 
 // ══════════════════════════════════════════
 // PURCHASES LOG
@@ -8932,6 +9362,7 @@ async function saveToCloud(){
       orders:     JSON.parse(localStorage.getItem('al_o')||'[]'),
       admin:      ADMIN,
       admins:     ADMINS,
+      sessions:   JSON.parse(localStorage.getItem('al_sessions')||'{}'),
       cats:       JSON.parse(localStorage.getItem('al_cats')||'[]'),
       company:    JSON.parse(localStorage.getItem('al_company')||'{}'),
       suppliers:  JSON.parse(localStorage.getItem('al_sup')||'[]'),
@@ -9118,7 +9549,16 @@ function startRealtimeSync(){
           try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(ex){}
         }
         if(d.orders !== undefined && Array.isArray(d.orders)){
+          var prevCount = ORDERS.length;
           ORDERS = d.orders;
+          // Notify if new order arrived
+          if(ORDERS.length > prevCount && SESSION && SESSION.role==='admin'){
+            var newOrd = ORDERS[ORDERS.length-1];
+            var cl = newOrd ? getC(newOrd.clientId) : null;
+            if(newOrd && cl){
+              toast('🛒 Nouvelle commande de '+cl.name+' — '+fm(newOrd.total), false);
+            }
+          }
           try{localStorage.setItem('al_o',JSON.stringify(ORDERS));}catch(ex){}
         }
         if(d.products !== undefined && Array.isArray(d.products)){
@@ -9131,6 +9571,28 @@ function startRealtimeSync(){
         }
         injectData(d);
         if(window.updateCreditBadge) window.updateCreditBadge();
+        // Check for new sessions and show notifications
+        if(d.sessions && typeof d.sessions==='object' && SESSION && SESSION.role==='admin'){
+          var prevSessions = JSON.parse(localStorage.getItem('_prev_sessions')||'{}');
+          Object.entries(d.sessions).forEach(function(e){
+            var sid=e[0], sess=e[1];
+            // New login in last 30 seconds
+            if(sess.time && (Date.now()-sess.time)<30000 && !prevSessions[sid]){
+              // Don't notify about own login
+              var ownKey = SESSION.role==='admin' ? (SESSION.username||'') : ('client_'+SESSION.id);
+              if(sid !== ownKey && isSuperAdmin()){
+                showLoginNotification(sess.name, sess.role, sess.photo||'');
+              }
+            }
+          });
+          try{localStorage.setItem('_prev_sessions',JSON.stringify(d.sessions));}catch(ex){}
+          // Update live connections if on admins page
+          if(typeof _currentSec!=='undefined'&&_currentSec==='admins') renderLiveConnections();
+          // Update sidebar badge
+          var total=Object.values(d.sessions||{}).filter(function(s){return s.time&&(Date.now()-s.time)<300000;}).length;
+          var badge=document.getElementById('live-conn-badge');
+          if(badge){badge.textContent=total;badge.style.display=total>0?'inline':'none';}
+        }
         if(!isSelf) refreshUI();
         fbShow('synced','🔄 Mis à jour');
       }catch(err){ console.warn('SSE put:',err.message); }
@@ -9223,6 +9685,14 @@ window.addEventListener('DOMContentLoaded', async function(){
   numObs.observe(document.body,{childList:true,subtree:true});
   document.addEventListener('keydown',function(ev){
     if(ev.key==='Escape'){var mo=document.getElementById('mo-bg');if(mo&&mo.classList.contains('on'))closeAllMd();}
+    // Ctrl+F -> focus search of active section
+    if((ev.ctrlKey||ev.metaKey)&&ev.key==='f'){
+      var searches=['srch','ord-search','cl-search','cl-global-search','stk-search','prod-search'];
+      for(var si=0;si<searches.length;si++){
+        var sel=document.getElementById(searches[si]);
+        if(sel&&sel.offsetParent!==null){ev.preventDefault();sel.focus();sel.select();break;}
+      }
+    }
   });
   document.addEventListener('keypress',function(e){
     var el=e.target;
@@ -9613,7 +10083,9 @@ function ncPhUpdate(){
   var preview = document.getElementById('nc-ph-preview');
   if(!sel||!inp) return;
   var code = sel.value;
-  var digits = parseInt(sel.options[sel.selectedIndex].getAttribute('data-len'))||9;
+  var opt = sel.options[sel.selectedIndex];
+  var digits = parseInt(opt.getAttribute('data-len'))||9;
+  var pattern = opt.getAttribute('data-pattern')||'[0-9]';
   // Clean: only digits
   var raw = (inp.value||'').replace(/\D/g,'');
   // Auto-strip leading 0 for Morocco
@@ -9621,16 +10093,30 @@ function ncPhUpdate(){
   // Limit to max digits for this country
   if(raw.length > digits) raw = raw.substring(0, digits);
   inp.value = raw;
-  // Preview
+  // Update placeholder based on country
+  if(code==='+212') inp.placeholder = '6 12 34 56 78';
+  else if(code==='+33') inp.placeholder = '6 12 34 56 78';
+  else inp.placeholder = 'Numéro...';
+  // Preview with validation
   if(preview){
     if(!raw){
-      preview.textContent='';preview.style.color='var(--tx3)';
+      preview.textContent = code==='+212' ? '💡 Commençant par 5, 6 ou 7 — ex: 612345678' : '';
+      preview.style.color='var(--tx3)';
     } else {
       var err = ncValidatePhone(raw, code, digits);
-      preview.textContent = err ? '⚠️ ' + err : '✅ ' + code + ' ' + raw;
-      preview.style.color = err ? '#E05252' : '#52C97A';
+      if(err){
+        preview.innerHTML = '⚠️ ' + err;
+        preview.style.color = '#E05252';
+      } else {
+        // Format nicely
+        var formatted = code + ' ' + raw.replace(/(\d{2})(?=\d)/g,'$1 ').trim();
+        preview.innerHTML = '✅ <strong>' + formatted + '</strong>';
+        preview.style.color = '#52C97A';
+      }
     }
   }
+  // Update progress bar
+  if(typeof _ncUpdateProgress==='function') _ncUpdateProgress();
 }
 
 function ncGetFullPhone(){
@@ -9661,6 +10147,13 @@ function ncValidatePhone(raw, countryCode, requiredLen){
 // 🔐 SUPER ADMIN — Gestion avancée des admins
 // ════════════════════════════════════════════════════════════════
 // Super admin = ADMIN principal (username = 'admin' par défaut)
+function getClientAvatar(name){
+  return 'https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background=C9A84C&color=0A0A0A&size=40';
+}
+function getAdminAvatar(name, isDisabled){
+  var bg = isDisabled ? '555' : '4A9EE8';
+  return 'https://ui-avatars.com/api/?name='+encodeURIComponent(name)+'&background='+bg+'&color=fff&size=32';
+}
 function isSuperAdmin(){ return SESSION && SESSION.role === 'admin' && SESSION.username === ADMIN.username; }
 
 function renderAdmins(){
@@ -9686,18 +10179,26 @@ function renderAdmins(){
     '</td>'+
   '</tr>';
   html += ADMINS.map(function(a,ai){
-    return '<tr>'+
+    var isDisabled = !!a.disabled;
+    var rowStyle = isDisabled ? 'opacity:.5;background:rgba(224,82,82,0.04)' : '';
+    var statusBadge = isDisabled ?
+      '<span style="background:rgba(224,82,82,.15);color:var(--red);border:1px solid rgba(224,82,82,.3);font-size:9px;padding:1px 7px;border-radius:8px;font-weight:700;margin-left:6px">DÉSACTIVÉ</span>' :
+      '<span style="background:rgba(82,201,122,.12);color:var(--grn);border:1px solid rgba(82,201,122,.25);font-size:9px;padding:1px 7px;border-radius:8px;font-weight:700;margin-left:6px">ACTIF</span>';
+    return '<tr style="'+rowStyle+'">'+
       '<td><div style="display:flex;align-items:center;gap:8px">'+
-        '<img src="'+(a.photo||'https://ui-avatars.com/api/?name='+encodeURIComponent(a.name)+'&background=4A9EE8&color=fff&size=32')+'" style="width:28px;height:28px;border-radius:50%;object-fit:cover">'+
-        '<span>'+a.name+'</span>'+
+        '<img src="'+(a.photo||'https://ui-avatars.com/api/?name='+encodeURIComponent(a.name)+'&background='+(isDisabled?'555':'4A9EE8')+'&color=fff&size=32')+'" style="width:28px;height:28px;border-radius:50%;object-fit:cover;'+(isDisabled?'filter:grayscale(1)':'')+'" onerror="this.remove()">'+
+        '<div>'+
+          '<span style="font-weight:600">'+a.name+'</span>'+statusBadge+
+        '</div>'+
       '</div></td>'+
       '<td style="font-family:monospace;font-size:12px">'+a.username+'</td>'+
       '<td style="font-size:12px;color:var(--tx3)">'+(a.email||'—')+'</td>'+
       '<td>'+formatLastLogin(a.lastLogin)+'</td>'+
       '<td>'+
       (isSA?
-        '<div style="display:flex;gap:5px">'+
+        '<div style="display:flex;gap:5px;flex-wrap:wrap">'+
           '<button class="btn btn-b btn-sm" onclick="openEditAdmin('+ai+')">✏️</button>'+
+          '<button class="btn '+(isDisabled?'btn-gn':'btn-o')+' btn-sm" onclick="toggleAdminStatus('+ai+')" title="'+(isDisabled?'Réactiver':'Désactiver')+'">'+(isDisabled?'✅ Activer':'⏸ Désact.')+' </button>'+
           '<button class="btn btn-r btn-sm" onclick="delAdmin('+ai+')">🗑️</button>'+
         '</div>':
         '<span style="color:var(--tx3);font-size:11px">—</span>')+
@@ -9706,8 +10207,9 @@ function renderAdmins(){
   }).join('');
   var tb = document.getElementById('admins-tb');
   if(tb) tb.innerHTML = html;
-  // Also show online indicator
+  // Refresh live connections panel
   renderOnlineAccounts();
+  renderLiveConnections();
 }
 
 function formatLastLogin(ts){
