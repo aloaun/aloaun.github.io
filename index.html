@@ -246,7 +246,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:var(--tx);min-h
 .refresh-fab{position:fixed;bottom:18px;right:18px;z-index:8999;width:44px;height:44px;background:var(--gold);border:none;border-radius:50%;color:var(--dk);font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(201,168,76,0.4);transition:.2s}
 .refresh-fab:hover{background:var(--gl);transform:scale(1.08)}
 #pg-login{display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;background:radial-gradient(ellipse at 20% 50%,rgba(201,168,76,0.07) 0%,transparent 60%),radial-gradient(ellipse at 80% 20%,rgba(74,158,232,0.04) 0%,transparent 50%);position:relative;z-index:1}
-#pg-admin,#pg-client{display:none}
+#pg-admin,#pg-client{display:none;position:fixed;inset:0;z-index:10;overflow-y:auto;background:var(--dk)}
+#pg-admin{position:fixed;inset:0;z-index:10;overflow:hidden}
 .logo-big{text-align:center;margin-bottom:36px}
 .logo-big h1{font-family:'Playfair Display',serif;font-size:44px;color:var(--gold);letter-spacing:5px}
 .logo-big p{font-size:11px;letter-spacing:5px;color:var(--tx3);text-transform:uppercase;margin-top:4px}
@@ -2825,7 +2826,7 @@ function doLogin(){
             else{var _a=ADMINS.find(function(a){return a.username===SESSION.username;});if(_a)_a.lastLogin=Date.now();}
             save();
           }
-        },60000);
+        },10000); // 10s heartbeat
         // Notification super admin: show toast with who logged in (if notifications enabled)
         updateAdminSidebar();initAdminFilters();renderDashboard();
         renderOnlineAccounts();
@@ -2836,7 +2837,13 @@ function doLogin(){
           al_sessions[u] = loginRecord;
           localStorage.setItem('al_sessions', JSON.stringify(al_sessions));
         }catch(e){}
-        if(window.patchFirebase) window.patchFirebase({sessions: JSON.parse(localStorage.getItem('al_sessions')||'{}')});
+        // Push session to Firebase for real-time tracking
+        try{
+          var _sess=JSON.parse(localStorage.getItem('al_sessions')||'{}');
+          _sess[u]={name:aFound.name||u,role:'admin',time:Date.now(),username:u};
+          localStorage.setItem('al_sessions',JSON.stringify(_sess));
+          if(window.patchFirebase) patchFirebase({sessions:_sess, admin:ADMIN, admins:ADMINS});
+        }catch(e){}
         // Show self notification (for the one who logged in)
         setTimeout(function(){
           var displayName = aFound.name||u;
@@ -2874,7 +2881,7 @@ function doLogin(){
           var _cc=CLIENTS.find(function(c){return c.id===SESSION.id;});
           if(_cc) _cc.lastLogin=Date.now();
         }
-      },60000);
+      },10000); // 10s heartbeat
       // Heartbeat for client
       if(!window._clientHB) window._clientHB=setInterval(function(){
         if(SESSION&&SESSION.role==='client'){
@@ -2927,7 +2934,22 @@ function openForgotFromLock(u){
   openForgot();
   setTimeout(function(){var el=document.getElementById('fp-input');if(el){el.value=u;}},200);
 }
-function doLogout(){SESSION=null;document.getElementById('pg-login').style.display='flex';document.getElementById('pg-admin').style.display='none';document.getElementById('pg-client').style.display='none';document.getElementById('lu').value='';document.getElementById('lp').value='';closeSide();}
+function doLogout(){
+  // Clean up heartbeats
+  if(window._loginHB){clearInterval(window._loginHB);window._loginHB=null;}
+  if(window._clientHB){clearInterval(window._clientHB);window._clientHB=null;}
+  // Remove from Firebase sessions
+  try{
+    var sid = SESSION ? (SESSION.role==='admin' ? SESSION.username : 'client_'+SESSION.id) : null;
+    if(sid && window.patchFirebase){
+      var sess = JSON.parse(localStorage.getItem('al_sessions')||'{}');
+      delete sess[sid];
+      localStorage.setItem('al_sessions', JSON.stringify(sess));
+      window.patchFirebase({sessions: sess});
+    }
+  }catch(e){}
+  SESSION=null;
+  document.getElementById('pg-login').style.display='flex';document.getElementById('pg-admin').style.display='none';document.getElementById('pg-client').style.display='none';document.getElementById('lu').value='';document.getElementById('lp').value='';closeSide();}
 
 // ═══════════ FORGOT PASSWORD (SECURE OTP) ═══════════
 var _fpFoundAccount=null;var _fpIsAdmin=false;var _fpOTP='';var _fpOTPVerified=false;
@@ -4353,7 +4375,7 @@ function renderClientsFiltered(F){
     '</tr>';
   }).join('');
 }
-function renderClients(){ filterClients(); }
+function renderClients(){ renderClientsOld(); }
 function renderClientsOld(){
   var q=(document.getElementById('clf-q').value||'').toLowerCase();
   var reg=document.getElementById('clf-region').value;
@@ -5321,10 +5343,7 @@ function refreshCart(){
       '<span class="pay-icon">📋</span><span class="pay-label">Chèque</span><span class="pay-desc">Bancaire</span>'+
     '</button>'+
     '</div>'+
-    '<button class="pay-btn pay-credit" style="margin-top:8px;min-height:54px;flex-direction:row;gap:10px;width:100%" onclick="openAltPay(\'credit\','+tot+')" title="Paiement à crédit">'+
-      '<span class="pay-icon" style="font-size:22px">🔄</span>'+
-      '<div style="text-align:left"><div class="pay-label" style="font-size:13px">À crédit</div><div class="pay-desc" style="opacity:.75">Ajouter au solde client — règlement différé</div></div>'+
-    '</button>'+
+
     '</div>';
 }
 
@@ -9353,6 +9372,12 @@ function fbShow(state, msg){
 // ── Sauvegarder vers Realtime Database ───────────────────
 var _offlineQueue = false; // true si une sauvegarde est en attente (hors ligne)
 
+async function patchFirebase(data){
+  try{
+    var url='https://alitos-daf7e-default-rtdb.firebaseio.com/alitos.json';
+    await fetch(url,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)});
+  }catch(e){console.warn('patchFirebase error:',e);}
+}
 async function saveToCloud(){
   fbShow('syncing','☁️ Sauvegarde...');
   try{
@@ -10215,13 +10240,15 @@ function renderAdmins(){
 function formatLastLogin(ts){
   if(!ts) return '<span style="color:var(--tx3);font-size:11px">—</span>';
   var diff = Date.now() - ts;
+  var secs = Math.floor(diff/1000);
   var mins = Math.floor(diff/60000);
-  var online = mins < 5; // considéré en ligne si heartbeat < 5min
-  var recent = mins < 60;
+  var online = diff < 60000; // En ligne si heartbeat < 60s (heartbeat = 10s)
+  var recent = diff < 3600000; // Récent si < 1h
   var dotColor = online ? '#52C97A' : recent ? '#E8834A' : '#555';
-  var dot = '<span style="width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;flex-shrink:0;background:'+dotColor+'"></span>';
+  var dot = '<span style="width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:5px;flex-shrink:0;animation:'+(online?'pulse 2s infinite':'none')+';background:'+dotColor+'"></span>';
   var label;
   if(online) label = '<strong style="color:#52C97A">🟢 En ligne</strong>';
+  else if(mins < 2) label = '<span style="color:#E8834A">🟡 Il y a '+secs+'s</span>';
   else if(mins < 60) label = '<span style="color:#E8834A">🟡 Il y a '+mins+'min</span>';
   else if(mins < 1440) label = '<span style="color:var(--tx3)">⚫ Il y a '+Math.floor(mins/60)+'h</span>';
   else label = '<span style="color:var(--tx3)">⚫ '+new Date(ts).toLocaleDateString('fr-FR')+'</span>';
@@ -10230,8 +10257,8 @@ function formatLastLogin(ts){
 
 function renderOnlineAccounts(){
   if(!isSuperAdmin()) return;
-  var onlineClients = CLIENTS.filter(function(c){ return c.lastLogin && (Date.now()-c.lastLogin)<300000; });
-  var onlineAdmins = ADMINS.filter(function(a){ return a.lastLogin && (Date.now()-a.lastLogin)<300000; });
+  var onlineClients = CLIENTS.filter(function(c){ return c.lastLogin && (Date.now()-c.lastLogin)<60000; });
+  var onlineAdmins = ADMINS.filter(function(a){ return a.lastLogin && (Date.now()-a.lastLogin)<60000; });
   var box = document.getElementById('online-accounts-box');
   if(!box) return;
   var total = onlineClients.length + onlineAdmins.length + ((Date.now()-(ADMIN.lastLogin||0))<300000?1:0);
@@ -10265,7 +10292,7 @@ function renderOnlineAccounts(){
   }, 30000);
 })();
 
-function isAccountOnline(ts){ return ts && (Date.now()-ts)<300000; }
+function isAccountOnline(ts){ return ts && (Date.now()-ts)<60000; }
 
 function openEditSuperAdmin(){
   var html = '<h3 style="margin-bottom:14px">✏️ Modifier le Super Admin</h3>'+
