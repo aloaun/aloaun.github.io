@@ -1082,8 +1082,10 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
         <button class="tab on" id="tab-c" onclick="swTab('c')">🛍️ Client</button>
         <button class="tab" id="tab-a" onclick="swTab('a')">⚙️ Admin</button>
       </div>
-      <div id="login-hint" style="text-align:center;font-size:11px;color:var(--tx3);margin-bottom:14px;padding:6px;background:rgba(201,168,76,0.05);border-radius:8px;border:1px solid var(--bo)">
+      <div id="login-hint" style="text-align:center;font-size:11px;color:var(--tx3);margin-bottom:14px;padding:8px 10px;background:rgba(201,168,76,0.05);border-radius:8px;border:1px solid var(--bo)">
         Connectez-vous avec votre compte <strong id="login-hint-role" style="color:var(--gold)">client</strong>
+        <div id="demo-hint-client" style="margin-top:5px;font-size:10px;color:var(--tx3)">Ex : <span style="color:var(--tx2)">client1</span> / <span style="color:var(--tx2)">pass123</span></div>
+        <div id="demo-hint-admin" style="display:none;margin-top:5px;font-size:10px;color:var(--tx3)">Ex : <span style="color:var(--tx2)">admin</span> / <span style="color:var(--tx2)">alitos2024</span></div>
       </div>
 
       <div class="fg"><label>Identifiant ou Email</label><input type="text" id="lu" placeholder="Identifiant ou email" autocomplete="username"></div>
@@ -2781,15 +2783,22 @@ function closeSide(){document.getElementById('admin-side').classList.remove('ope
 
 // ═══════════ AUTH ═══════════
 var SESSION=null;
+var _currentTab='c'; // 'c' = client, 'a' = admin — état fiable de l'onglet actif
+
 function swTab(t){
-  document.getElementById('tab-c').className='tab'+(t==='c'?' on':'');
-  document.getElementById('tab-a').className='tab'+(t==='a'?' on':'');
-  document.getElementById('lu').value='';document.getElementById('lp').value='';
+  _currentTab=t; // Mémoriser l'onglet actif
+  var tabC=document.getElementById('tab-c');
+  var tabA=document.getElementById('tab-a');
+  if(tabC) tabC.className='tab'+(t==='c'?' on':'');
+  if(tabA) tabA.className='tab'+(t==='a'?' on':'');
+  var lu=document.getElementById('lu');
+  var lp=document.getElementById('lp');
+  if(lu) lu.value='';
+  if(lp) lp.value='';
   var err=document.getElementById('lerr');if(err)err.style.display='none';
   clearErr('lu');clearErr('lp');
   var hint=document.getElementById('login-hint-role');
   if(hint)hint.textContent=(t==='a'?'administrateur':'client');
-  var lu=document.getElementById('lu');
   if(lu){
     lu.placeholder=(t==='a'?'Identifiant administrateur':'Votre identifiant client');
     lu.focus();
@@ -2806,12 +2815,14 @@ function doLogin(){
   var err=document.getElementById('lerr');
   err.style.display='none';
   clearErr('lu'); clearErr('lp');
-  var isAdminTab=document.getElementById('tab-a').classList.contains('on');
+  // Utiliser _currentTab comme source de vérité (fiable même si classList échoue)
+  var isAdminTab=(_currentTab==='a');
   if(!u){showErr('lu','Identifiant ou email obligatoire');err.textContent='Remplissez tous les champs';err.style.display='block';return;}
   if(!p){showErr('lp','Mot de passe obligatoire');err.textContent='Remplissez tous les champs';err.style.display='block';return;}
   if(LOCKED_USERS[u]){showLockedErr(err,u);return;}
 
-  var btn=document.querySelector('.btn-main');
+  // Cibler uniquement le bouton de connexion dans #pg-login pour éviter tout conflit
+  var btn=document.querySelector('#pg-login .btn-main');
   if(btn){btn.disabled=true;btn.textContent='Connexion...';}
 
   function tryLogin(fbData){
@@ -2935,19 +2946,46 @@ function doLogin(){
     err.style.display='block';document.getElementById('lp').value='';
   }
 
-  // Connexion locale garantie apres 2s + Firebase en parallele
-  var _fbDone=false;
-  var _fbTimer=setTimeout(function(){
-    if(!_fbDone){_fbDone=true;tryLogin(null);}
-  },2000);
-  try{
-    var _fo={};
-    try{if(typeof AbortSignal!=='undefined'&&AbortSignal.timeout) _fo={signal:AbortSignal.timeout(5000)};}catch(_e2){}
-    fetch(FB_URL,_fo)
-      .then(function(r){return r&&r.ok?r.json():null;})
-      .then(function(d){if(!_fbDone){_fbDone=true;clearTimeout(_fbTimer);tryLogin(d);}})
-      .catch(function(){if(!_fbDone){_fbDone=true;clearTimeout(_fbTimer);tryLogin(null);}});
-  }catch(_fe){if(!_fbDone){_fbDone=true;clearTimeout(_fbTimer);tryLogin(null);}}
+  // ── Connexion locale EN PRIORITÉ (immédiate, sans attendre Firebase) ──
+  // Si la connexion locale réussit → on entre directement
+  // Si elle échoue → on tente Firebase une seule fois pour rafraîchir les données
+  var _localSuccess = false;
+
+  // Tentative 1 : connexion avec les données locales actuelles
+  function tryLocalLogin(){
+    if(isAdminTab){
+      var aFound=null;
+      if(ADMIN.username&&u===ADMIN.username&&p===ADMIN.password) aFound={name:ADMIN.name||'Administrateur'};
+      if(!aFound){for(var ai=0;ai<ADMINS.length;ai++){if(ADMINS[ai].username===u&&ADMINS[ai].password===p&&!ADMINS[ai].disabled){aFound=ADMINS[ai];break;}}}
+      if(aFound){_localSuccess=true;}
+    } else {
+      var uLower2=u.toLowerCase();
+      for(var ci=0;ci<CLIENTS.length;ci++){
+        var cl2=CLIENTS[ci];
+        if((cl2.username&&cl2.username===u&&cl2.password===p)||(cl2.email&&cl2.email.toLowerCase()===uLower2&&cl2.password===p)){_localSuccess=true;break;}
+      }
+    }
+    return _localSuccess;
+  }
+
+  if(tryLocalLogin()){
+    // Connexion locale réussie → immédiate, sans Firebase
+    tryLogin(null);
+  } else {
+    // Connexion locale échouée → rafraîchir depuis Firebase puis retenter
+    var _fbDone=false;
+    var _fbTimer=setTimeout(function(){
+      if(!_fbDone){_fbDone=true;tryLogin(null);}
+    },3000);
+    try{
+      var _fo={};
+      try{if(typeof AbortSignal!=='undefined'&&AbortSignal.timeout) _fo={signal:AbortSignal.timeout(4000)};}catch(_e2){}
+      fetch(FB_URL,_fo)
+        .then(function(r){return r&&r.ok?r.json():null;})
+        .then(function(d){if(!_fbDone){_fbDone=true;clearTimeout(_fbTimer);tryLogin(d);}})
+        .catch(function(){if(!_fbDone){_fbDone=true;clearTimeout(_fbTimer);tryLogin(null);}});
+    }catch(_fe){if(!_fbDone){_fbDone=true;clearTimeout(_fbTimer);tryLogin(null);}}
+  }
 }
 function showLockedErr(err,u){
   err.innerHTML='Compte bloqué (3 tentatives). ';
@@ -2963,7 +3001,7 @@ function openForgotFromLock(u){
   openForgot();
   setTimeout(function(){var el=document.getElementById('fp-input');if(el){el.value=u;}},200);
 }
-function doLogout(){SESSION=null;document.getElementById('pg-login').style.display='flex';document.getElementById('pg-admin').style.display='none';document.getElementById('pg-client').style.display='none';document.getElementById('lu').value='';document.getElementById('lp').value='';closeSide();}
+function doLogout(){SESSION=null;_currentTab='c';document.getElementById('pg-login').style.display='flex';document.getElementById('pg-admin').style.display='none';document.getElementById('pg-client').style.display='none';document.getElementById('lu').value='';document.getElementById('lp').value='';var _e=document.getElementById('lerr');if(_e)_e.style.display='none';var _tc=document.getElementById('tab-c');var _ta=document.getElementById('tab-a');if(_tc)_tc.className='tab on';if(_ta)_ta.className='tab';var _hint=document.getElementById('login-hint-role');if(_hint)_hint.textContent='client';var _lb=document.querySelector('.card');if(_lb)_lb.style.borderColor='';closeSide();}
 
 // ═══════════ FORGOT PASSWORD (SECURE OTP) ═══════════
 var _fpFoundAccount=null;var _fpIsAdmin=false;var _fpOTP='';var _fpOTPVerified=false;
