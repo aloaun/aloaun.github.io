@@ -661,11 +661,11 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
 .pay-grid-bottom{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .pay-btn{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:8px;padding:18px 12px;border:none;border-radius:16px;
+  gap:10px;padding:20px 10px;border:none;border-radius:18px;
   font-family:'DM Sans',sans-serif;cursor:pointer;
   transition:all .2s cubic-bezier(.34,1.56,.64,1);
   width:100%;position:relative;overflow:hidden;
-  min-height:110px;box-sizing:border-box;
+  min-height:120px;box-sizing:border-box;flex:1;
 }
 .pay-btn::before{
   content:'';position:absolute;inset:0;
@@ -675,14 +675,14 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
 .pay-btn:hover{transform:translateY(-4px);filter:brightness(1.15);box-shadow:0 12px 32px rgba(0,0,0,.5)!important}
 .pay-btn:active{transform:scale(.95);filter:brightness(.92)}
 .pay-btn .pay-icon{
-  width:52px;height:52px;flex-shrink:0;
+  width:58px;height:58px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
-  font-size:32px;line-height:1;
+  font-size:36px;line-height:1;
   background:rgba(255,255,255,.15);
-  border-radius:14px;
+  border-radius:16px;
   margin-bottom:2px;
 }
-.pay-btn .pay-label{font-size:13px;font-weight:800;color:inherit;text-align:center;line-height:1.2;letter-spacing:.2px}
+.pay-btn .pay-label{font-size:14px;font-weight:800;color:inherit;text-align:center;line-height:1.2;letter-spacing:.2px}
 .pay-btn .pay-desc{font-size:10px;opacity:.78;text-align:center;margin-top:-4px}
 
 /* CMI — Violet/Purple */
@@ -5393,16 +5393,19 @@ function refreshCart(){
   ci.innerHTML=items.map(function(e){var p=PRODUCTS.find(function(x){return x.id===e[0];})||{name:e[0],price:0,image:''};var lt=p.price*e[1];tot+=lt;return'<div class="ci-item"><img src="'+p.image+'" onerror="this.src=\'https://via.placeholder.com/44\'" alt=""><div style="flex:1"><p style="font-size:13px;font-weight:500">'+p.name+'</p><span style="font-size:12px;color:var(--tx3)">'+e[1]+' × '+fm(p.price)+'</span></div><div style="font-size:13px;font-weight:600;color:var(--gold)">'+fm(lt)+'</div><button class="ci-rm" onclick="delete cart[\''+e[0]+'\'];updCartUI();clRenderProds();refreshCart()">×</button></div>';}).join('');
   cf.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--bo)"><span style="color:var(--tx2)">Total</span><strong style="font-size:17px;color:var(--gold)">'+fm(tot)+'</strong></div>'+
     '<textarea id="cl-note" style="width:100%;background:var(--dk4);border:1px solid var(--bo2);border-radius:10px;padding:9px;color:var(--tx);font-family:\'DM Sans\',sans-serif;font-size:13px;resize:none;outline:none;height:52px;display:block;margin-top:5px" placeholder="Note de livraison (optionnel)..."></textarea>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-top:9px">'+
+    '<div style="margin-top:10px">'+
     (function(){
       var cr2=SESSION?getClientCredit(SESSION.id):null;
       var activeCoupons2=cr2?(cr2.coupons||[]).filter(function(c){return !c.used&&!c.cancelled&&(c.amount||0)>0;}):[];
       var totalCouponVal2=activeCoupons2.reduce(function(s,c){return s+c.amount;},0);
       var couponBtn=activeCoupons2.length?
-        '<button class="btn-main" style="background:linear-gradient(135deg,#7d5a00,#C9A84C);color:#000;margin-top:0;padding:11px 6px;font-size:12px;grid-column:1/-1;border:1px solid var(--gold)" onclick="openCouponPay('+tot+')">🎟️ Coupon avoir — '+fm(totalCouponVal2||activeCoupons2.reduce(function(s,c){return s+c.amount;},0))+'</button>':'';
+        '<button class="pay-btn pay-coupon" style="width:100%;margin-bottom:8px;min-height:80px;flex-direction:row;gap:12px;justify-content:center" onclick="openCouponPay('+tot+')">'+
+        '<span class="pay-icon" style="margin-bottom:0"></span>'+
+        '<div><div class="pay-label" style="font-size:14px">Coupon avoir</div><div class="pay-desc" style="font-size:12px;opacity:.9">'+fm(totalCouponVal2)+' disponible</div></div>'+
+        '</button>':'';
       return couponBtn;
     })()+
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:9px">'+
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">'+
     '<button class="pay-btn pay-cmi" onclick="openCMI('+tot+')">'+
       '<span class="pay-icon"></span><span class="pay-label">CMI</span>'+
     '</button>'+
@@ -5413,7 +5416,7 @@ function refreshCart(){
       '<span class="pay-icon"></span><span class="pay-label">Virement</span>'+
     '</button>'+
     '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
     '<button class="pay-btn pay-cheque" onclick="openAltPay(\'cheque\','+tot+')">'+
       '<span class="pay-icon"></span><span class="pay-label">Chèque</span>'+
     '</button>'+
@@ -5594,13 +5597,21 @@ function openCouponPay(total){
     '<div style="font-size:11px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Vos coupons disponibles</div>'+
     coupons.map(function(c){
       var icon=typeIcons[c.type]||'🎟️';
-      return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:5px 0;border-bottom:1px solid rgba(201,168,76,0.1)">'+
+      var origAmt=c.originalAmount||c.amount;
+      var usedAmt=Math.round((origAmt-c.amount)*100)/100;
+      return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:7px 0;border-bottom:1px solid rgba(201,168,76,0.1)">'+
+        '<div>'+
         '<span style="color:var(--gold);font-family:monospace">'+icon+' '+c.code+'</span>'+
-        '<span style="font-weight:700;color:var(--grn)">'+fm(c.amount)+'</span>'+
+        (usedAmt>0?'<div style="font-size:10px;color:var(--tx3);margin-top:1px">Initial: '+fm(origAmt)+' · Utilisé: '+fm(usedAmt)+'</div>':'<div style="font-size:10px;color:var(--tx3);margin-top:1px">Montant initial: '+fm(origAmt)+'</div>')+
+        '</div>'+
+        '<div style="text-align:right">'+
+        '<div style="font-weight:700;color:var(--grn);font-size:13px">'+fm(c.amount)+'</div>'+
+        '<div style="font-size:10px;color:var(--tx3)">disponible</div>'+
+        '</div>'+
       '</div>';
     }).join('')+
     '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid rgba(201,168,76,0.3);font-size:13px;font-weight:700;color:var(--gold)">'+
-    '<span>Total coupons</span><span>'+fm(totalCoupons)+'</span></div>'+
+    '<span>Total coupons disponibles</span><span>'+fm(totalCoupons)+'</span></div>'+
     '</div>';
 
   if(totalCoupons>=total){
@@ -5612,24 +5623,36 @@ function openCouponPay(total){
     '</div>'+
     '<button class="btn btn-g" style="width:100%;padding:13px;font-size:14px" onclick="confirmCouponPayment('+total+',0,\'\')">✅ Confirmer le paiement par coupon ('+fm(total)+')</button>';
   } else {
-    // Coupons are NOT enough — must choose complementary payment
+    // Coupons are NOT enough — must choose complementary payment method(s)
     var reste=Math.round((total-totalCoupons)*100)/100;
     html+='<div style="background:rgba(232,131,74,0.1);border:1px solid rgba(232,131,74,0.4);border-radius:8px;padding:12px;margin-bottom:14px">'+
       '<div style="font-size:13px;font-weight:600;color:var(--ora)">⚠️ Coupon insuffisant</div>'+
       '<div style="font-size:12px;color:var(--tx2);margin-top:4px">Coupons utilisés : <strong>'+fm(totalCoupons)+'</strong></div>'+
       '<div style="font-size:13px;font-weight:700;color:var(--red);margin-top:4px">Reste obligatoire à payer : <strong>'+fm(reste)+'</strong></div>'+
     '</div>'+
-    '<div class="fg"><label style="font-size:12px;font-weight:600">Moyen de paiement pour le reste ('+fm(reste)+') <span style="color:var(--red)">★</span></label>'+
-    '<select id="coupon-complement-method" style="width:100%;background:var(--dk4);border:2px solid var(--bo);border-radius:10px;padding:11px 14px;color:var(--tx);font-size:13px;outline:none">'+
-    '<option value="">— Obligatoire : choisir le mode —</option>'+
-    '<option value="cash">💵 Espèces ('+fm(reste)+')</option>'+
-    '<option value="transfer">🏦 Virement bancaire</option>'+
-    '<option value="cmi">💳 CMI / Carte</option>'+
-    '<option value="cheque">📋 Chèque</option>'+
-    '<option value="credit">🔄 À crédit (ajouter '+fm(reste)+' au solde)</option>'+
-    '</select></div>'+
-    '<button class="btn btn-g" style="width:100%;margin-top:12px;padding:13px;font-size:14px" onclick="confirmCouponPayment('+total+','+reste+',document.getElementById(\'coupon-complement-method\').value)">'+
-    '✅ Payer : Coupon ('+fm(totalCoupons)+') + Complément ('+fm(reste)+')</button>';
+    '<div style="font-size:12px;font-weight:600;color:var(--tx2);margin-bottom:10px">Choisissez un moyen pour payer les <strong style="color:var(--ora)">'+fm(reste)+'</strong> restants :</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">'+
+    '<button class="pay-btn pay-cmi" onclick="confirmCouponPayment('+total+','+reste+',\'cmi\')">'+
+      '<span class="pay-icon"></span><span class="pay-label">CMI</span>'+
+    '</button>'+
+    '<button class="pay-btn pay-cash" onclick="confirmCouponPayment('+total+','+reste+',\'cash\')">'+
+      '<span class="pay-icon"></span><span class="pay-label">Espèces</span>'+
+    '</button>'+
+    '<button class="pay-btn pay-transfer" onclick="confirmCouponPayment('+total+','+reste+',\'transfer\')">'+
+      '<span class="pay-icon"></span><span class="pay-label">Virement</span>'+
+    '</button>'+
+    '</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">'+
+    '<button class="pay-btn pay-cheque" onclick="confirmCouponPayment('+total+','+reste+',\'cheque\')">'+
+      '<span class="pay-icon"></span><span class="pay-label">Chèque</span>'+
+    '</button>'+
+    '<button class="pay-btn pay-coupon" onclick="openCouponPayCouponComplement('+total+','+totalCoupons+','+reste+')" style="opacity:0.7">'+
+      '<span class="pay-icon"></span><span class="pay-label" style="font-size:11px">Autre coupon</span>'+
+    '</button>'+
+    '<button class="pay-btn pay-credit" onclick="confirmCouponPayment('+total+','+reste+',\'credit\')">'+
+      '<span class="pay-icon"></span><span class="pay-label">Crédit</span>'+
+    '</button>'+
+    '</div>';
   }
   document.getElementById('ord-content').innerHTML=html;
   openMd('ord');
@@ -5639,25 +5662,31 @@ function confirmCouponPayment(total, reste, complementMethod){
   // Critical: if coupons don't cover total, complement is mandatory
   if(reste>0 && (!complementMethod||complementMethod==='')){
     toast('⚠️ Sélectionnez obligatoirement un moyen de paiement pour les '+fm(reste)+' restants',true);
-    var sel=document.getElementById('coupon-complement-method');
-    if(sel){sel.setAttribute('style','border:2px solid #E05252 !important;border-radius:10px;');}
     return;
   }
   var cr=getClientCredit(SESSION.id);
   var today=new Date().toISOString().split('T')[0];
-  // Utiliser les coupons avec tracking des codes
+  // Utiliser les coupons avec tracking des codes ET des montants originaux
   var result=typeof _markCouponsUsed==='function'?
     _markCouponsUsed(cr,total,today):
     (function(){
       var used=0; var codes=[];
       (cr.coupons||[]).filter(function(c){return !c.used&&!c.cancelled&&c.amount>0;}).forEach(function(c){
-        if(used<total){var u=Math.min(c.amount,total-used);c.amount-=u;used+=u;codes.push({code:c.code,amount:u});if(c.amount<=0)c.used=true;}
+        if(used<total){
+          var u=Math.min(c.amount,total-used);
+          var origAmt=c.originalAmount||c.amount; // preserve original
+          c.amount=Math.round((c.amount-u)*100)/100;
+          used+=u;
+          codes.push({code:c.code,amount:u,originalAmount:origAmt,newAmount:c.amount});
+          if(c.amount<=0.009)c.used=true;
+        }
       });
       return {used:used,codes:codes};
     })();
   var used=result.used; var usedCodes=result.codes;
   if(!cr.transactions) cr.transactions=[];
-  cr.transactions.push({date:today,type:'coupon_use',amount:used,note:'Coupon(s) utilisé(s): '+(usedCodes.map(function(x){return x.code;}).join(', '))});
+  cr.transactions.push({date:today,type:'coupon_use',amount:used,note:'Coupon(s) utilisé(s): '+(usedCodes.map(function(x){return x.code+'('+fm(x.amount)+')';}).join(', '))});
+
   // Si crédit comme complément → ajouter au solde
   if(reste>0 && complementMethod==='credit'){
     cr.balance=(cr.balance||0)+reste;
@@ -5679,6 +5708,14 @@ function confirmCouponPayment(total, reste, complementMethod){
   toast('✅ Paiement par coupon confirmé ! Coupon: '+fm(used)+(reste>0?' + '+fm(reste)+' ('+complementMethod+')':''));
   if(window.toggleCart) toggleCart(); // close cart
   clRenderProds();renderClOrds();
+}
+
+// ── Cas où le client veut compléter avec un autre coupon ──
+function openCouponPayCouponComplement(total, alreadyCouponAmt, reste){
+  var cr=getClientCredit(SESSION.id);
+  toast('⚠️ Tous les coupons disponibles ont déjà été comptabilisés ('+fm(alreadyCouponAmt)+'). Choisissez un autre moyen pour les '+fm(reste)+' restants.',true);
+  // Re-open the coupon payment screen so they see the full list
+  openCouponPay(total);
 }
 
 function openAltPay(mode,total){
@@ -5755,11 +5792,14 @@ function openCreditComplementModal(total,creditDispo,plafond){
         '<span>Reste à payer</span><strong style="color:var(--ora)">'+fm(surplus)+'</strong></div>'+
     '</div>'+
     '<p style="font-size:12px;color:var(--tx2);margin-bottom:10px">Comment payez-vous les <strong style="color:var(--ora)">'+fm(surplus)+'</strong> restants ?</p>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">'+
+      '<button class="pay-btn pay-cmi" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'cmi\')""><span class="pay-icon"></span><span class="pay-label">CMI</span></button>'+
+      '<button class="pay-btn pay-cash" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'cash\')""><span class="pay-icon"></span><span class="pay-label">Espèces</span></button>'+
+      '<button class="pay-btn pay-transfer" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'transfer\')""><span class="pay-icon"></span><span class="pay-label">Virement</span></button>'+
+    '</div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'+
-      '<button class="pay-btn pay-cmi" style="min-height:60px" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'cmi\')""><span class="pay-icon"></span><span class="pay-label">CMI</span></button>'+
-      '<button class="pay-btn pay-cash" style="min-height:60px" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'cash\')""><span class="pay-icon"></span><span class="pay-label">Espèces</span></button>'+
-      '<button class="pay-btn pay-transfer" style="min-height:60px" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'transfer\')""><span class="pay-icon"></span><span class="pay-label">Virement</span></button>'+
-      '<button class="pay-btn pay-cheque" style="min-height:60px" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'cheque\')""><span class="pay-icon"></span><span class="pay-label">Chèque</span></button>'+
+      '<button class="pay-btn pay-cheque" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'cheque\')""><span class="pay-icon"></span><span class="pay-label">Chèque</span></button>'+
+      '<button class="pay-btn pay-coupon" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'coupon\')""><span class="pay-icon"></span><span class="pay-label">Coupon</span></button>'+
     '</div>'+
     '<button class="btn btn-o" style="width:100%;padding:11px" onclick="closeAllMd()">↩ Annuler</button>';
   document.getElementById('ord-content').innerHTML=html;
@@ -5951,6 +5991,19 @@ function openPartialRestModal(alreadyPaid, reste, firstMode){
     }
   });
 
+  // Add coupon option if available and not already used
+  var crp = SESSION ? getClientCredit(SESSION.id) : null;
+  var activeCpns = crp ? (crp.coupons||[]).filter(function(c){return !c.used&&!c.cancelled&&(c.amount||0)>0;}) : [];
+  var totalCpnAmt = activeCpns.reduce(function(s,c){return s+(c.amount||0);},0);
+  var couponInModes = usedModes.indexOf('coupon')>=0;
+  if(activeCpns.length && !couponInModes && totalCpnAmt>0){
+    btnGrid += '<button class="pay-btn pay-coupon" onclick="completePartialWithCoupon('+reste+','+alreadyPaid+',\''+firstMode+'\')">' +
+      '<span class="pay-icon"></span>' +
+      '<div><div class="pay-label" style="font-size:13px">Coupon avoir</div>' +
+      '<div class="pay-desc">'+fm(Math.min(totalCpnAmt,reste))+' disponible</div></div>' +
+    '</button>';
+  }
+
   var creditBtn = '';
   if(creditAvail > 0){
     creditBtn =
@@ -5984,7 +6037,7 @@ function openPartialRestModal(alreadyPaid, reste, firstMode){
         '<span style="color:var(--ora)">'+fm(reste)+'</span>'+
       '</div>'+
     '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'+btnGrid+'</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">'+btnGrid+'</div>'+
     creditBtn+
     '<button class="btn btn-o" style="width:100%;padding:11px;margin-top:10px" onclick="closeAllMd()">↩ Annuler</button>';
 
@@ -5994,6 +6047,105 @@ function openPartialRestModal(alreadyPaid, reste, firstMode){
 
 
 
+
+function completePartialWithCoupon(reste, alreadyPaid, prevModes){
+  var cr = SESSION ? getClientCredit(SESSION.id) : null;
+  if(!cr) return;
+  var coupons = (cr.coupons||[]).filter(function(c){return !c.used&&!c.cancelled&&(c.amount||0)>0;});
+  if(!coupons.length){ toast('⚠️ Aucun coupon disponible',true); return; }
+  var totalCoupons = Math.round(coupons.reduce(function(s,c){return s+(c.amount||0);},0)*100)/100;
+  var typeIcons={avoir:'📄',fidelite:'⭐',dedommagement:'🤝',distribution:'📤',manuel:'🎁'};
+
+  var html =
+    '<h3 style="color:var(--gold);margin-bottom:12px">🎟️ Payer avec coupon</h3>'+
+    '<div style="background:var(--dk4);border-radius:10px;padding:12px;margin-bottom:12px">'+
+      (_altPendingOrder&&_altPendingOrder._paidSteps||[]).map(function(s){
+        return '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--grn);margin-bottom:3px">'+
+          '<span>✅ '+s.mode+'</span><span>+'+fm(s.amount)+'</span></div>';
+      }).join('')+
+      '<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700;padding-top:8px;border-top:1px solid var(--bo)">'+
+        '<span>Reste à couvrir :</span><span style="color:var(--ora)">'+fm(reste)+'</span>'+
+      '</div>'+
+    '</div>'+
+    '<div style="background:rgba(201,168,76,0.08);border:1px solid var(--gold);border-radius:10px;padding:12px;margin-bottom:12px">'+
+    '<div style="font-size:11px;color:var(--tx3);font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Vos coupons disponibles</div>'+
+    coupons.map(function(c){
+      var icon=typeIcons[c.type]||'🎟️';
+      var origAmt=c.originalAmount||c.amount;
+      var usedAmt=Math.round((origAmt-c.amount)*100)/100;
+      return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;padding:7px 0;border-bottom:1px solid rgba(201,168,76,0.1)">'+
+        '<div>'+
+        '<span style="color:var(--gold);font-family:monospace">'+icon+' '+c.code+'</span>'+
+        (usedAmt>0?'<div style="font-size:10px;color:var(--tx3)">Initial: '+fm(origAmt)+' · Utilisé: '+fm(usedAmt)+'</div>':'<div style="font-size:10px;color:var(--tx3)">Initial: '+fm(origAmt)+'</div>')+
+        '</div>'+
+        '<div style="font-weight:700;color:var(--grn);font-size:13px">'+fm(c.amount)+'</div>'+
+      '</div>';
+    }).join('')+
+    '<div style="display:flex;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid rgba(201,168,76,0.3);font-weight:700;color:var(--gold)">'+
+    '<span>Total disponible</span><span>'+fm(totalCoupons)+'</span></div>'+
+    '</div>';
+
+  if(totalCoupons>=reste){
+    var surplus = Math.round((totalCoupons-reste)*100)/100;
+    html += '<div style="background:rgba(82,201,122,0.1);border:1px solid rgba(82,201,122,0.3);border-radius:8px;padding:10px;margin-bottom:12px;font-size:13px;color:var(--grn)">'+
+      '✅ Les coupons couvrent le reste'+
+      (surplus>0?'<br><span style="font-size:11px;color:var(--tx3)">Solde coupon après : '+fm(surplus)+'</span>':'')+
+    '</div>'+
+    '<button class="btn btn-g" style="width:100%;padding:13px;font-size:14px" onclick="_finalizePartialWithCoupon('+reste+','+alreadyPaid+',\''+prevModes+'\')">✅ Confirmer coupon ('+fm(reste)+')</button>';
+  } else {
+    var newReste = Math.round((reste-totalCoupons)*100)/100;
+    html += '<div style="background:rgba(232,131,74,0.1);border:1px solid var(--ora);border-radius:8px;padding:10px;margin-bottom:12px;font-size:13px;color:var(--ora)">'+
+      '⚠️ Coupons insuffisants — couvrira '+fm(totalCoupons)+', reste encore '+fm(newReste)+'</div>'+
+    '<button class="btn btn-g" style="width:100%;padding:13px;font-size:14px" onclick="_finalizePartialWithCoupon('+totalCoupons+','+alreadyPaid+',\''+prevModes+'\')">✅ Utiliser tout ('+fm(totalCoupons)+') + choisir pour le reste</button>';
+  }
+  html += '<button class="btn btn-o" style="width:100%;padding:11px;margin-top:8px" onclick="openPartialRestModal('+alreadyPaid+','+reste+',\''+prevModes+'\')">← Retour</button>';
+
+  document.getElementById('ord-content').innerHTML = html;
+  openMd('ord');
+}
+
+function _finalizePartialWithCoupon(couponAmount, alreadyPaid, prevModes){
+  var cr = SESSION ? getClientCredit(SESSION.id) : null;
+  if(!cr) return;
+  var today = new Date().toISOString().split('T')[0];
+  var used=0; var codes=[];
+  (cr.coupons||[]).filter(function(c){return !c.used&&!c.cancelled&&c.amount>0;}).forEach(function(c){
+    if(used<couponAmount){
+      var u=Math.min(c.amount,couponAmount-used);
+      var origAmt=c.originalAmount||c.amount;
+      c.amount=Math.round((c.amount-u)*100)/100;
+      used+=u;
+      codes.push({code:c.code,amount:u,originalAmount:origAmt,newAmount:c.amount});
+      if(c.amount<=0.009)c.used=true;
+    }
+  });
+  if(!cr.transactions) cr.transactions=[];
+  cr.transactions.push({date:today,type:'coupon_use',amount:used,note:'Coupon partiel: '+(codes.map(function(x){return x.code;}).join(', '))});
+  try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
+
+  if(!_altPendingOrder._paidSteps) _altPendingOrder._paidSteps=[];
+  _altPendingOrder._paidSteps.push({mode:'coupon',amount:used});
+
+  var newAlreadyPaid = alreadyPaid + used;
+  var totalOrder = _altPendingOrder ? _altPendingOrder.total : newAlreadyPaid;
+  var newReste = Math.max(0, totalOrder - newAlreadyPaid);
+
+  if(newReste < 0.01){
+    // Fully paid
+    var items2=[];
+    for(var id in cart){var p=PRODUCTS.find(function(x){return x.id===id;});if(p)items2.push({productId:id,quantity:cart[id],price:p.price,buyPrice:p.buyPrice||0});}
+    var profit=items2.reduce(function(s,it){return s+(it.price-(it.buyPrice||0))*it.quantity;},0);
+    var o={id:'ORD'+(1000+ORDERS.length),clientId:SESSION.id,items:items2,total:totalOrder,profit:profit,
+      note:_altPendingOrder.note||'',payStatus:'paid',payMethod:prevModes+'+coupon',
+      couponsUsed:codes,status:'pending',date:today};
+    ORDERS.unshift(o);save();if(window.saveToCloud)window.saveToCloud();
+    cart={};updCartUI();_altPendingOrder=null;closeAllMd();
+    toast('✅ Paiement complet : '+fm(alreadyPaid)+' ('+prevModes+') + '+fm(used)+' (coupon)');
+    clRenderProds();renderClOrds();
+  } else {
+    openPartialRestModal(newAlreadyPaid, newReste, prevModes+'+coupon');
+  }
+}
 
 function completePartialPayment(restMode, reste, alreadyPaid, firstMode){
   // Called when client chose a 2nd payment method for the remainder
