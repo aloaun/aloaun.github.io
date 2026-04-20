@@ -659,94 +659,131 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
 /* ══ PAYMENT BUTTONS — Design premium inspiré de l'image ══ */
 .pay-grid-top{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
 .pay-grid-bottom{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+/* ══════════════════════════════════════════
+   BOUTONS DE PAIEMENT — Design présentable
+   ══════════════════════════════════════════ */
 .pay-btn{
   display:flex;flex-direction:column;align-items:center;justify-content:center;
-  gap:10px;padding:20px 10px;border:none;border-radius:18px;
+  gap:8px;padding:16px 10px 14px;border:none;border-radius:20px;
   font-family:'DM Sans',sans-serif;cursor:pointer;
-  transition:all .2s cubic-bezier(.34,1.56,.64,1);
+  transition:all .22s cubic-bezier(.34,1.56,.64,1);
   width:100%;position:relative;overflow:hidden;
-  min-height:120px;box-sizing:border-box;flex:1;
+  min-height:115px;box-sizing:border-box;flex:1;
 }
+/* Reflet brillant en haut */
 .pay-btn::before{
-  content:'';position:absolute;inset:0;
-  background:linear-gradient(135deg,rgba(255,255,255,.2),transparent 60%);
+  content:'';position:absolute;top:0;left:0;right:0;height:50%;
+  background:linear-gradient(180deg,rgba(255,255,255,.18) 0%,rgba(255,255,255,0) 100%);
   pointer-events:none;border-radius:inherit;
 }
-.pay-btn:hover{transform:translateY(-4px);filter:brightness(1.15);box-shadow:0 12px 32px rgba(0,0,0,.5)!important}
-.pay-btn:active{transform:scale(.95);filter:brightness(.92)}
+/* Bordure lumineuse animée au hover */
+.pay-btn::after{
+  content:'';position:absolute;inset:-1px;border-radius:21px;
+  background:linear-gradient(135deg,rgba(255,255,255,.35),rgba(255,255,255,0) 50%);
+  opacity:0;transition:opacity .22s;pointer-events:none;
+}
+.pay-btn:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 14px 36px rgba(0,0,0,.55)!important}
+.pay-btn:hover::after{opacity:1}
+.pay-btn:active{transform:scale(.96);filter:brightness(.9)}
+
+/* Icône dans un cercle/carré arrondi */
 .pay-btn .pay-icon{
-  width:58px;height:58px;flex-shrink:0;
+  width:54px;height:54px;flex-shrink:0;
   display:flex;align-items:center;justify-content:center;
-  font-size:36px;line-height:1;
-  background:rgba(255,255,255,.15);
-  border-radius:16px;
+  font-style:normal;line-height:1;
+  background:rgba(255,255,255,.18);
+  border:1px solid rgba(255,255,255,.25);
+  border-radius:50%;
+  box-shadow:0 2px 8px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.3);
   margin-bottom:2px;
+  transition:transform .22s;
 }
-.pay-btn .pay-label{font-size:14px;font-weight:800;color:inherit;text-align:center;line-height:1.2;letter-spacing:.2px}
-.pay-btn .pay-desc{font-size:10px;opacity:.78;text-align:center;margin-top:-4px}
+.pay-btn:hover .pay-icon{transform:scale(1.12);}
+.pay-btn .pay-icon::before{font-size:26px;line-height:1;display:block;}
 
-/* CMI — Violet/Purple */
+.pay-btn .pay-label{
+  font-size:12px;font-weight:800;color:inherit;
+  text-align:center;line-height:1.2;letter-spacing:.4px;
+  text-transform:uppercase;opacity:.95;
+}
+.pay-btn .pay-desc{
+  font-size:10px;opacity:.72;text-align:center;
+  margin-top:-3px;font-weight:500;
+}
+
+/* ── CMI / Carte — Violet royal ── */
 .pay-cmi{
-  background:linear-gradient(145deg,#4a1080,#8b2fc9,#a855f7);
-  color:#fff;border:1px solid rgba(168,85,247,.5);
-  box-shadow:0 6px 20px rgba(168,85,247,.45);
+  background:linear-gradient(160deg,#3b0764 0%,#7e22ce 55%,#a855f7 100%);
+  color:#fff;
+  border:1px solid rgba(168,85,247,.6);
+  box-shadow:0 6px 22px rgba(126,34,206,.5),inset 0 1px 0 rgba(255,255,255,.15);
 }
-.pay-cmi:hover{box-shadow:0 8px 28px rgba(168,85,247,.5);}
-.pay-cmi .pay-icon::before{content:'💳';font-size:32px;line-height:1}
-.pay-cash .pay-icon::before{content:'💵';font-size:32px;line-height:1}
-.pay-transfer .pay-icon::before{content:'🏦';font-size:32px;line-height:1}
-.pay-cheque .pay-icon::before{content:'📋';font-size:32px;line-height:1}
-.pay-credit .pay-icon::before{content:'🔄';font-size:32px;line-height:1}
-.pay-coupon .pay-icon::before{content:'🎫';font-size:32px;line-height:1}
+.pay-cmi:hover{box-shadow:0 10px 32px rgba(168,85,247,.65),inset 0 1px 0 rgba(255,255,255,.2);}
+.pay-cmi .pay-icon::before{content:'💳';font-size:26px;}
 
-/* Espèces — Vert émeraude */
+/* ── Espèces — Vert forêt ── */
 .pay-cash{
-  background:linear-gradient(145deg,#0a4d20,#16a34a,#22c55e);
-  color:#fff;border:1px solid rgba(34,197,94,.4);
-  box-shadow:0 4px 18px rgba(34,197,94,.3);
+  background:linear-gradient(160deg,#052e16 0%,#15803d 55%,#22c55e 100%);
+  color:#fff;
+  border:1px solid rgba(34,197,94,.5);
+  box-shadow:0 6px 22px rgba(21,128,61,.5),inset 0 1px 0 rgba(255,255,255,.12);
 }
-.pay-cash:hover{box-shadow:0 8px 28px rgba(34,197,94,.45);}
+.pay-cash:hover{box-shadow:0 10px 32px rgba(34,197,94,.6),inset 0 1px 0 rgba(255,255,255,.18);}
+.pay-cash .pay-icon::before{content:'💵';font-size:26px;}
 
-/* Virement — Bleu saphir */
+/* ── Virement — Bleu océan ── */
 .pay-transfer{
-  background:linear-gradient(145deg,#0f2d7a,#1d4ed8,#3b82f6);
-  color:#fff;border:1px solid rgba(59,130,246,.4);
-  box-shadow:0 4px 18px rgba(59,130,246,.3);
+  background:linear-gradient(160deg,#0c1a4e 0%,#1d4ed8 55%,#60a5fa 100%);
+  color:#fff;
+  border:1px solid rgba(96,165,250,.45);
+  box-shadow:0 6px 22px rgba(29,78,216,.5),inset 0 1px 0 rgba(255,255,255,.12);
 }
-.pay-transfer:hover{box-shadow:0 8px 28px rgba(59,130,246,.45);}
+.pay-transfer:hover{box-shadow:0 10px 32px rgba(59,130,246,.6),inset 0 1px 0 rgba(255,255,255,.18);}
+.pay-transfer .pay-icon::before{content:'🏦';font-size:26px;}
 
-/* Chèque — Gris ardoise */
+/* ── Chèque — Anthracite élégant ── */
 .pay-cheque{
-  background:linear-gradient(145deg,#1f2937,#374151,#6b7280);
-  color:#fff;border:1px solid rgba(107,114,128,.4);
-  box-shadow:0 4px 18px rgba(107,114,128,.25);
+  background:linear-gradient(160deg,#111827 0%,#374151 55%,#6b7280 100%);
+  color:#fff;
+  border:1px solid rgba(156,163,175,.35);
+  box-shadow:0 6px 22px rgba(17,24,39,.6),inset 0 1px 0 rgba(255,255,255,.1);
 }
-.pay-cheque:hover{box-shadow:0 8px 28px rgba(107,114,128,.4);}
+.pay-cheque:hover{box-shadow:0 10px 32px rgba(107,114,128,.5),inset 0 1px 0 rgba(255,255,255,.15);}
+.pay-cheque .pay-icon::before{content:'📋';font-size:26px;}
 
-/* Crédit — Orange doré (pleine largeur) */
-.pay-credit{
-  background:linear-gradient(145deg,#92400e,#d97706,#f59e0b);
-  color:#0A0A0A;border:1px solid rgba(245,158,11,.4);
-  box-shadow:0 4px 18px rgba(245,158,11,.3);
-  width:100%;
-}
-.pay-credit:hover{box-shadow:0 8px 28px rgba(245,158,11,.45);}
-
-/* Coupon — Or ambré */
-/* Sessions panels responsive */
-@media(max-width:700px){
-  #sec-admins .sessions-grid{grid-template-columns:1fr !important;}
-}
+/* ── Coupon — Or ambré ── */
 .pay-coupon{
-  background:linear-gradient(145deg,#78350f,#b45309,#C9A84C);
-  color:#0A0A0A;border:1px solid rgba(201,168,76,.5);
-  box-shadow:0 4px 18px rgba(201,168,76,.3);
+  background:linear-gradient(160deg,#451a03 0%,#92400e 45%,#C9A84C 100%);
+  color:#fff;
+  border:1px solid rgba(201,168,76,.55);
+  box-shadow:0 6px 22px rgba(146,64,14,.5),inset 0 1px 0 rgba(255,255,255,.15);
 }
-/* Fallback pay grid for existing pay-grid selector */
+.pay-coupon:hover{box-shadow:0 10px 32px rgba(201,168,76,.55),inset 0 1px 0 rgba(255,255,255,.2);}
+.pay-coupon .pay-icon::before{content:'🎫';font-size:26px;}
+
+/* ── Crédit — Ambre cuivré (PLEINE LARGEUR) ── */
+.pay-credit{
+  background:linear-gradient(160deg,#431407 0%,#c2410c 45%,#fb923c 100%);
+  color:#fff;
+  border:1px solid rgba(251,146,60,.45);
+  box-shadow:0 6px 22px rgba(194,65,12,.5),inset 0 1px 0 rgba(255,255,255,.15);
+  width:100%;min-height:72px;flex-direction:row;gap:14px;padding:14px 20px;
+}
+.pay-credit:hover{box-shadow:0 10px 32px rgba(251,146,60,.55),inset 0 1px 0 rgba(255,255,255,.2);}
+.pay-credit .pay-icon{width:46px;height:46px;margin-bottom:0;}
+.pay-credit .pay-icon::before{content:'🔄';font-size:26px;}
+.pay-credit .pay-label{font-size:14px;text-align:left;letter-spacing:.3px;}
+
+/* Fallback pay grid */
 .pay-grid{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:7px;margin-top:7px}
 @media(max-width:380px){
   .pay-grid-top{grid-template-columns:1fr 1fr 1fr}
   .pay-grid-bottom{grid-template-columns:1fr 1fr}
+}
+
+/* Sessions panels responsive */
+@media(max-width:700px){
+  #sec-admins .sessions-grid{grid-template-columns:1fr !important;}
 }
 /* Login notification animation */
 @keyframes notif-slide{from{opacity:0;transform:translateX(100%)}to{opacity:1;transform:translateX(0)}}
@@ -5393,21 +5430,20 @@ function refreshCart(){
   ci.innerHTML=items.map(function(e){var p=PRODUCTS.find(function(x){return x.id===e[0];})||{name:e[0],price:0,image:''};var lt=p.price*e[1];tot+=lt;return'<div class="ci-item"><img src="'+p.image+'" onerror="this.src=\'https://via.placeholder.com/44\'" alt=""><div style="flex:1"><p style="font-size:13px;font-weight:500">'+p.name+'</p><span style="font-size:12px;color:var(--tx3)">'+e[1]+' × '+fm(p.price)+'</span></div><div style="font-size:13px;font-weight:600;color:var(--gold)">'+fm(lt)+'</div><button class="ci-rm" onclick="delete cart[\''+e[0]+'\'];updCartUI();clRenderProds();refreshCart()">×</button></div>';}).join('');
   cf.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-top:1px solid var(--bo)"><span style="color:var(--tx2)">Total</span><strong style="font-size:17px;color:var(--gold)">'+fm(tot)+'</strong></div>'+
     '<textarea id="cl-note" style="width:100%;background:var(--dk4);border:1px solid var(--bo2);border-radius:10px;padding:9px;color:var(--tx);font-family:\'DM Sans\',sans-serif;font-size:13px;resize:none;outline:none;height:52px;display:block;margin-top:5px" placeholder="Note de livraison (optionnel)..."></textarea>'+
-    '<div style="margin-top:10px">'+
+    '<div style="margin-top:12px">'+
     (function(){
       var cr2=SESSION?getClientCredit(SESSION.id):null;
       var activeCoupons2=cr2?(cr2.coupons||[]).filter(function(c){return !c.used&&!c.cancelled&&(c.amount||0)>0;}):[];
       var totalCouponVal2=activeCoupons2.reduce(function(s,c){return s+c.amount;},0);
-      var couponBtn=activeCoupons2.length?
-        '<button class="pay-btn pay-coupon" style="width:100%;margin-bottom:8px;min-height:80px;flex-direction:row;gap:12px;justify-content:center" onclick="openCouponPay('+tot+')">'+
-        '<span class="pay-icon" style="margin-bottom:0"></span>'+
-        '<div><div class="pay-label" style="font-size:14px">Coupon avoir</div><div class="pay-desc" style="font-size:12px;opacity:.9">'+fm(totalCouponVal2)+' disponible</div></div>'+
-        '</button>':'';
-      return couponBtn;
+      if(!activeCoupons2.length) return '';
+      return '<button class="pay-btn pay-coupon" style="width:100%;margin-bottom:10px;min-height:72px;flex-direction:row;gap:14px;padding:14px 20px;" onclick="openCouponPay('+tot+')">'+
+        '<span class="pay-icon" style="margin-bottom:0;width:46px;height:46px;flex-shrink:0"></span>'+
+        '<div style="text-align:left"><div class="pay-label" style="font-size:14px;letter-spacing:.3px;text-align:left">Coupon avoir</div><div class="pay-desc" style="font-size:11px;text-align:left;opacity:.85">'+fm(totalCouponVal2)+' disponible</div></div>'+
+        '</button>';
     })()+
-    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:8px">'+
+    '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:9px;margin-bottom:9px">'+
     '<button class="pay-btn pay-cmi" onclick="openCMI('+tot+')">'+
-      '<span class="pay-icon"></span><span class="pay-label">CMI</span>'+
+      '<span class="pay-icon"></span><span class="pay-label">CMI / Carte</span>'+
     '</button>'+
     '<button class="pay-btn pay-cash" onclick="openAltPay(\'cash\','+tot+')">'+
       '<span class="pay-icon"></span><span class="pay-label">Espèces</span>'+
@@ -5415,15 +5451,14 @@ function refreshCart(){
     '<button class="pay-btn pay-transfer" onclick="openAltPay(\'transfer\','+tot+')">'+
       '<span class="pay-icon"></span><span class="pay-label">Virement</span>'+
     '</button>'+
-    '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
     '<button class="pay-btn pay-cheque" onclick="openAltPay(\'cheque\','+tot+')">'+
       '<span class="pay-icon"></span><span class="pay-label">Chèque</span>'+
     '</button>'+
-    '<button class="pay-btn pay-credit" onclick="openAltPay(\'credit\','+tot+')">'+
-      '<span class="pay-icon"></span><span class="pay-label">Tout à crédit</span>'+
-    '</button>'+
     '</div>'+
+    '<button class="pay-btn pay-credit" onclick="openAltPay(\'credit\','+tot+')">'+
+      '<span class="pay-icon"></span>'+
+      '<div style="text-align:left"><div class="pay-label">Tout à crédit</div><div class="pay-desc" style="opacity:.8;font-size:10px">Reporter sur le compte client</div></div>'+
+    '</button>'+
     '</div>';
 }
 
@@ -6007,10 +6042,10 @@ function openPartialRestModal(alreadyPaid, reste, firstMode){
   var creditBtn = '';
   if(creditAvail > 0){
     creditBtn =
-      '<button class="pay-btn pay-credit" style="width:100%;min-height:56px;margin-top:4px" onclick="completePartialPayment(\'credit\','+creditPossible+','+alreadyPaid+',\''+firstMode+'\')">' +
+      '<button class="pay-btn pay-credit" style="margin-bottom:8px" onclick="completePartialPayment(\'credit\','+creditPossible+','+alreadyPaid+',\''+firstMode+'\')">' +
         '<span class="pay-icon"></span>' +
-        '<div><div class="pay-label" style="font-size:13px">À crédit — '+fm(creditPossible)+'</div>' +
-        '<div class="pay-desc">Plafond dispo : '+fm(creditAvail)+'</div></div>' +
+        '<div style="text-align:left"><div class="pay-label">À crédit — '+fm(creditPossible)+'</div>' +
+        '<div class="pay-desc" style="opacity:.8">Plafond dispo : '+fm(creditAvail)+'</div></div>' +
       '</button>';
   }
 
@@ -6037,7 +6072,7 @@ function openPartialRestModal(alreadyPaid, reste, firstMode){
         '<span style="color:var(--ora)">'+fm(reste)+'</span>'+
       '</div>'+
     '</div>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px">'+btnGrid+'</div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:9px;margin-bottom:9px">'+btnGrid+'</div>'+
     creditBtn+
     '<button class="btn btn-o" style="width:100%;padding:11px;margin-top:10px" onclick="closeAllMd()">↩ Annuler</button>';
 
@@ -6323,8 +6358,11 @@ function processAltPay(){
     }
     if(given<total){
       if(cashInput){cashInput.style.border='2px solid #E8834A';}
-      // Propose other payment methods for the remainder
-      var manque = total - given;
+      var manque = Math.round((total - given)*100)/100;
+      // Initialiser les paidSteps si nécessaire
+      if(!_altPendingOrder._paidSteps) _altPendingOrder._paidSteps = [];
+      _altPendingOrder._paidSteps.push({mode:'espèces', amount:given});
+      // Laisser le client choisir librement le moyen pour le reste
       openPartialRestModal(given, manque, 'cash');
       return;
     }
