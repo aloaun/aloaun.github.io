@@ -660,23 +660,31 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
 .pay-grid-top{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:8px}
 .pay-grid-bottom{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
 .pay-btn{
-  display:flex;align-items:center;justify-content:center;
-  gap:8px;padding:13px 10px;border:none;border-radius:14px;
-  font-family:'DM Sans',sans-serif;cursor:pointer;transition:.2s cubic-bezier(.34,1.56,.64,1);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:6px;padding:16px 10px;border:none;border-radius:16px;
+  font-family:'DM Sans',sans-serif;cursor:pointer;
+  transition:.2s cubic-bezier(.34,1.56,.64,1);
   width:100%;position:relative;overflow:hidden;
-  font-size:13px;font-weight:700;letter-spacing:.2px;
-  box-shadow:0 4px 16px rgba(0,0,0,.3);
+  min-height:90px;box-sizing:border-box;
 }
-.pay-btn::after{
+.pay-btn::before{
   content:'';position:absolute;inset:0;
-  background:linear-gradient(135deg,rgba(255,255,255,.15),transparent 60%);
+  background:linear-gradient(135deg,rgba(255,255,255,.18),transparent 60%);
   pointer-events:none;border-radius:inherit;
 }
-.pay-btn:hover{transform:translateY(-2px) scale(1.02);box-shadow:0 8px 24px rgba(0,0,0,.4);}
-.pay-btn:active{transform:scale(.96);}
-.pay-btn .pay-icon{font-size:20px;line-height:1;flex-shrink:0;}
-.pay-btn .pay-label{font-size:12px;font-weight:700;color:inherit;text-align:center;}
-.pay-btn .pay-desc{font-size:9px;opacity:.75;text-align:center;}
+.pay-btn:hover{transform:translateY(-3px);filter:brightness(1.12)}
+.pay-btn:active{transform:scale(.96);filter:brightness(.95)}
+.pay-btn .pay-icon{
+  width:40px;height:40px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;line-height:1;
+  font-style:normal;
+  -webkit-text-stroke:0;
+  text-rendering:optimizeLegibility;
+}
+.pay-btn .pay-icon svg{width:28px;height:28px;display:block;flex-shrink:0}
+.pay-btn .pay-label{font-size:12px;font-weight:700;color:inherit;text-align:center;line-height:1.2}
+.pay-btn .pay-desc{font-size:9px;opacity:.75;text-align:center;margin-top:-2px}
 
 /* CMI — Violet/Purple */
 .pay-cmi{
@@ -685,6 +693,12 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
   box-shadow:0 4px 18px rgba(168,85,247,.35);
 }
 .pay-cmi:hover{box-shadow:0 8px 28px rgba(168,85,247,.5);}
+.pay-cmi .pay-icon::before{content:'💳';font-size:28px;line-height:1}
+.pay-cash .pay-icon::before{content:'💵';font-size:28px;line-height:1}
+.pay-transfer .pay-icon::before{content:'🏦';font-size:28px;line-height:1}
+.pay-cheque .pay-icon::before{content:'🗒';font-size:28px;line-height:1}
+.pay-credit .pay-icon::before{content:'🔄';font-size:28px;line-height:1}
+.pay-coupon .pay-icon::before{content:'🎫';font-size:28px;line-height:1}
 
 /* Espèces — Vert émeraude */
 .pay-cash{
@@ -3867,20 +3881,31 @@ function confirmReturn(id){
       note:'Retour cmd '+id+' — crédit réduit sur part cash: '+fm(redFromCash)});
   }
 
-  // RÈGLE 3 — Coupon = surplus cash après que le crédit est à zéro
-  // RÈGLE 4 — Si aucun crédit → coupon sur montants cash réels
-  // RÈGLE 5 — Si tout en crédit → aucun coupon
-  if(retCashPart > 0.01 && payMethod !== 'credit'){
+  // RÈGLE 3 : créer coupon SEULEMENT si le crédit est entièrement soldé
+  // Pas de coupon tant qu'il reste un solde crédit non nul
+  var soldeFinal = cr.balance || 0;
+  
+  if(soldeFinal > 0.01){
+    // Il reste encore du crédit → PAS de coupon
+    // On a déjà réduit le maximum possible dans les étapes 1 et 2
+    cr.transactions.push({date:today, type:'info', amount:0,
+      note:'Retour cmd '+id+' — aucun coupon créé, solde crédit restant: '+fm(soldeFinal)});
+  } else if(retCashPart > 0.01 && payMethod !== 'credit'){
+    // Crédit soldé OU inexistant → coupon pour le montant cash non remboursé par le crédit
     var couponCode='AV-'+id+'-'+Math.random().toString(36).substr(2,4).toUpperCase();
     cr.coupons.push({
       code:couponCode, amount:retCashPart, originalAmount:retCashPart,
       date:today, orderId:id, used:false, cancelled:false, type:'avoir',
       reason:'Avoir retour cmd '+id+' — '+fm(retCashPart)+
-        (creditReduced>0?' (crédit préalablement réduit: '+fm(creditReduced)+')':'')
+        (creditReduced>0?' (crédit réduit de '+fm(creditReduced)+' au préalable)':'')
     });
     couponGenerated = retCashPart;
-    cr.transactions.push({date:today,type:'coupon',amount:retCashPart,
+    cr.transactions.push({date:today, type:'coupon', amount:retCashPart,
       note:'Coupon avoir '+couponCode+' — '+fm(retCashPart)});
+  } else if(payMethod === 'credit'){
+    // Commande entièrement à crédit → retour réduit le crédit, pas de coupon
+    cr.transactions.push({date:today, type:'info', amount:0,
+      note:'Retour cmd '+id+' — commande crédit, solde réduit uniquement'});
   }
   try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
   save();
@@ -5377,21 +5402,21 @@ function refreshCart(){
     })()+
     '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:9px">'+
     '<button class="pay-btn pay-cmi" onclick="openCMI('+tot+')">'+
-      '<span class="pay-icon">💳</span><span class="pay-label">CMI</span>'+
+      '<span class="pay-icon"></span><span class="pay-label">CMI</span>'+
     '</button>'+
     '<button class="pay-btn pay-cash" onclick="openAltPay(\'cash\','+tot+')">'+
-      '<span class="pay-icon">💵</span><span class="pay-label">Espèces</span>'+
+      '<span class="pay-icon"></span><span class="pay-label">Espèces</span>'+
     '</button>'+
     '<button class="pay-btn pay-transfer" onclick="openAltPay(\'transfer\','+tot+')">'+
-      '<span class="pay-icon">🏦</span><span class="pay-label">Virement</span>'+
+      '<span class="pay-icon"></span><span class="pay-label">Virement</span>'+
     '</button>'+
     '</div>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">'+
     '<button class="pay-btn pay-cheque" onclick="openAltPay(\'cheque\','+tot+')">'+
-      '<span class="pay-icon">📋</span><span class="pay-label">Chèque</span>'+
+      '<span class="pay-icon"></span><span class="pay-label">Chèque</span>'+
     '</button>'+
     '<button class="pay-btn pay-credit" onclick="openAltPay(\'credit\','+tot+')">'+
-      '<span class="pay-icon">🔄</span><span class="pay-label">Tout à crédit</span>'+
+      '<span class="pay-icon"></span><span class="pay-label">Tout à crédit</span>'+
     '</button>'+
     '</div>'+
     '</div>';
@@ -5729,10 +5754,10 @@ function openCreditComplementModal(total,creditDispo,plafond){
     '</div>'+
     '<p style="font-size:12px;color:var(--tx2);margin-bottom:10px">Comment payez-vous les <strong style="color:var(--ora)">'+fm(surplus)+'</strong> restants ?</p>'+
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'+
-      '<button class="pay-btn pay-cmi" style="min-height:60px" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'cmi\')""><span class="pay-icon" style="font-size:20px">💳</span><span class="pay-label">CMI</span></button>'+
-      '<button class="pay-btn pay-cash" style="min-height:60px" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'cash\')""><span class="pay-icon" style="font-size:20px">💵</span><span class="pay-label">Espèces</span></button>'+
-      '<button class="pay-btn pay-transfer" style="min-height:60px" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'transfer\')""><span class="pay-icon" style="font-size:20px">🏦</span><span class="pay-label">Virement</span></button>'+
-      '<button class="pay-btn pay-cheque" style="min-height:60px" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'cheque\')""><span class="pay-icon" style="font-size:20px">📋</span><span class="pay-label">Chèque</span></button>'+
+      '<button class="pay-btn pay-cmi" style="min-height:60px" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'cmi\')""><span class="pay-icon"></span><span class="pay-label">CMI</span></button>'+
+      '<button class="pay-btn pay-cash" style="min-height:60px" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'cash\')""><span class="pay-icon"></span><span class="pay-label">Espèces</span></button>'+
+      '<button class="pay-btn pay-transfer" style="min-height:60px" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'transfer\')""><span class="pay-icon"></span><span class="pay-label">Virement</span></button>'+
+      '<button class="pay-btn pay-cheque" style="min-height:60px" onclick="finalizeCredit('+total+','+creditDispo+','+surplus+',\'cheque\')""><span class="pay-icon"></span><span class="pay-label">Chèque</span></button>'+
     '</div>'+
     '<button class="btn btn-o" style="width:100%;padding:11px" onclick="closeAllMd()">↩ Annuler</button>';
   document.getElementById('ord-content').innerHTML=html;
@@ -5897,52 +5922,76 @@ function calcChange(){
 // 💰 PAIEMENT PARTIEL — Propose autres moyens pour le reste
 // ════════════════════════════════════════════════════════
 function openPartialRestModal(alreadyPaid, reste, firstMode){
-  _altPendingOrder._partialPaid = alreadyPaid;
+  _altPendingOrder._partialPaid    = alreadyPaid;
   _altPendingOrder._partialPaidMode = firstMode;
-  _altPendingOrder._partialReste = reste;
+  _altPendingOrder._partialReste   = reste;
 
   var cr = SESSION ? getClientCredit(SESSION.id) : null;
-  var plafond = cr ? (cr.limit||0) : 0;
-  var soldeCr  = cr ? (cr.balance||0) : 0;
-  var creditAvail = Math.max(0, plafond - soldeCr);
-  // CAS 2 : Reste ≤ plafond dispo → peut payer en crédit ; sinon limité
+  var plafond      = cr ? (cr.limit||0)    : 0;
+  var soldeCr      = cr ? (cr.balance||0)  : 0;
+  var creditAvail  = Math.max(0, plafond - soldeCr);
   var creditPossible = Math.min(reste, creditAvail);
-  var surplusApresCredit = reste - creditPossible;
+
+  // Build payment method buttons — exclude the mode already used
+  var usedModes = (firstMode||'').split('+'); // supports chaining
+  var btnGrid = '';
+  var modes = [
+    {k:'cmi',      cls:'pay-cmi',      label:'Carte / CMI'},
+    {k:'cash',     cls:'pay-cash',     label:'Espèces'},
+    {k:'transfer', cls:'pay-transfer', label:'Virement'},
+    {k:'cheque',   cls:'pay-cheque',   label:'Chèque'},
+  ];
+  modes.forEach(function(m){
+    if(usedModes.indexOf(m.k)<0){
+      btnGrid += '<button class="pay-btn '+m.cls+'" onclick="completePartialPayment(\''+m.k+'\','+reste+','+alreadyPaid+',\''+firstMode+'\')">' +
+        '<span class="pay-icon"></span><span class="pay-label">'+m.label+'</span>' +
+      '</button>';
+    }
+  });
+
+  var creditBtn = '';
+  if(creditAvail > 0){
+    creditBtn =
+      '<button class="pay-btn pay-credit" style="width:100%;min-height:56px;margin-top:4px" onclick="completePartialPayment(\'credit\','+creditPossible+','+alreadyPaid+',\''+firstMode+'\')">' +
+        '<span class="pay-icon"></span>' +
+        '<div><div class="pay-label" style="font-size:13px">À crédit — '+fm(creditPossible)+'</div>' +
+        '<div class="pay-desc">Plafond dispo : '+fm(creditAvail)+'</div></div>' +
+      '</button>';
+  }
+
+  // Summary of what's already paid
+  var paidSummary = '';
+  if(Array.isArray(_altPendingOrder._paidSteps)){
+    paidSummary = _altPendingOrder._paidSteps.map(function(s){
+      return '<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--grn);margin-bottom:3px">'+
+        '<span>✅ '+s.mode+'</span><span>+'+fm(s.amount)+'</span></div>';
+    }).join('');
+  }
 
   var html =
-    '<h3 style="color:var(--gold);margin-bottom:4px">💳 Paiement partiel</h3>'+
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Montant insuffisant — choisissez comment couvrir le reste</p>'+
+    '<h3 style="color:var(--gold);margin-bottom:4px;font-size:16px">💳 Complément de paiement</h3>'+
+    '<p style="font-size:12px;color:var(--tx3);margin-bottom:12px">Choisissez comment payer le montant restant</p>'+
     '<div style="background:var(--dk4);border-radius:10px;padding:12px 14px;margin-bottom:14px">'+
-      '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px">'+
-        '<span style="color:var(--tx2)">Déjà payé ('+firstMode+') :</span>'+
+      paidSummary+
+      '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">'+
+        '<span style="color:var(--tx2)">Déjà réglé :</span>'+
         '<strong style="color:var(--grn)">'+fm(alreadyPaid)+'</strong>'+
       '</div>'+
-      '<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:700">'+
+      '<div style="display:flex;justify-content:space-between;font-size:15px;font-weight:700;padding-top:8px;border-top:1px solid var(--bo)">'+
         '<span>Reste à payer :</span>'+
         '<span style="color:var(--ora)">'+fm(reste)+'</span>'+
       '</div>'+
     '</div>'+
-    '<p style="font-size:12px;color:var(--tx3);margin-bottom:10px">Comment voulez-vous payer les <strong style="color:var(--ora)">'+fm(reste)+'</strong> restants ?</p>'+
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
-    (firstMode!=='cmi'?'<button class="pay-btn pay-cmi" style="min-height:56px" onclick="completePartialPayment(&quot;cmi&quot;,'+reste+','+alreadyPaid+',&quot;'+firstMode+'&quot;)"><span class="pay-icon" style="font-size:18px">💳</span><span class="pay-label">CMI</span></button>':'<div></div>')+
-    (firstMode!=='cash'?'<button class="pay-btn pay-cash" style="min-height:56px" onclick="completePartialPayment(&quot;cash&quot;,'+reste+','+alreadyPaid+',&quot;'+firstMode+'&quot;)"><span class="pay-icon" style="font-size:18px">💵</span><span class="pay-label">Espèces</span></button>':'<div></div>')+
-    (firstMode!=='transfer'?'<button class="pay-btn pay-transfer" style="min-height:56px" onclick="completePartialPayment(&quot;transfer&quot;,'+reste+','+alreadyPaid+',&quot;'+firstMode+'&quot;)"><span class="pay-icon" style="font-size:18px">🏦</span><span class="pay-label">Virement</span></button>':'<div></div>')+
-    (firstMode!=='cheque'?'<button class="pay-btn pay-cheque" style="min-height:56px" onclick="completePartialPayment(&quot;cheque&quot;,'+reste+','+alreadyPaid+',&quot;'+firstMode+'&quot;)"><span class="pay-icon" style="font-size:18px">📋</span><span class="pay-label">Chèque</span></button>':'<div></div>')+
-    '</div>'+
-    (creditPossible>0?
-      '<button class="pay-btn pay-credit" style="min-height:54px;width:100%;margin-bottom:8px" onclick="completePartialPayment(&quot;credit&quot;,'+creditPossible+','+alreadyPaid+',&quot;'+firstMode+'&quot;)">' +
-        '<span class="pay-icon" style="font-size:18px">🔄</span>'+
-        '<div><div class="pay-label">Crédit ('+fm(creditPossible)+')</div>'+
-          (surplusApresCredit>0?'<div class="pay-desc" style="color:#E8834A">⚠️ +'+fm(surplusApresCredit)+' hors plafond</div>':
-          '<div class="pay-desc">Plafond dispo: '+fm(creditAvail)+'</div>')+
-        '</div>'+
-      '</button>':''+
-    '')+
-    '<button class="btn btn-o" style="width:100%;padding:11px" onclick="closeAllMd()">↩ Annuler et reprendre</button>';
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">'+btnGrid+'</div>'+
+    creditBtn+
+    '<button class="btn btn-o" style="width:100%;padding:11px;margin-top:10px" onclick="closeAllMd()">↩ Annuler</button>';
 
   document.getElementById('ord-content').innerHTML = html;
   openMd('ord');
 }
+
+
+
 
 function completePartialPayment(restMode, reste, alreadyPaid, firstMode){
   closeAllMd();
