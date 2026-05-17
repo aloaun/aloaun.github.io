@@ -2147,6 +2147,17 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
       <div class="tc-h"><h3>Rentabilité par produit</h3></div>
       <table><thead><tr><th>Produit</th><th>Catégorie</th><th>Qté</th><th>CA</th><th>Coût</th><th>Profit</th><th>Marge</th><th>% CA</th></tr></thead><tbody id="top-prods"></tbody></table>
      </div>
+     <!-- REGION & VILLE dans analytics -->
+     <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:4px" id="an-region-city-wrap">
+      <div class="tc" id="an-region-block">
+       <div class="tc-h"><h3>📍 Ventes par région</h3></div>
+       <div id="an-region-list" style="padding:6px 0"></div>
+      </div>
+      <div class="tc" id="an-city-block">
+       <div class="tc-h"><h3>🏙️ Ventes par ville</h3></div>
+       <div id="an-city-list" style="padding:6px 0"></div>
+      </div>
+     </div>
     </div>
 
     <!-- REGIONAL PRODUCTS (region + city) -->
@@ -3920,7 +3931,7 @@ function buildCatOptions(selectedVal,pfx){
 }
 
 // Init filter dropdowns
-function initAdminFilters(){initOrderFilters();initProdFilters();initClientFilters();}
+function initAdminFilters(){initOrderFilters();initProdFilters();initClientFilters();setTimeout(function(){renderOrders();},50);}
 function initOrderFilters(){
   var rSet={};CLIENTS.forEach(function(c){rSet[c.region]=1;});
   var rs=document.getElementById('of-region');
@@ -6039,18 +6050,71 @@ function renderAnalytics(){
   var margin=totalCA>0?Math.round(totalPr/totalCA*100):0;
   var returnRate=O.length?Math.round(O.filter(function(o){return o.status==='returned';}).length/O.length*100):0;
 
-  // KPIs analytique
+  // Couleur marge selon seuil
+  var marginColor=margin>=50?'#52C97A':margin>=30?'#C9A84C':'#E05252';
+
+  // KPIs analytique avec barre de progression pour la marge
   var anEl=(document.getElementById('an-kpis')||{innerHTML:''});
-  anEl.innerHTML=[
-    {l:'CA livré',v:fm(totalCA)},{l:'Profit',v:fm(totalPr)},
-    {l:'Panier moyen',v:fm(avgOrder)},{l:'Marge',v:margin+'%'},
-    {l:'Taux retour',v:returnRate+'%'},{l:'Total cmds',v:O.length}
-  ].map(function(k){
-    return '<div class="kpi" style="text-align:center">'
-      +'<div class="kl">'+k.l+'</div>'
-      +'<div class="kv" style="font-size:18px">'+k.v+'</div>'
-      +'</div>';
-  }).join('');
+  anEl.innerHTML=
+    // KPI standard
+    [{l:'CA livré',v:fm(totalCA)},{l:'Profit',v:fm(totalPr)},
+     {l:'Panier moyen',v:fm(avgOrder)},{l:'Taux retour',v:returnRate+'%'},{l:'Total cmds',v:O.length}
+    ].map(function(k){
+      return '<div class="kpi" style="text-align:center">'
+        +'<div class="kl">'+k.l+'</div>'
+        +'<div class="kv" style="font-size:18px">'+k.v+'</div>'
+        +'</div>';
+    }).join('')+
+    // KPI Marge avec barre de progression
+    '<div class="kpi" style="text-align:center">'
+      +'<div class="kl">MARGE GLOBALE</div>'
+      +'<div class="kv" style="font-size:22px;color:'+marginColor+';font-weight:700">'+margin+'%</div>'
+      +'<div style="margin-top:8px;background:rgba(255,255,255,0.08);border-radius:20px;height:8px;overflow:hidden;position:relative">'
+        +'<div style="height:100%;width:'+Math.min(margin,100)+'%;background:'+marginColor+';border-radius:20px;transition:width 0.6s ease"></div>'
+      +'</div>'
+      +'<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--tx3);margin-top:3px"><span>0%</span><span style="color:'+marginColor+'">'+margin+'%</span><span>100%</span></div>'
+    +'</div>';
+
+  // Barre marge globale sous les KPIs
+  var mgBarEl=document.getElementById('an-margin-bar');
+  if(!mgBarEl){
+    var kpisEl=document.getElementById('an-kpis');
+    if(kpisEl&&kpisEl.parentNode){
+      var barDiv=document.createElement('div');
+      barDiv.id='an-margin-bar';
+      barDiv.style.cssText='margin-bottom:20px;padding:14px 16px;background:rgba(255,255,255,0.03);border:1px solid var(--bo2);border-radius:12px';
+      kpisEl.parentNode.insertBefore(barDiv,kpisEl.nextSibling);
+      mgBarEl=barDiv;
+    }
+  }
+  // Pré-calcul stats produits pour la marge
+  var pStats2={};
+  O.forEach(function(o){
+    (o.items||[]).forEach(function(it){
+      if(!pStats2[it.productId])pStats2[it.productId]={ca:0,profit:0};
+      pStats2[it.productId].ca+=it.price*it.quantity;
+      pStats2[it.productId].profit+=(it.price-(it.buyPrice||0))*it.quantity;
+    });
+  });
+  if(mgBarEl){
+    var pids=Object.keys(pStats2).sort(function(a,b){return pStats2[b].ca-pStats2[a].ca;}).slice(0,8);
+    mgBarEl.innerHTML='<div style="font-size:11px;color:var(--tx3);letter-spacing:1px;text-transform:uppercase;margin-bottom:12px">📊 Marge par produit</div>'
+      +pids.map(function(pid){
+        var p=getP(pid);
+        var s=pStats2[pid];
+        var mg=s.ca>0?Math.round(s.profit/s.ca*100):0;
+        var clr=mg>=50?'#52C97A':mg>=30?'#C9A84C':'#E05252';
+        return '<div style="margin-bottom:10px">'
+          +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+            +'<span style="font-size:12px;color:var(--tx)">'+p.name+'</span>'
+            +'<span style="font-size:12px;font-weight:600;color:'+clr+'">'+mg+'%</span>'
+          +'</div>'
+          +'<div style="background:rgba(255,255,255,0.08);border-radius:20px;height:7px;overflow:hidden">'
+            +'<div style="height:100%;width:'+Math.min(mg,100)+'%;background:'+clr+';border-radius:20px;transition:width 0.7s ease"></div>'
+          +'</div>'
+        +'</div>';
+      }).join('');
+  }
 
   // CA & Profit mensuel
   var months=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
@@ -6102,6 +6166,55 @@ function renderAnalytics(){
         +'<td style="color:var(--grn)"><strong>'+fm(s.profit)+'</strong></td>'
         +'<td><span class="sb '+(mg>40?'sd':mg>20?'sc':'sp')+'">'+mg+'%</span></td></tr>';
     }).join('')+'</tbody></table></div>';
+
+  // ── RÉGION & VILLE dans analytics ──
+  var regCA={},cityCA={};
+  O.forEach(function(o){
+    var c=getC(o.clientId);
+    var reg=c.region||'Inconnue';
+    var vil=c.city||'Inconnue';
+    regCA[reg]=(regCA[reg]||0)+o.total;
+    cityCA[vil]=(cityCA[vil]||0)+o.total;
+  });
+  var totalAllCA=O.reduce(function(s,o){return s+o.total;},0)||1;
+  // Régions
+  var regEl=document.getElementById('an-region-list');
+  if(regEl){
+    var regKeys=Object.keys(regCA).sort(function(a,b){return regCA[b]-regCA[a];}).slice(0,8);
+    regEl.innerHTML=regKeys.map(function(r,i){
+      var pct=Math.round(regCA[r]/totalAllCA*100);
+      var colors=['#C9A84C','#4A9EE8','#52C97A','#9B6BDB','#E05252','#E8834A','#4ECDC4','#FF6B6B'];
+      var clr=colors[i%colors.length];
+      return '<div style="margin-bottom:11px;padding:0 14px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+          +'<span style="font-size:12px;color:var(--tx);font-weight:500">'+r+'</span>'
+          +'<span style="font-size:11px;color:var(--tx3)">'+fm(regCA[r])+' · '+pct+'%</span>'
+        +'</div>'
+        +'<div style="background:rgba(255,255,255,0.08);border-radius:20px;height:6px;overflow:hidden">'
+          +'<div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:20px;transition:width 0.6s ease"></div>'
+        +'</div>'
+      +'</div>';
+    }).join('')||'<div style="padding:14px;color:var(--tx3);font-size:12px">Aucune donnée</div>';
+  }
+  // Villes
+  var cityEl=document.getElementById('an-city-list');
+  if(cityEl){
+    var cityKeys=Object.keys(cityCA).sort(function(a,b){return cityCA[b]-cityCA[a];}).slice(0,8);
+    cityEl.innerHTML=cityKeys.map(function(v,i){
+      var pct=Math.round(cityCA[v]/totalAllCA*100);
+      var colors=['#52C97A','#C9A84C','#4A9EE8','#9B6BDB','#E05252','#E8834A','#4ECDC4','#FF6B6B'];
+      var clr=colors[i%colors.length];
+      return '<div style="margin-bottom:11px;padding:0 14px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+          +'<span style="font-size:12px;color:var(--tx);font-weight:500">'+v+'</span>'
+          +'<span style="font-size:11px;color:var(--tx3)">'+fm(cityCA[v])+' · '+pct+'%</span>'
+        +'</div>'
+        +'<div style="background:rgba(255,255,255,0.08);border-radius:20px;height:6px;overflow:hidden">'
+          +'<div style="height:100%;width:'+pct+'%;background:'+clr+';border-radius:20px;transition:width 0.6s ease"></div>'
+        +'</div>'
+      +'</div>';
+    }).join('')||'<div style="padding:14px;color:var(--tx3);font-size:12px">Aucune donnée</div>';
+  }
 }
 
 
@@ -11203,6 +11316,8 @@ function refreshUI(){
       else if(sec==='suppliers' && window.renderSuppliers) window.renderSuppliers();
       else if(sec==='analytics' && window.renderAnalytics) window.renderAnalytics();
       else if(sec==='purchases' && window.renderPurchases) window.renderPurchases();
+      // Pré-render commandes en arrière-plan → tableau prêt dès navigation
+      if(sec!=='orders' && window.renderOrders) setTimeout(window.renderOrders,300);
     } else if(window.SESSION.role==='client'){
       if(window.clRenderProds) window.clRenderProds();
       if(window.renderClOrds) window.renderClOrds();
