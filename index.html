@@ -118,13 +118,13 @@ canvas,.chart-div{display:block!important;width:100%!important;height:100%!impor
   .cg2{grid-template-columns:1fr!important}
   .cg22{grid-template-columns:1fr!important}
   .kv{font-size:18px!important}
-  /* Cacher colonnes n+7 SAUF pour le tableau commandes admin */
-  #pg-admin :not(#sec-orders) thead th:nth-child(n+7){display:none!important}
-  #pg-admin :not(#sec-orders) tbody td:nth-child(n+7){display:none!important}
-  /* Tableau commandes : forcer scroll, afficher TOUTES les colonnes */
-  #sec-orders .tc,#sec-orders{overflow-x:scroll!important;-webkit-overflow-scrolling:touch!important}
+  /* Masquer col 7+ sur AUTRES tables, PAS le tableau commandes */
+  #pg-admin .tc:not(#sec-orders .tc) thead th:nth-child(n+7){display:none!important}
+  #pg-admin .tc:not(#sec-orders .tc) tbody td:nth-child(n+7){display:none!important}
+  /* Commandes : scroll + toutes colonnes */
+  #sec-orders{overflow-x:scroll!important;-webkit-overflow-scrolling:touch!important}
   #sec-orders table{min-width:980px!important;font-size:11px!important}
-  #sec-orders thead th,#sec-orders tbody td{padding:6px 5px!important;white-space:nowrap!important}
+  #sec-orders thead th,#sec-orders tbody td{padding:6px 4px!important;white-space:nowrap!important}
 }
 
 
@@ -143,10 +143,10 @@ canvas,.chart-div{display:block!important;width:100%!important;height:100%!impor
   .tc{overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;padding:0!important}
   .tc table{min-width:500px!important}
   .tc-h{padding:12px 14px!important}
-  /* Tableau commandes : scroll horizontal forcé, toutes colonnes visibles */
-  #sec-orders .tc{overflow-x:scroll!important;-webkit-overflow-scrolling:touch!important;display:block!important}
+  /* Tableau commandes : TOUTES colonnes visibles, scroll horizontal */
+  #sec-orders .tc{overflow-x:scroll!important;-webkit-overflow-scrolling:touch!important;display:block!important;width:100%!important}
   #sec-orders table{min-width:980px!important;width:max-content!important;font-size:11.5px!important}
-  #sec-orders thead th,#sec-orders tbody td{padding:7px 6px!important;white-space:nowrap!important}
+  #sec-orders thead th,#sec-orders tbody td{padding:7px 5px!important;white-space:nowrap!important}
 }
 
 </style>
@@ -1797,7 +1797,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
        <button class="btn btn-b btn-sm" onclick="bulkConfirm()">✓ Confirmer sélection</button>
        <button class="btn btn-o btn-sm" onclick="_selectedOrders.clear();document.querySelectorAll('.ord-chk').forEach(function(c){c.checked=false;});updateBulkBar()">✕ Désélectionner</button>
       </div>
-      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;display:block"><table style="min-width:980px;width:max-content;border-collapse:collapse"><thead><tr><th style="white-space:nowrap"><input type="checkbox" onclick="toggleAllOrders()" title="Tout sélectionner" style="cursor:pointer"></th><th style="white-space:nowrap">N°</th><th style="white-space:nowrap">Client</th><th style="white-space:nowrap">Région</th><th style="white-space:nowrap">Produits</th><th style="white-space:nowrap">Retour</th><th style="white-space:nowrap">Montant</th><th style="white-space:nowrap">Profit</th><th style="white-space:nowrap">Date</th><th style="white-space:nowrap">Statut</th><th style="white-space:nowrap">Paiement</th><th style="white-space:nowrap">Actions</th></tr></thead><tbody id="ords-tb"></tbody></table></div>
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;display:block"><table style="min-width:980px;width:max-content;border-collapse:collapse"><thead><tr><th style="white-space:nowrap;padding:8px 6px"><input type="checkbox" onclick="toggleAllOrders()" title="Tout sélectionner" style="cursor:pointer"></th><th style="white-space:nowrap;padding:8px 6px">N°</th><th style="white-space:nowrap;padding:8px 6px">Client</th><th style="white-space:nowrap;padding:8px 6px">Région</th><th style="white-space:nowrap;padding:8px 6px">Produits</th><th style="white-space:nowrap;padding:8px 6px">Retour</th><th style="white-space:nowrap;padding:8px 6px">Montant</th><th style="white-space:nowrap;padding:8px 6px">Profit</th><th style="white-space:nowrap;padding:8px 6px">Date</th><th style="white-space:nowrap;padding:8px 6px">Statut</th><th style="white-space:nowrap;padding:8px 6px">Paiement</th><th style="white-space:nowrap;padding:8px 6px">Actions</th></tr></thead><tbody id="ords-tb"></tbody></table></div>
      </div>
     </div>
 
@@ -3449,6 +3449,13 @@ function doLogin(){
         },60000);
         // Notification super admin: show toast with who logged in (if notifications enabled)
         updateAdminSidebar();initAdminFilters();renderOnlineAccounts();
+        // Afficher les commandes dès le login (tableau pré-rempli)
+        setTimeout(function(){
+          if(typeof renderOrders==='function') renderOrders();
+          var pending=ORDERS.filter(function(o){return o.status==='pending';}).length;
+          var b=document.getElementById('ord-badge');
+          if(b){b.textContent=pending>0?pending:'';b.style.display=pending>0?'inline':'none';}
+        },250);
         // Render dès que pg-admin est visible, puis refresh après Firebase
         setTimeout(function(){
           if(typeof renderDashboard==='function') renderDashboard();
@@ -4420,7 +4427,7 @@ function renderOrders(){
   else if(sort==='tot-d')O.sort(function(a,b){return b.total-a.total;});
   else if(sort==='tot-a')O.sort(function(a,b){return a.total-b.total;});
   else if(sort==='prof-d')O.sort(function(a,b){return calcProfit(b)-calcProfit(a);});
-  else O.sort(function(a,b){return b.date.localeCompare(a.date);});
+  else{var _sp={'pending':0,'confirmed':1,'shipped':2,'delivered':3,'returned':4,'cancelled':5};O.sort(function(a,b){var pa=(_sp[a.status]!==undefined?_sp[a.status]:9);var pb=(_sp[b.status]!==undefined?_sp[b.status]:9);if(pa!==pb)return pa-pb;return b.date.localeCompare(a.date);});}
   (document.getElementById('o-cnt')||{textContent:''}).textContent=O.length+' résultat(s)';
   (document.getElementById('ords-tb')||{innerHTML:''}).innerHTML=O.map(function(o){
     var c=getC(o.clientId);var pr=calcProfit(o);
@@ -4500,7 +4507,7 @@ function renderOrders(){
   else if(sort==='tot-d')O.sort(function(a,b){return b.total-a.total;});
   else if(sort==='tot-a')O.sort(function(a,b){return a.total-b.total;});
   else if(sort==='prof-d')O.sort(function(a,b){return calcProfit(b)-calcProfit(a);});
-  else O.sort(function(a,b){return b.date.localeCompare(a.date);});
+  else{var _sp={'pending':0,'confirmed':1,'shipped':2,'delivered':3,'returned':4,'cancelled':5};O.sort(function(a,b){var pa=(_sp[a.status]!==undefined?_sp[a.status]:9);var pb=(_sp[b.status]!==undefined?_sp[b.status]:9);if(pa!==pb)return pa-pb;return b.date.localeCompare(a.date);});}
   (document.getElementById('o-cnt')||{textContent:''}).textContent=O.length+' résultat(s)';
   (document.getElementById('ords-tb')||{innerHTML:''}).innerHTML=O.map(function(o){
     var c=getC(o.clientId);var pr=calcProfit(o);
@@ -6442,7 +6449,7 @@ function processCMI(){
     for(var id in cart){var p=PRODUCTS.find(function(x){return x.id===id;});items2.push({productId:id,quantity:cart[id],price:p.price,buyPrice:p.buyPrice||0});}
     var profit=items2.reduce(function(s,it){return s+(it.price-(it.buyPrice||0))*it.quantity;},0);
     var o={id:'ORD'+(1000+ORDERS.length),clientId:SESSION.id,items:items2,total:_pendingOrder.total,profit:profit,note:_pendingOrder.note,payStatus:'paid',payMethod:'cmi',status:'pending',date:new Date().toISOString().split('T')[0]};
-    ORDERS.unshift(o);save();if(window._adminNotifyOrder)window._adminNotifyOrder(o);cart={};updCartUI();_pendingOrder=null;
+    ORDERS.unshift(o);if(typeof renderOrders==='function'&&window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders')setTimeout(renderOrders,80);var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}save();cart={};updCartUI();_pendingOrder=null;
     btn.disabled=false;btn.textContent='Payer maintenant →';
     closeAllMd();toast('✅ Paiement CMI accepté ! Commande envoyée.');clRenderProds();
   },1800);
@@ -6681,7 +6688,7 @@ function confirmCouponPayment(total, reste, complementMethod){
     payStatus:reste>0&&complementMethod==='credit'?'partial':'paid',
     payMethod:'coupon'+(reste>0?'+'+complementMethod:''),
     status:'pending',date:today,couponUsed:used,couponsUsed:usedCodes,complementMethod:complementMethod||''};
-  ORDERS.unshift(o);save();if(window._adminNotifyOrder)window._adminNotifyOrder(o);
+  ORDERS.unshift(o);if(typeof renderOrders==='function'&&window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders')setTimeout(renderOrders,80);var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}save();
   if(window.saveToCloud) window.saveToCloud();
   cart={};updCartUI();
   // Fermer TOUS les modals
@@ -6809,7 +6816,7 @@ function finalizeCredit(total,creditPart,cashPart,cashMode){
     paidAmount:cashPart,creditAmount:creditPart,resteAmount:0,
     status:'pending',date:today};
   ORDERS.unshift(o);
-if(window._adminNotifyOrder)window._adminNotifyOrder(o);
+if(typeof renderOrders==='function'&&window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders')setTimeout(renderOrders,80);var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}
   try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
   save();if(window.saveToCloud)window.saveToCloud();
   cart={};updCartUI();clRenderProds();
@@ -6835,7 +6842,7 @@ function _finalizeCredit(total,cashPart,cashMode){
     payStatus:'partial',payMethod:'credit',creditAmount:total,paidAmount:0,
     status:'pending',date:today};
   ORDERS.unshift(o);
-if(window._adminNotifyOrder)window._adminNotifyOrder(o);
+if(typeof renderOrders==='function'&&window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders')setTimeout(renderOrders,80);var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}
   try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
   save();if(window.saveToCloud)window.saveToCloud();
   cart={};updCartUI();clRenderProds();
@@ -7182,7 +7189,7 @@ function confirmPayMethodInput(mode, reste, alreadyPaid, prevModes){
       paySteps: _altPendingOrder._paidSteps.slice()
     };
     ORDERS.unshift(o);
-if(window._adminNotifyOrder)window._adminNotifyOrder(o);
+if(typeof renderOrders==='function'&&window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders')setTimeout(renderOrders,80);var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}
     save(); if(window.saveToCloud) window.saveToCloud();
     cart={}; updCartUI(); _altPendingOrder=null;
     closeAllMd();
@@ -7305,7 +7312,7 @@ function _finalizePartialWithCoupon(couponAmount, alreadyPaid, prevModes){
     var o={id:'ORD'+(1000+ORDERS.length),clientId:SESSION.id,items:items2,total:totalOrder,profit:profit,
       note:_altPendingOrder.note||'',payStatus:'paid',payMethod:prevModes+'+coupon',
       couponsUsed:codes,status:'pending',date:today};
-    ORDERS.unshift(o);save();if(window._adminNotifyOrder)window._adminNotifyOrder(o);if(window.saveToCloud)window.saveToCloud();
+    ORDERS.unshift(o);if(typeof renderOrders==='function'&&window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders')setTimeout(renderOrders,80);var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}save();if(window.saveToCloud)window.saveToCloud();
     cart={};updCartUI();_altPendingOrder=null;closeAllMd();
     toast('✅ Paiement complet : '+fm(alreadyPaid)+' ('+prevModes+') + '+fm(used)+' (coupon)');
     clRenderProds();renderClOrds();
@@ -7358,7 +7365,7 @@ function processAltPay(){
   if(_altPayMode==='cash'){extra.cashGiven=parseFloat(document.getElementById('pay-cash-given').value)||0;extra.change=extra.cashGiven-_altPendingOrder.total;}
   if(_altPayMode==='transfer'){extra.bank=document.getElementById('pay-transfer-bank').value;extra.ref=document.getElementById('pay-transfer-ref').value.trim();}
   var o={id:'ORD'+(1000+ORDERS.length),clientId:SESSION.id,items:items2,total:_altPendingOrder.total,profit:profit,note:_altPendingOrder.note,payStatus:'paid',payMethod:_altPayMode,payExtra:extra,status:'pending',date:new Date().toISOString().split('T')[0]};
-  ORDERS.unshift(o);save();if(window._adminNotifyOrder)window._adminNotifyOrder(o);
+  ORDERS.unshift(o);if(typeof renderOrders==='function'&&window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders')setTimeout(renderOrders,80);var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}save();
   if(window.saveToCloud) window.saveToCloud();
   cart={};updCartUI();_altPendingOrder=null;
   closeAllMd();
@@ -9041,7 +9048,7 @@ processAltPay=function(){
   }
   var o={id:'ORD'+(1000+ORDERS.length),clientId:SESSION.id,items:items2,total:_altPendingOrder.total,profit:profit,note:_altPendingOrder.note,payStatus:'paid',payMethod:_altPayMode,payExtra:extra,status:'pending',date:new Date().toISOString().split('T')[0]};
   ORDERS.unshift(o);
-if(window._adminNotifyOrder)window._adminNotifyOrder(o);
+if(typeof renderOrders==='function'&&window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders')setTimeout(renderOrders,80);var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}
   // Add to credit balance if unpaid portion
   save();cart={};updCartUI();_altPendingOrder=null;
   closeAllMd();
@@ -9811,7 +9818,7 @@ processAltPay = function(){
     payStatus: reste > 0 ? 'partial' : 'paid', payMethod:_altPayMode, payExtra:extra,
     status:'pending', date:new Date().toISOString().split('T')[0]};
   ORDERS.unshift(o);
-if(window._adminNotifyOrder)window._adminNotifyOrder(o);
+if(typeof renderOrders==='function'&&window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders')setTimeout(renderOrders,80);var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}
 
   // Ajouter le reste au crédit client
   if(reste > 0){
@@ -10863,7 +10870,7 @@ function payFullCredit(){
     payStatus:'partial', payMethod:'credit', payExtra:{}, status:'pending',
     date:new Date().toISOString().split('T')[0]};
   ORDERS.unshift(o);
-if(window._adminNotifyOrder)window._adminNotifyOrder(o);
+if(typeof renderOrders==='function'&&window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders')setTimeout(renderOrders,80);var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}
   cr.balance = newBal;
   cr.transactions = cr.transactions || [];
   cr.transactions.push({date:o.date, type:'credit', amount:total, note:'Achat à crédit '+o.id});
@@ -11094,12 +11101,6 @@ async function loadFromCloud(){
     inj('clients',   'al_c',          'CLIENTS',            v=>Array.isArray(v)&&v.length>0);
     inj('products',  'al_p',          'PRODUCTS',           v=>Array.isArray(v)&&v.length>0);
     inj('orders',    'al_o',          'ORDERS',             v=>Array.isArray(v)&&v.length>0);
-    // Toujours mettre à jour le badge commandes en attente après chargement
-    setTimeout(function(){
-      var pending=ORDERS.filter(function(o){return o.status==='pending';}).length;
-      var b=document.getElementById('ord-badge');
-      if(b){b.textContent=pending>0?pending:'';b.style.display=pending>0?'inline':'none';}
-    },50);
     // Recharger ADMIN depuis Firebase — mais garder le mot de passe local en priorité
     if(d.admin && d.admin.username){
       var fbAdmin = d.admin;
@@ -11129,8 +11130,8 @@ async function loadFromCloud(){
       setTimeout(function(){ 
         if(typeof renderDashboard==='function') renderDashboard();
         var sec=window._currentSec||'dash';
-        if(typeof renderOrders==='function') renderOrders();  // toujours rafraîchir commandes
-        if(sec==='analytics' && typeof renderAnalytics==='function') renderAnalytics();
+        if(sec==='orders' && typeof renderOrders==='function') renderOrders();
+        else if(sec==='analytics' && typeof renderAnalytics==='function') renderAnalytics();
         else if(sec==='regional' && typeof renderRegional==='function') renderRegional();
         // Second render pour les graphiques (après peinture complète)
         setTimeout(function(){
@@ -11190,6 +11191,8 @@ function refreshUI(){
       else if(sec==='suppliers' && window.renderSuppliers) window.renderSuppliers();
       else if(sec==='analytics' && window.renderAnalytics) window.renderAnalytics();
       else if(sec==='purchases' && window.renderPurchases) window.renderPurchases();
+      // Toujours pré-rendre commandes en arrière-plan (tableau prêt dès navigation)
+      if(sec!=='orders' && typeof renderOrders==='function') setTimeout(renderOrders,300);
     } else if(window.SESSION.role==='client'){
       if(window.clRenderProds) window.clRenderProds();
       if(window.renderClOrds) window.renderClOrds();
@@ -11212,8 +11215,6 @@ function refreshUI(){
       else if(sec==='credits' && window.renderCredits) window.renderCredits();
       else if(sec==='coupons' && window.renderCouponsSection) window.renderCouponsSection();
       else if(sec==='scanner') renderScanHistory();
-      // Toujours pré-rendre les commandes en arrière-plan pour tableau prêt
-      if(sec!=='orders' && window.renderOrders) setTimeout(window.renderOrders,400);
       else if(sec==='complaints'){
         if(window.renderComplaints) window.renderComplaints();
         if(window.renderAdminContactMsgs) setTimeout(window.renderAdminContactMsgs,100);
@@ -11221,6 +11222,8 @@ function refreshUI(){
       else if(sec==='suppliers' && window.renderSuppliers) window.renderSuppliers();
       else if(sec==='analytics' && window.renderAnalytics) window.renderAnalytics();
       else if(sec==='purchases' && window.renderPurchases) window.renderPurchases();
+      // Toujours pré-rendre commandes en arrière-plan (tableau prêt dès navigation)
+      if(sec!=='orders' && typeof renderOrders==='function') setTimeout(renderOrders,300);
     } else if(window.SESSION.role==='client'){
       if(window.clRenderProds) window.clRenderProds();
       if(window.renderClOrds) window.renderClOrds();
@@ -11295,6 +11298,13 @@ function startRealtimeSync(){
         }
         injectData(d);
         if(window.updateCreditBadge) window.updateCreditBadge();
+        // Toujours rafraîchir tableau commandes + badge après sync Firebase
+        setTimeout(function(){
+          if(typeof renderOrders==='function') renderOrders();
+          var pending=ORDERS.filter(function(o){return o.status==='pending';}).length;
+          var b=document.getElementById('ord-badge');
+          if(b){b.textContent=pending>0?pending:'';b.style.display=pending>0?'inline':'none';}
+        },150);
         // Check for new sessions and show notifications
         if(d.sessions && typeof d.sessions==='object' && typeof SESSION !== 'undefined' && SESSION && SESSION.role==='admin'){
           var prevSessions = JSON.parse(localStorage.getItem('_prev_sessions')||'{}');
@@ -12498,277 +12508,250 @@ function printBarcodeLabels(){
   });
 })();
 
-// ══════════════════════════════════════════════════════════════
-//  ADMIN NOTIFICATION - Commande client → visible immédiatement
-// ══════════════════════════════════════════════════════════════
-window._adminNotifyOrder = function(o){
-  // Mettre à jour badge sidebar
-  var pending = ORDERS.filter(function(x){return x.status==='pending';}).length;
-  var b = document.getElementById('ord-badge');
-  if(b){b.textContent = pending>0 ? pending : ''; b.style.display = pending>0 ? 'inline' : 'none';}
-  // Si admin est sur le tableau commandes → rafraîchir immédiatement
-  if(window.SESSION && window.SESSION.role==='admin' && window._currentSec==='orders' && window.renderOrders){
-    setTimeout(window.renderOrders, 80);
-  }
-  // Aussi sauvegarder vers Firebase
-  if(window.saveToCloud) setTimeout(window.saveToCloud, 500);
-};
-
-// Appel renderOrders au login admin pour que le tableau soit pré-rempli
+// ══════════════════════════════════════════════════
+//  AUTO-INIT: renderOrders dès que SESSION admin prête
+// ══════════════════════════════════════════════════
 (function(){
-  var _initCheck = setInterval(function(){
-    if(window.SESSION && window.SESSION.role==='admin' && typeof renderOrders==='function'){
-      clearInterval(_initCheck);
+  var _t=0;
+  var _iv=setInterval(function(){
+    _t++;
+    if(_t>60){clearInterval(_iv);return;} // stop after 12s
+    if(window.SESSION&&window.SESSION.role==='admin'&&typeof renderOrders==='function'){
+      clearInterval(_iv);
       setTimeout(function(){
         renderOrders();
-        var pending = ORDERS.filter(function(x){return x.status==='pending';}).length;
-        var b = document.getElementById('ord-badge');
-        if(b){b.textContent = pending>0?pending:''; b.style.display = pending>0?'inline':'none';}
-      }, 300);
+        var p=ORDERS.filter(function(o){return o.status==='pending';}).length;
+        var b=document.getElementById('ord-badge');
+        if(b){b.textContent=p>0?p:'';b.style.display=p>0?'inline':'none';}
+      },200);
     }
-  }, 200);
-  // Stop after 10 seconds to avoid memory leak
-  setTimeout(function(){ clearInterval(_initCheck); }, 10000);
+  },200);
 })();
 
-// ══════════════════════════════════════════════════════════════
-//  GESTION DES COUPONS ADMIN (fonctions manquantes)
-// ══════════════════════════════════════════════════════════════
+// ══════════════════════════════════════════════════
+//  COUPONS ADMIN — Toutes les fonctions manquantes
+// ══════════════════════════════════════════════════
 
 function openAddCouponForm(){
-  var form = document.getElementById('cpn-add-form');
-  if(!form){ toast('Formulaire coupon introuvable',true); return; }
-  var isOpen = form.style.display !== 'none';
-  form.style.display = isOpen ? 'none' : 'block';
-  if(!isOpen){
-    // Peupler le select clients
-    var sel = document.getElementById('cpn-new-client');
+  var f=document.getElementById('cpn-add-form');
+  if(!f)return;
+  var open=f.style.display!=='none';
+  f.style.display=open?'none':'block';
+  if(!open){
+    // Peupler select clients
+    var sel=document.getElementById('cpn-new-client');
     if(sel){
-      sel.innerHTML = '<option value="">— Choisir un client —</option>';
+      sel.innerHTML='<option value="">— Choisir un client —</option>';
       CLIENTS.forEach(function(c){
-        var o = document.createElement('option');
-        o.value = c.id; o.textContent = c.name + ' (' + c.city + ')';
+        var o=document.createElement('option');
+        o.value=c.id;
+        o.textContent=c.name+(c.city?' ('+c.city+')':'');
         sel.appendChild(o);
       });
     }
-    // Reset champs
-    var amt = document.getElementById('cpn-new-amount');
-    var rsn = document.getElementById('cpn-new-reason');
-    if(amt) amt.value = '';
-    if(rsn) rsn.value = '';
-    form.scrollIntoView({behavior:'smooth', block:'nearest'});
+    var amt=document.getElementById('cpn-new-amount');
+    var rsn=document.getElementById('cpn-new-reason');
+    if(amt)amt.value='';
+    if(rsn)rsn.value='';
+    f.scrollIntoView({behavior:'smooth',block:'nearest'});
   }
 }
 
 function addManualCoupon(){
-  var clientId = (document.getElementById('cpn-new-client')||{}).value || '';
-  var amount   = parseFloat((document.getElementById('cpn-new-amount')||{}).value) || 0;
-  var type     = (document.getElementById('cpn-new-type')||{}).value || 'manuel';
-  var reason   = ((document.getElementById('cpn-new-reason')||{}).value || '').trim();
-
-  if(!clientId){ toast('⚠️ Sélectionnez un client',true); return; }
-  if(amount <= 0){ toast('⚠️ Montant doit être > 0',true); return; }
-
-  var client = CLIENTS.find(function(c){ return c.id === clientId; });
-  if(!client){ toast('Client introuvable',true); return; }
-
-  var code = 'CPN-' + Date.now().toString(36).toUpperCase().slice(-6);
-  var cr = getClientCredit(clientId);
-  if(!cr.coupons) cr.coupons = [];
+  var cid=(document.getElementById('cpn-new-client')||{}).value||'';
+  var amt=parseFloat((document.getElementById('cpn-new-amount')||{}).value)||0;
+  var typ=(document.getElementById('cpn-new-type')||{}).value||'manuel';
+  var rsn=((document.getElementById('cpn-new-reason')||{}).value||'').trim();
+  if(!cid){toast('⚠️ Sélectionnez un client',true);return;}
+  if(amt<=0){toast('⚠️ Montant doit être supérieur à 0',true);return;}
+  var client=CLIENTS.find(function(c){return c.id===cid;});
+  if(!client){toast('Client introuvable',true);return;}
+  var code='CPN-'+Date.now().toString(36).toUpperCase().slice(-6);
+  var cr=getClientCredit(cid);
+  if(!cr.coupons)cr.coupons=[];
   cr.coupons.push({
-    id: code, code: code,
-    amount: amount, remaining: amount,
-    type: type, reason: reason || type,
-    createdAt: new Date().toISOString().split('T')[0],
-    used: false, cancelled: false, createdBy: 'admin'
+    id:code,code:code,
+    amount:amt,remaining:amt,
+    type:typ,reason:rsn||typ,
+    createdAt:new Date().toISOString().split('T')[0],
+    used:false,cancelled:false,createdBy:'admin'
   });
-  CREDITS[clientId] = cr;
+  CREDITS[cid]=cr;
   save();
-  if(window.saveToCloud) setTimeout(window.saveToCloud, 300);
-  toast('✅ Coupon ' + code + ' créé — ' + fm(amount) + ' pour ' + client.name);
-  document.getElementById('cpn-add-form').style.display = 'none';
+  if(window.saveToCloud)setTimeout(window.saveToCloud,300);
+  toast('✅ Coupon '+code+' créé — '+fm(amt)+' pour '+client.name);
+  document.getElementById('cpn-add-form').style.display='none';
   renderCouponsSection();
 }
 
 function openDistributeCoupons(){
-  var form = document.getElementById('cpn-dist-form');
-  if(!form){ toast('Formulaire distribution introuvable',true); return; }
-  var isOpen = form.style.display !== 'none';
-  form.style.display = isOpen ? 'none' : 'block';
-  if(!isOpen){
-    var amt = document.getElementById('cpn-dist-amount');
-    var rsn = document.getElementById('cpn-dist-reason');
-    if(amt) amt.value = '';
-    if(rsn) rsn.value = '';
-    form.scrollIntoView({behavior:'smooth', block:'nearest'});
+  var f=document.getElementById('cpn-dist-form');
+  if(!f)return;
+  var open=f.style.display!=='none';
+  f.style.display=open?'none':'block';
+  if(!open){
+    var amt=document.getElementById('cpn-dist-amount');
+    var rsn=document.getElementById('cpn-dist-reason');
+    if(amt)amt.value='';
+    if(rsn)rsn.value='';
+    f.scrollIntoView({behavior:'smooth',block:'nearest'});
   }
 }
 
 function distributeCoupons(){
-  var amount  = parseFloat((document.getElementById('cpn-dist-amount')||{}).value) || 0;
-  var type    = (document.getElementById('cpn-dist-type')||{}).value || 'distribution';
-  var reason  = ((document.getElementById('cpn-dist-reason')||{}).value||'').trim() || 'Distribution admin';
-  var target  = (document.getElementById('cpn-dist-target')||{}).value || 'all';
-
-  if(amount <= 0){ toast('⚠️ Montant requis',true); return; }
-
-  var targets = CLIENTS.slice();
-  if(target === 'credit'){
-    targets = targets.filter(function(c){ return getClientCredit(c.id).balance > 0; });
-  } else if(target === 'nocoupon'){
-    targets = targets.filter(function(c){
-      return !(getClientCredit(c.id).coupons||[]).some(function(x){ return !x.used && !x.cancelled; });
+  var amt=parseFloat((document.getElementById('cpn-dist-amount')||{}).value)||0;
+  var typ=(document.getElementById('cpn-dist-type')||{}).value||'distribution';
+  var rsn=((document.getElementById('cpn-dist-reason')||{}).value||'').trim()||'Distribution admin';
+  var tgt=(document.getElementById('cpn-dist-target')||{}).value||'all';
+  if(amt<=0){toast('⚠️ Montant requis',true);return;}
+  var targets=CLIENTS.slice();
+  if(tgt==='credit'){
+    targets=targets.filter(function(c){return getClientCredit(c.id).balance>0;});
+  } else if(tgt==='nocoupon'){
+    targets=targets.filter(function(c){
+      return !(getClientCredit(c.id).coupons||[]).some(function(x){return !x.used&&!x.cancelled;});
     });
-  } else if(target === 'vip'){
-    targets = targets.sort(function(a,b){
-      var caA = ORDERS.filter(function(o){ return o.clientId===a.id && o.status==='delivered'; }).reduce(function(s,o){ return s+o.total; },0);
-      var caB = ORDERS.filter(function(o){ return o.clientId===b.id && o.status==='delivered'; }).reduce(function(s,o){ return s+o.total; },0);
-      return caB - caA;
+  } else if(tgt==='vip'){
+    targets=targets.sort(function(a,b){
+      var caA=ORDERS.filter(function(o){return o.clientId===a.id&&o.status==='delivered';})
+                    .reduce(function(s,o){return s+o.total;},0);
+      var caB=ORDERS.filter(function(o){return o.clientId===b.id&&o.status==='delivered';})
+                    .reduce(function(s,o){return s+o.total;},0);
+      return caB-caA;
     }).slice(0,5);
   }
-
-  if(targets.length === 0){ toast('⚠️ Aucun client ciblé',true); return; }
-  if(!confirm('Distribuer ' + fm(amount) + ' à ' + targets.length + ' client(s) ?')) return;
-
-  var today = new Date().toISOString().split('T')[0];
+  if(targets.length===0){toast('⚠️ Aucun client ciblé',true);return;}
+  if(!confirm('Distribuer '+fm(amt)+' à '+targets.length+' client(s) ?'))return;
+  var today=new Date().toISOString().split('T')[0];
   targets.forEach(function(c){
-    var cr = getClientCredit(c.id);
-    if(!cr.coupons) cr.coupons = [];
-    var code = 'DIST-' + Date.now().toString(36).toUpperCase().slice(-5) + '-' + c.id.slice(-3).toUpperCase();
+    var cr=getClientCredit(c.id);
+    if(!cr.coupons)cr.coupons=[];
+    var code='DIST-'+Date.now().toString(36).toUpperCase().slice(-5)+'-'+c.id.slice(-3).toUpperCase();
     cr.coupons.push({
-      id: code, code: code,
-      amount: amount, remaining: amount,
-      type: type, reason: reason,
-      createdAt: today,
-      used: false, cancelled: false, createdBy: 'admin'
+      id:code,code:code,
+      amount:amt,remaining:amt,
+      type:typ,reason:rsn,
+      createdAt:today,
+      used:false,cancelled:false,createdBy:'admin'
     });
-    CREDITS[c.id] = cr;
+    CREDITS[c.id]=cr;
   });
-
   save();
-  if(window.saveToCloud) setTimeout(window.saveToCloud, 300);
-  document.getElementById('cpn-dist-form').style.display = 'none';
-  toast('✅ ' + targets.length + ' coupon(s) distribué(s) — ' + fm(amount) + ' MAD chacun');
+  if(window.saveToCloud)setTimeout(window.saveToCloud,300);
+  document.getElementById('cpn-dist-form').style.display='none';
+  toast('✅ '+targets.length+' coupon(s) distribué(s) — '+fm(amt)+' chacun');
   renderCouponsSection();
 }
 
-function cancelCoupon(clientId, couponId){
-  var cr = getClientCredit(clientId);
-  var cp = (cr.coupons||[]).find(function(x){ return x.id===couponId; });
-  if(!cp) return;
-  if(!confirm('Annuler le coupon ' + cp.code + ' (' + fm(cp.amount) + ') ?')) return;
-  cp.cancelled = true; cp.cancelledAt = new Date().toISOString().split('T')[0];
-  CREDITS[clientId] = cr; save();
-  if(window.saveToCloud) setTimeout(window.saveToCloud, 300);
-  toast('Coupon ' + cp.code + ' annulé');
+function cancelCoupon(clientId,couponId){
+  var cr=getClientCredit(clientId);
+  var cp=(cr.coupons||[]).find(function(x){return x.id===couponId;});
+  if(!cp)return;
+  if(!confirm('Annuler le coupon '+cp.code+' ('+fm(cp.amount)+') ?'))return;
+  cp.cancelled=true;
+  cp.cancelledAt=new Date().toISOString().split('T')[0];
+  CREDITS[clientId]=cr;
+  save();
+  if(window.saveToCloud)setTimeout(window.saveToCloud,300);
+  toast('Coupon '+cp.code+' annulé');
   renderCouponsSection();
 }
 
 function renderCouponsSection(){
-  // ── Stats ──
-  var statsEl = document.getElementById('cpn-sec-stats');
+  // ── STATS ──
+  var statsEl=document.getElementById('cpn-sec-stats');
   if(statsEl){
-    var total=0, active=0, used=0, cancelled=0, totalAmt=0;
+    var total=0,active=0,used=0,cancelled=0,totalAmt=0;
     CLIENTS.forEach(function(c){
       (getClientCredit(c.id).coupons||[]).forEach(function(cp){
         total++;
-        if(!cp.used && !cp.cancelled){ active++; totalAmt += (cp.remaining||cp.amount||0); }
-        else if(cp.used) used++;
-        else if(cp.cancelled) cancelled++;
+        if(!cp.used&&!cp.cancelled){active++;totalAmt+=(cp.remaining||cp.amount||0);}
+        else if(cp.used)used++;
+        else if(cp.cancelled)cancelled++;
       });
     });
     statsEl.innerHTML=[
-      {l:'Total',       v:total,          i:'🎟️'},
-      {l:'Actifs',      v:active,         i:'✅'},
-      {l:'Utilisés',    v:used,           i:'✔'},
-      {l:'Annulés',     v:cancelled,      i:'❌'},
-      {l:'En circulation', v:fm(totalAmt),i:'💰'}
+      {l:'Total',v:total,i:'🎟️'},
+      {l:'Actifs',v:active,i:'✅'},
+      {l:'Utilisés',v:used,i:'✔'},
+      {l:'Annulés',v:cancelled,i:'❌'},
+      {l:'En circulation',v:fm(totalAmt),i:'💰'}
     ].map(function(k){
       return '<div class="kpi" style="text-align:center">'
-        +'<div class="kl">' + k.i + ' ' + k.l + '</div>'
-        +'<div class="kv" style="font-size:18px">' + k.v + '</div>'
+        +'<div class="kl">'+k.i+' '+k.l+'</div>'
+        +'<div class="kv" style="font-size:18px">'+k.v+'</div>'
         +'</div>';
     }).join('');
   }
 
-  // ── Peupler filtre clients ──
-  var clientSel = document.getElementById('cpn-sec-filter-client');
-  if(clientSel && clientSel.options.length <= 1){
+  // ── PEUPLER FILTRE CLIENTS ──
+  var clientSel=document.getElementById('cpn-sec-filter-client');
+  if(clientSel&&clientSel.options.length<=1){
     CLIENTS.forEach(function(c){
-      var o = document.createElement('option');
-      o.value = c.id; o.textContent = c.name;
+      var o=document.createElement('option');
+      o.value=c.id;o.textContent=c.name;
       clientSel.appendChild(o);
     });
   }
 
-  // ── Filtres ──
-  var search       = ((document.getElementById('cpn-search')||{}).value||'').toLowerCase();
-  var filterClient = (document.getElementById('cpn-sec-filter-client')||{}).value||'';
-  var filterStatus = (document.getElementById('cpn-sec-filter-status')||{}).value||'';
-  var filterType   = (document.getElementById('cpn-sec-filter-type')||{}).value||'';
+  // ── FILTRES ──
+  var search=((document.getElementById('cpn-search')||{}).value||'').toLowerCase();
+  var filterClient=(document.getElementById('cpn-sec-filter-client')||{}).value||'';
+  var filterStatus=(document.getElementById('cpn-sec-filter-status')||{}).value||'';
+  var filterType=(document.getElementById('cpn-sec-filter-type')||{}).value||'';
 
-  // ── Construire la liste ──
-  var rows = [];
+  // ── CONSTRUIRE LIGNES ──
+  var rows=[];
   CLIENTS.forEach(function(c){
-    if(filterClient && c.id !== filterClient) return;
+    if(filterClient&&c.id!==filterClient)return;
     (getClientCredit(c.id).coupons||[]).forEach(function(cp){
-      var st = cp.used ? 'used' : cp.cancelled ? 'cancelled' : 'active';
-      if(filterStatus && st !== filterStatus) return;
-      if(filterType   && cp.type !== filterType) return;
+      var st=cp.used?'used':cp.cancelled?'cancelled':'active';
+      if(filterStatus&&st!==filterStatus)return;
+      if(filterType&&cp.type!==filterType)return;
       if(search){
-        var s = search;
-        if(!(cp.code||'').toLowerCase().includes(s) &&
-           !c.name.toLowerCase().includes(s) &&
-           !(cp.reason||'').toLowerCase().includes(s)) return;
+        if(!(cp.code||'').toLowerCase().includes(search)
+          &&!c.name.toLowerCase().includes(search)
+          &&!(cp.reason||'').toLowerCase().includes(search))return;
       }
-      rows.push({c:c, cp:cp, st:st});
+      rows.push({c:c,cp:cp,st:st});
     });
   });
 
-  var listEl = document.getElementById('cpn-sec-list');
-  if(!listEl) return;
+  var listEl=document.getElementById('cpn-sec-list');
+  if(!listEl)return;
 
-  if(rows.length === 0){
-    listEl.innerHTML = '<div style="padding:28px;text-align:center;color:var(--tx3);font-size:13px">'
-      + (total===0 ? '🎟️ Aucun coupon créé pour le moment. Cliquez sur ➕ Nouveau coupon pour commencer.'
-                   : '🔍 Aucun coupon correspond aux filtres sélectionnés.')
-      + '</div>';
+  if(rows.length===0){
+    listEl.innerHTML='<div style="padding:28px;text-align:center;color:var(--tx3);font-size:13px">'
+      +'🎟️ Aucun coupon trouvé. Cliquez sur ➕ Nouveau coupon pour créer.</div>';
     return;
   }
 
-  var typeLabels = {
-    avoir:'📄 Avoir', fidelite:'⭐ Fidélité',
-    dedommagement:'🤝 Dédomm.', distribution:'📤 Distribution', manuel:'✍️ Manuel'
-  };
-
-  listEl.innerHTML = '<table style="width:100%;min-width:700px"><thead><tr>'
-    + '<th>Code</th><th>Client</th><th>Montant</th><th>Restant</th>'
-    + '<th>Type</th><th>Raison</th><th>Créé le</th><th>Statut</th><th>Action</th>'
-    + '</tr></thead><tbody>'
-    + rows.map(function(r){
-        var cp = r.cp, c = r.c;
-        var stBadge = r.st==='active'
-          ? '<span class="sb sd">✅ Actif</span>'
-          : r.st==='used'
-          ? '<span class="sb sc">✔ Utilisé</span>'
-          : '<span class="sb sp">❌ Annulé</span>';
-        return '<tr>'
-          + '<td><strong style="color:var(--gold)">' + (cp.code||cp.id||'—') + '</strong></td>'
-          + '<td>' + c.name + '</td>'
-          + '<td>' + fm(cp.amount||0) + '</td>'
-          + '<td>' + (r.st==='active'
-              ? '<strong style="color:var(--grn)">' + fm(cp.remaining||cp.amount||0) + '</strong>'
-              : '—') + '</td>'
-          + '<td style="font-size:11px">' + (typeLabels[cp.type]||cp.type||'—') + '</td>'
-          + '<td style="color:var(--tx3);font-size:11px">' + (cp.reason||'—') + '</td>'
-          + '<td style="color:var(--tx3);font-size:11px">' + (cp.createdAt||'—') + '</td>'
-          + '<td>' + stBadge + '</td>'
-          + '<td>' + (r.st==='active'
-              ? '<button class="btn btn-r btn-sm" onclick="cancelCoupon(\'' + c.id + '\',\'' + cp.id + '\')">✕ Annuler</button>'
-              : '') + '</td>'
-          + '</tr>';
-      }).join('')
-    + '</tbody></table>';
+  var typeL={avoir:'📄 Avoir',fidelite:'⭐ Fidélité',dedommagement:'🤝 Dédomm.',
+             distribution:'📤 Distribution',manuel:'✍️ Manuel'};
+  listEl.innerHTML='<div style="overflow-x:auto"><table style="width:100%;min-width:700px">'
+    +'<thead><tr><th>Code</th><th>Client</th><th>Montant</th><th>Restant</th>'
+    +'<th>Type</th><th>Raison</th><th>Créé le</th><th>Statut</th><th>Action</th></tr></thead>'
+    +'<tbody>'
+    +rows.map(function(r){
+      var cp=r.cp,c=r.c;
+      var stB=r.st==='active'?'<span class="sb sd">✅ Actif</span>'
+             :r.st==='used'?'<span class="sb sc">✔ Utilisé</span>'
+             :'<span class="sb sp">❌ Annulé</span>';
+      return '<tr>'
+        +'<td><strong style="color:var(--gold)">'+(cp.code||cp.id||'—')+'</strong></td>'
+        +'<td>'+c.name+'</td>'
+        +'<td>'+fm(cp.amount||0)+'</td>'
+        +'<td>'+(r.st==='active'?'<strong style="color:var(--grn)">'+fm(cp.remaining||cp.amount||0)+'</strong>':'—')+'</td>'
+        +'<td style="font-size:11px">'+(typeL[cp.type]||cp.type||'—')+'</td>'
+        +'<td style="color:var(--tx3);font-size:11px">'+(cp.reason||'—')+'</td>'
+        +'<td style="color:var(--tx3);font-size:11px">'+(cp.createdAt||'—')+'</td>'
+        +'<td>'+stB+'</td>'
+        +'<td>'+(r.st==='active'
+          ?'<button class="btn btn-r btn-sm" onclick="cancelCoupon(\''+c.id+'\',\''+cp.id+'\')">✕</button>'
+          :'')+'</td>'
+        +'</tr>';
+    }).join('')
+    +'</tbody></table></div>';
 }
 
 </script>
