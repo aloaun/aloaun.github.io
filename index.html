@@ -74,9 +74,7 @@ tbody td{padding:11px 12px!important;font-size:13px!important;vertical-align:mid
   border:1px solid var(--bo)!important;
   border-radius:16px!important;
   padding:0!important;
-  overflow:visible!important;
-  overflow-x:auto!important;
-  -webkit-overflow-scrolling:touch!important;
+  overflow:hidden!important;
 }
 .tc-h{padding:14px 18px!important;border-bottom:1px solid var(--bo)!important}
 .tc-h h3{font-size:10px!important;font-weight:700!important;letter-spacing:1.5px!important;text-transform:uppercase!important;color:var(--tx3)!important;display:flex!important;align-items:center!important;gap:8px!important}
@@ -118,8 +116,6 @@ canvas,.chart-div{display:block!important;width:100%!important;height:100%!impor
   .cg2{grid-template-columns:1fr!important}
   .cg22{grid-template-columns:1fr!important}
   .kv{font-size:18px!important}
-  thead th:nth-child(n+7){display:none!important}
-  tbody td:nth-child(n+7){display:none!important}
 }
 
 
@@ -135,7 +131,7 @@ canvas,.chart-div{display:block!important;width:100%!important;height:100%!impor
 
 /* ── Mobile table scroll ── */
 @media(max-width:768px){
-  .tc{overflow-x:auto!important;-webkit-overflow-scrolling:touch!important;padding:0!important}
+  .tc{padding:0!important}
   .tc table{min-width:500px!important}
   .tc-h{padding:12px 14px!important}
   /* Cacher colonnes moins importantes sur mobile */
@@ -867,10 +863,10 @@ input.inp-err,select.inp-err{border:2px solid #E05252!important;background:rgba(
 .cg22{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
 .cc{background:var(--dk3);border:1px solid var(--bo);border-radius:12px;padding:16px}
 .cc h3{font-size:11px;font-weight:600;color:var(--tx2);margin-bottom:12px;text-transform:uppercase;letter-spacing:1px}
-.tc{background:var(--dk3);border:1px solid var(--bo);border-radius:12px;padding:16px;margin-bottom:18px;overflow-x:auto}
+.tc{background:var(--dk3);border:1px solid var(--bo);border-radius:12px;padding:0;margin-bottom:18px}
 .tc-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:7px}
 .tc-h h3{font-size:11px;font-weight:600;color:var(--tx2);text-transform:uppercase;letter-spacing:1px}
-table{width:100%;border-collapse:collapse;min-width:580px}.tc{overflow-x:auto!important;-webkit-overflow-scrolling:touch!important}
+table{width:100%;border-collapse:collapse;min-width:580px}.tc{}
 th{text-align:left;padding:8px 10px;font-size:10px;color:var(--tx3);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--bo2);white-space:nowrap}
 td{padding:10px;font-size:13px;border-bottom:1px solid rgba(255,255,255,0.03);vertical-align:middle}
 tr:last-child td{border-bottom:none}
@@ -1768,19 +1764,76 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
 
     <!-- ORDERS -->
     <div class="sec" id="sec-orders">
-     <div class="fb">
-      <input type="text" id="of-q" placeholder="🔍 N°, client, ville, produit..." title="Raccourci: Ctrl+F" oninput="renderOrders()" style="flex:1.5">
-      <select id="of-client" onchange="renderOrders()" oninput="renderOrders()"><option value="">Tous clients</option></select>
-      <select id="of-status" onchange="renderOrders()" oninput="renderOrders()"><option value="">Tous statuts</option><option value="pending">En attente</option><option value="confirmed">Confirmée</option><option value="shipped">Expédiée</option><option value="delivered">Livrée</option><option value="returned">Retournée</option><option value="cancelled">Annulée</option></select>
-      <select id="of-pay" onchange="renderOrders()" oninput="renderOrders()"><option value="">Tout paiement</option><option value="paid">Tous payés</option><option value="cmi">Payé CMI</option><option value="cash">Payé espèces</option><option value="transfer">Payé virement</option><option value="coupon">Payé coupon</option><option value="credit">À crédit</option><option value="pending">Non payé</option></select>
-      <select id="of-region" onchange="renderOrders()" oninput="renderOrders()"><option value="">Toutes régions</option></select>
-      <input type="date" id="of-dfrom" onchange="renderOrders()" oninput="renderOrders()" title="Du">
-      <input type="date" id="of-dto" onchange="renderOrders()" oninput="renderOrders()" title="Au">
-      <select id="of-sort" onchange="renderOrders()" oninput="renderOrders()"><option value="priority">Priorité (En attente en tête)</option><option value="date-d">Date récente</option><option value="date-a">Date ancienne</option><option value="tot-d">Montant ↓</option><option value="tot-a">Montant ↑</option><option value="prof-d">Profit ↓</option></select>
-      <button class="btn btn-o btn-sm" onclick="resetOF()">✕</button>
-      <button class="btn btn-g btn-sm" onclick="exportOrdersCSV()" title="Exporter en CSV">📥 CSV</button>
-     </div>
-     <div class="tc">
+     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px;padding:14px 16px;background:var(--dk3);border:1px solid var(--bo);border-radius:14px">
+
+  <!-- Ligne 1: Recherche + Boutons -->
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+    <input type="text" id="of-q"
+      placeholder="🔍 N°, client, ville, produit..."
+      oninput="renderOrders()"
+      style="flex:1;min-width:160px;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px 12px;color:var(--tx);font-size:13px;outline:none">
+    <button onclick="resetOF()" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 14px;color:var(--tx3);font-size:12px;cursor:pointer;white-space:nowrap">✕ Reset</button>
+    <button onclick="exportOrdersCSV()" style="background:var(--gold);border:none;border-radius:8px;padding:8px 14px;color:#000;font-size:12px;cursor:pointer;font-weight:600;white-space:nowrap">📥 CSV</button>
+  </div>
+
+  <!-- Ligne 2: Statut + Paiement -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <select id="of-status" onchange="renderOrders()"
+      style="flex:1;min-width:140px;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:13px;cursor:pointer">
+      <option value="">Tous statuts</option>
+      <option value="pending">⏳ En attente</option>
+      <option value="confirmed">✓ Confirmée</option>
+      <option value="shipped">📦 Expédiée</option>
+      <option value="delivered">✅ Livrée</option>
+      <option value="returned">↩ Retournée</option>
+      <option value="cancelled">✕ Annulée</option>
+    </select>
+    <select id="of-pay" onchange="renderOrders()"
+      style="flex:1;min-width:140px;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:13px;cursor:pointer">
+      <option value="">Tout paiement</option>
+      <option value="paid">💰 Tous payés</option>
+      <option value="pending">❌ Non payé</option>
+      <option value="cash">💵 Espèces</option>
+      <option value="cmi">💳 CMI</option>
+      <option value="transfer">🏦 Virement</option>
+      <option value="coupon">🎟 Coupon</option>
+      <option value="credit">🔄 Crédit</option>
+    </select>
+  </div>
+
+  <!-- Ligne 3: Client + Région -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <select id="of-client" onchange="renderOrders()"
+      style="flex:1;min-width:140px;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:13px;cursor:pointer">
+      <option value="">Tous clients</option>
+    </select>
+    <select id="of-region" onchange="renderOrders()"
+      style="flex:1;min-width:140px;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:13px;cursor:pointer">
+      <option value="">Toutes régions</option>
+    </select>
+  </div>
+
+  <!-- Ligne 4: Dates + Tri -->
+  <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+    <input type="date" id="of-dfrom" onchange="renderOrders()"
+      title="Date début"
+      style="flex:1;min-width:130px;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:13px">
+    <input type="date" id="of-dto" onchange="renderOrders()"
+      title="Date fin"
+      style="flex:1;min-width:130px;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:13px">
+    <select id="of-sort" onchange="renderOrders()"
+      style="flex:1;min-width:140px;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px 10px;color:var(--tx);font-size:13px;cursor:pointer">
+      <option value="priority">🔺 Priorité</option>
+      <option value="date-d">📅 Date récente</option>
+      <option value="date-a">📅 Date ancienne</option>
+      <option value="tot-d">💰 Montant ↓</option>
+      <option value="tot-a">💰 Montant ↑</option>
+      <option value="prof-d">📈 Profit ↓</option>
+    </select>
+  </div>
+
+</div>
+<div class="tc">
       <div class="tc-h"><h3>Commandes</h3><div style="display:flex;gap:6px;align-items:center"><button class="btn btn-gn btn-sm" onclick="bulkDeliver()" title="Livrer la sélection ou toutes les expédiées">📬 Livrer</button><span id="o-cnt" style="font-size:12px;color:var(--tx3)"></span></div></div>
       <!-- Barre actions bulk -->
       <div id="bulk-bar" style="display:none;align-items:center;gap:8px;background:rgba(201,168,76,0.1);border:1px solid var(--gold);border-radius:8px;padding:8px 12px;margin-bottom:10px;flex-wrap:wrap">
@@ -3874,7 +3927,7 @@ function goSec(n,el){
   closeSide();
   if(n==='orders'){
     initOrderFilters();
-    setTimeout(function(){renderOrders();},30);
+    renderOrders();
   }
   if(n==='prods'){initProdFilters();renderProds();}
   if(n==='stock'){fillStkAddProd();renderStock();}
@@ -3976,8 +4029,6 @@ function initOrderFilters(){
     var el=document.getElementById(id);
     if(el&&!el.value)el.selectedIndex=0;
   });
-  // Forcer renderOrders après init
-  setTimeout(function(){renderOrders();},10);
 }
 
 function initProdFilters(){
@@ -8599,7 +8650,7 @@ goSec=function(n,el){
   closeSide();
   if(n==='orders'){
     initOrderFilters();
-    setTimeout(function(){renderOrders();},30);
+    renderOrders();
   }
   if(n==='prods'){initProdFilters();renderProds();}
   if(n==='stock'){fillStkAddProd();renderStock();}
@@ -11215,7 +11266,7 @@ async function loadFromCloud(){
       setTimeout(function(){ 
         if(typeof renderDashboard==='function') renderDashboard();
         var sec=window._currentSec||'dash';
-        if(sec==='orders' && typeof renderOrders==='function') renderOrders();
+        if(sec==='orders' && typeof renderOrders==='function'){initOrderFilters();renderOrders();}
         else if(sec==='analytics' && typeof renderAnalytics==='function') renderAnalytics();
         else if(sec==='regional' && typeof renderRegional==='function') renderRegional();
         // Second render pour les graphiques (après peinture complète)
