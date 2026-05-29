@@ -4204,62 +4204,6 @@ function _svgPie(el,labels,data,colors){
 
 function renderDashboard(){
   var O=ORDERS,today=new Date().toISOString().split('T')[0];
-  // CA aujourd'hui = seulement les commandes LIVRÉES aujourd'hui
-  var todO=O.filter(function(o){return (o.deliveryDate===today||o.date===today)&&o.status==='delivered';});
-  var todCA=todO.reduce(function(s,o){return s+o.total;},0);
-  var todPr=todO.reduce(function(s,o){return s+calcProfit(o);},0);
-  // CA total = seulement livrées
-  var totCA=O.filter(function(o){return o.status==='delivered';}).reduce(function(s,o){return s+o.total;},0);
-  var totPr=O.filter(function(o){return o.status==='delivered';}).reduce(function(s,o){return s+calcProfit(o);},0);
-  var pend=O.filter(function(o){return o.status==='pending';}).length;
-  var supDebt=SUPPLIERS.reduce(function(s,x){return s+(x.debt||0);},0);
-  (document.getElementById('a-kpis')||{innerHTML:''}).innerHTML=[
-    {l:"CA total livré",v:fm(totCA),s:totCA>0?Math.round(totPr/totCA*100)+'% marge':'',ac:'#C9A84C',i:'💰'},
-    {l:"Profit total livré",v:fm(totPr),s:totCA>0?Math.round(totPr/totCA*100)+'%':'',ac:'#52C97A',i:'📈'},
-    {l:"CA aujourd'hui",v:fm(todCA),s:todO.length+' cmd',ac:'#4A9EE8',i:'📅'},
-    {l:"Profit aujourd'hui",v:fm(todPr),s:todO.length+' vente(s)',ac:'#52C97A',i:'🌟'},
-    {l:"En attente",v:pend,s:'commandes',ac:'#E05252',i:'⏳'},
-    {l:"Clients",v:CLIENTS.length,s:'enregistrés',ac:'#E8834A',i:'👥'},
-    {l:"Dettes fourn.",v:fm(supDebt),s:SUPPLIERS.length+' fourn.',ac:'#9B6BDB',i:'🏭'},
-    {l:"Soldes crédit",v:fm(Object.values(CREDITS).reduce(function(s,cr){return s+(cr.balance||0);},0)),s:'clients débiteurs',ac:'#E05252',i:'💳'},
-    {l:"Coupons actifs",v:(function(){var n=0;CLIENTS.forEach(function(c){n+=(getClientCredit(c.id).coupons||[]).filter(function(x){return !x.used&&!x.cancelled;}).length;});return n;})(),s:'en circulation',ac:'#C9A84C',i:'🎟️'},
-  ].map(function(k){return '<div class="kpi" style="--ac:'+k.ac+'"><div class="ki">'+k.i+'</div><div class="kl">'+k.l+'</div><div class="kv">'+k.v+'</div><div class="ks">'+k.s+'</div></div>';}).join('');
-  var oos=PRODUCTS.filter(function(p){return p.stock===0;}),low=PRODUCTS.filter(function(p){return p.stock>0&&p.stock<=(p.threshold||10);});
-  var ah='';
-  if(oos.length)ah+='<div class="stk-alert"><span style="font-size:16px">🚨</span><p><strong>'+oos.length+' produit(s) en rupture :</strong> '+oos.map(function(p){return p.name;}).join(', ')+'</p></div>';
-  if(low.length)ah+='<div class="stk-alert stk-warn"><span style="font-size:16px">⚠️</span><p><strong>'+low.length+' stock bas :</strong> '+low.map(function(p){return p.name+' ('+p.stock+')';}).join(', ')+'</p></div>';
-  (document.getElementById('dash-alerts')||{innerHTML:''}).innerHTML=ah;
-  (document.getElementById('dash-ords')||{innerHTML:''}).innerHTML=O.slice(0,8).map(function(o){
-    var c=getC(o.clientId);var pr=calcProfit(o);
-    return '<tr><td><strong style="color:var(--gold)">'+o.id+'</strong></td>'+
-      '<td><div style="display:flex;align-items:center;gap:5px"><img src="'+clientAvatar(c)+'" style="width:22px;height:22px;border-radius:50%;object-fit:cover" onerror="this.style.display=\'none\'">'+c.name+'</div></td>'+
-      '<td>'+c.city+'</td><td><strong>'+fm(o.total)+'</strong></td><td style="color:var(--grn)">+'+fm(pr)+'</td><td>'+o.date+'</td><td>'+badge(o.status)+'</td><td>'+payB(o.payStatus,o.payMethod,o)+'</td><td>'+(o.status==='pending'?'<div style="display:flex;gap:3px">'+
-        '<button class="btn btn-gn btn-sm" onclick="qVal(\''+o.id+'\')">✓</button>'+
-        (o.status==='confirmed'?'<button class="btn btn-b btn-sm" onclick="shipOrd(\''+o.id+'\')">📦</button>':'')+'</div>':'')+
-      '</td></tr>';
-  }).join('');
-  var days=[],caD=[],prD=[];
-  for(var i=29;i>=0;i--){var d=new Date();d.setDate(d.getDate()-i);var ds=d.toISOString().split('T')[0];days.push(d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}));var dO=O.filter(function(o){return o.date===ds;});caD.push(dO.reduce(function(s,o){return s+o.total;},0));prD.push(dO.reduce(function(s,o){return s+calcProfit(o);},0));}
-  setTimeout(function(){
-  _svgLine(document.getElementById('ch-ca'),days,[{label:'CA',data:caD,borderColor:'#C9A84C'},{label:'Profit',data:prD,borderColor:'#52C97A'}]);
-  var rCA={};O.forEach(function(o){var c=CLIENTS.find(function(x){return x.id===o.clientId;});if(c)rCA[c.region]=(rCA[c.region]||0)+o.total;});
-  _svgDonut(document.getElementById('ch-reg'),Object.keys(rCA),Object.values(rCA).map(Math.round),['#C9A84C','#4A9EE8','#52C97A','#9B6BDB','#E8834A','#E05252']);
-  var pQ={};
-  O.filter(function(o){return o.status!=='cancelled';}).forEach(function(o){
-    o.items.forEach(function(it){
-      var netQty=it.quantity;
-      if(o.returnItems){var ret=o.returnItems.find(function(r){return r.productId===it.productId;});if(ret) netQty=Math.max(0,netQty-ret.quantity);}
-      if(netQty>0) pQ[it.productId]=(pQ[it.productId]||0)+netQty;
-    });
-  });
-  var sp=Object.entries(pQ).sort(function(a,b){return b[1]-a[1];}).slice(0,5);
-  _svgBar(document.getElementById('ch-prod'),sp.map(function(x){return getP(x[0]).name.substring(0,10);}),sp.map(function(x){return x[1];}),['#C9A84C','#4A9EE8','#52C97A','#9B6BDB','#E8834A']);
-  var cnt={pending:0,confirmed:0,shipped:0,delivered:0};O.forEach(function(o){if(cnt[o.status]!==undefined)cnt[o.status]++;});
-  _svgPie(document.getElementById('ch-stat'),['En attente','Confirmée','Expédiée','Livrée'],[cnt.pending,cnt.confirmed,cnt.shipped,cnt.delivered],['#C9A84C','#4A9EE8','#9B6BDB','#52C97A']);
-  },200); // end setTimeout for charts
-}
-function renderDashboard(){
-  var O=ORDERS,today=new Date().toISOString().split('T')[0];
   var todO=O.filter(function(o){return (o.deliveryDate===today||o.date===today)&&o.status==='delivered';});
   var todCA=todO.reduce(function(s,o){return s+o.total;},0);
   var todPr=todO.reduce(function(s,o){return s+calcProfit(o);},0);
@@ -4408,16 +4352,6 @@ function toggleAllOrders(){
   });
   updateBulkBar();
 }
-function toggleAllOrders(){
-  var cbs=document.querySelectorAll('.ord-chk');
-  var allChecked=[...cbs].every(function(c){return c.checked;});
-  cbs.forEach(function(c){
-    var id=c.dataset.id;
-    if(allChecked){_selectedOrders.delete(id);c.checked=false;}
-    else{_selectedOrders.add(id);c.checked=true;}
-  });
-  updateBulkBar();
-}
 function updateBulkBar(){
   var bar=document.getElementById('bulk-bar');
   if(!bar) return;
@@ -4425,35 +4359,6 @@ function updateBulkBar(){
   bar.style.display=n>0?'flex':'none';
   var lbl=document.getElementById('bulk-lbl');
   if(lbl) lbl.textContent=n+' commande(s) sélectionnée(s)';
-}
-function bulkDeliver(){
-  if(_selectedOrders.size>0){
-    // Deliver selected
-    var ids=[..._selectedOrders];
-    var today=new Date().toISOString().split('T')[0];
-    var count=0;
-    ids.forEach(function(id){
-      var o=ORDERS.find(function(x){return x.id===id;});
-      if(o&&(o.status==='shipped'||o.status==='confirmed'||o.status==='pending')){
-        o.status='delivered';o.deliveryDate=today;count++;
-      }
-    });
-    if(!count){toast('Aucune commande à livrer parmi la sélection',true);return;}
-    _selectedOrders.clear();
-    save();if(window.saveToCloud)window.saveToCloud();
-    renderOrders();renderDashboard();
-    toast('✅ '+count+' commande(s) livrée(s)');
-  } else {
-    // Deliver all shipped
-    var shipped=ORDERS.filter(function(o){return o.status==='shipped';});
-    if(!shipped.length){toast('Aucune commande expédiée à livrer',true);return;}
-    if(!confirm('Livrer les '+shipped.length+' commandes expédiées ?')) return;
-    var today2=new Date().toISOString().split('T')[0];
-    shipped.forEach(function(o){o.status='delivered';o.deliveryDate=today2;});
-    save();if(window.saveToCloud)window.saveToCloud();
-    renderOrders();renderDashboard();
-    toast('✅ '+shipped.length+' commande(s) livrée(s)');
-  }
 }
 function bulkDeliver(){
   if(_selectedOrders.size>0){
