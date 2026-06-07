@@ -1780,8 +1780,7 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
       <select id="of-region" onchange="renderOrders()"><option value="">Toutes régions</option></select>
       <input type="date" id="of-dfrom" onchange="renderOrders()" title="Du">
       <input type="date" id="of-dto" onchange="renderOrders()" title="Au">
-      <select id="of-sort" onchange="renderOrders()"><option value="priority" selected>Priorité (En attente en haut)</option>
-        <option value="date-d">Date récente</option><option value="date-a">Date ancienne</option><option value="tot-d">Montant ↓</option><option value="tot-a">Montant ↑</option><option value="prof-d">Profit ↓</option></select>
+      <select id="of-sort" onchange="renderOrders()"><option value="date-d">Date récente</option><option value="date-a">Date ancienne</option><option value="tot-d">Montant ↓</option><option value="tot-a">Montant ↑</option><option value="prof-d">Profit ↓</option></select>
       <button class="btn btn-o btn-sm" onclick="resetOF()">✕</button>
       <button class="btn btn-g btn-sm" onclick="exportOrdersCSV()" title="Exporter en CSV">📥 CSV</button>
      </div>
@@ -3448,16 +3447,22 @@ function doLogin(){
         updateAdminSidebar();initAdminFilters();renderOnlineAccounts();
         setTimeout(function(){
           if(typeof renderOrders==='function') renderOrders();
-          var p=ORDERS.filter(function(o){return o.status==='pending';}).length;
-          var b=document.getElementById('ord-badge');
-          if(b){b.textContent=p>0?p:'';b.style.display=p>0?'inline':'none';}
-        },300);
+          var _p=ORDERS.filter(function(o){return o.status==='pending';}).length;
+          var _b=document.getElementById('ord-badge');
+          if(_b){_b.textContent=_p>0?_p:'';_b.style.display=_p>0?'inline':'none';}
+        },350);
         setTimeout(function(){
           if(typeof renderOrders==='function') renderOrders();
-          var p=ORDERS.filter(function(o){return o.status==='pending';}).length;
-          var b=document.getElementById('ord-badge');
-          if(b){b.textContent=p>0?p:'';b.style.display=p>0?'inline':'none';}
-        },300);
+          var _p=ORDERS.filter(function(o){return o.status==='pending';}).length;
+          var _b=document.getElementById('ord-badge');
+          if(_b){_b.textContent=_p>0?_p:'';_b.style.display=_p>0?'inline':'none';}
+        },350);
+        setTimeout(function(){
+          if(typeof renderOrders==='function') renderOrders();
+          var _p=ORDERS.filter(function(o){return o.status==='pending';}).length;
+          var _b=document.getElementById('ord-badge');
+          if(_b){_b.textContent=_p>0?_p:'';_b.style.display=_p>0?'inline':'none';}
+        },350);
         // Render dès que pg-admin est visible, puis refresh après Firebase
         setTimeout(function(){
           if(typeof renderDashboard==='function') renderDashboard();
@@ -3937,16 +3942,16 @@ function initAdminFilters(){initOrderFilters();initProdFilters();initClientFilte
 function initOrderFilters(){
   var rSet={};CLIENTS.forEach(function(c){if(c.region)rSet[c.region]=1;});
   var rs=document.getElementById('of-region');
-  if(rs){rs.innerHTML='<option value="">Toutes régions</option>'+Object.keys(rSet).map(function(r){return'<option value="'+r+'">'+r+'</option>';}).join('');}
+  if(rs)rs.innerHTML='<option value="">Toutes régions</option>'+Object.keys(rSet).map(function(r){return'<option value="'+r+'">'+r+'</option>';}).join('');
   var cs=document.getElementById('of-client');
-  if(cs){cs.innerHTML='<option value="">Tous clients</option>'+CLIENTS.map(function(c){return'<option value="'+c.id+'">'+c.name+'</option>';}).join('');}
+  if(cs)cs.innerHTML='<option value="">Tous clients</option>'+CLIENTS.map(function(c){return'<option value="'+c.id+'">'+c.name+'</option>';}).join('');
 }
 function initOrderFilters(){
   var rSet={};CLIENTS.forEach(function(c){if(c.region)rSet[c.region]=1;});
   var rs=document.getElementById('of-region');
-  if(rs){rs.innerHTML='<option value="">Toutes régions</option>'+Object.keys(rSet).map(function(r){return'<option value="'+r+'">'+r+'</option>';}).join('');}
+  if(rs)rs.innerHTML='<option value="">Toutes régions</option>'+Object.keys(rSet).map(function(r){return'<option value="'+r+'">'+r+'</option>';}).join('');
   var cs=document.getElementById('of-client');
-  if(cs){cs.innerHTML='<option value="">Tous clients</option>'+CLIENTS.map(function(c){return'<option value="'+c.id+'">'+c.name+'</option>';}).join('');}
+  if(cs)cs.innerHTML='<option value="">Tous clients</option>'+CLIENTS.map(function(c){return'<option value="'+c.id+'">'+c.name+'</option>';}).join('');
 }
 function initProdFilters(){
   var cats=getCats();
@@ -4408,7 +4413,6 @@ function exportOrdersCSV(){
 }
 function renderOrders(){
   var O=ORDERS.slice();
-  // ── FILTRAGE DYNAMIQUE ET INTELLIGENT (script v2) ──
   var q=((document.getElementById('of-q')||{value:''}).value||'').toLowerCase().trim();
   var cl=(document.getElementById('of-client')||{value:''}).value;
   var st=(document.getElementById('of-status')||{value:''}).value;
@@ -4416,20 +4420,9 @@ function renderOrders(){
   var reg=((document.getElementById('of-region')||{value:''}).value||'').toLowerCase();
   var df=(document.getElementById('of-dfrom')||{value:''}).value;
   var dt=(document.getElementById('of-dto')||{value:''}).value;
-  var sort=(document.getElementById('of-sort')||{value:'priority'}).value;
-  // 1. Recherche mot-clé : N°, nom, ville, téléphone, username
-  if(q)O=O.filter(function(o){
-    var c=getC(o.clientId);
-    var oId=(o.id||'').toLowerCase();
-    var cName=(c.name||'').toLowerCase();
-    var cCity=(c.city||'').toLowerCase();
-    var cPhone=(c.phone||'').toLowerCase();
-    var cUser=(c.username||'').toLowerCase();
-    return oId.includes(q)||cName.includes(q)||cCity.includes(q)||cPhone.includes(q)||cUser.includes(q);
-  });
-  // 2. Statut commande
+  var sort=(document.getElementById('of-sort')||{value:''}).value;
+  if(q)O=O.filter(function(o){var c=getC(o.clientId);return(o.id||'').toLowerCase().includes(q)||(c.name||'').toLowerCase().includes(q)||(c.city||'').toLowerCase().includes(q)||(c.phone||'').toLowerCase().includes(q)||(c.username||'').toLowerCase().includes(q);});
   if(st)O=O.filter(function(o){return o.status===st;});
-  // 3. Statut paiement
   if(pay==='pending')O=O.filter(function(o){return o.payStatus!=='paid';});
   else if(pay==='paid')O=O.filter(function(o){return o.payStatus==='paid';});
   else if(pay==='cmi')O=O.filter(function(o){return o.payStatus==='paid'&&o.payMethod==='cmi';});
@@ -4438,36 +4431,16 @@ function renderOrders(){
   else if(pay==='coupon')O=O.filter(function(o){return o.payStatus==='paid'&&o.payMethod==='coupon';});
   else if(pay==='credit')O=O.filter(function(o){return o.payMethod==='credit';});
   else if(pay==='partial')O=O.filter(function(o){return o.payStatus==='partial';});
-  // 4. Client précis
   if(cl)O=O.filter(function(o){return o.clientId===cl;});
-  // 5. Région/Ville — correspondance partielle
-  if(reg)O=O.filter(function(o){
-    var c=getC(o.clientId);
-    var cReg=(c.region||'').toLowerCase();
-    var cCity=(c.city||'').toLowerCase();
-    return cReg.includes(reg)||cCity.includes(reg);
-  });
-  // 6. Période
+  if(reg)O=O.filter(function(o){var c=getC(o.clientId);return(c.region||'').toLowerCase().includes(reg)||(c.city||'').toLowerCase().includes(reg);});
   if(df)O=O.filter(function(o){return(o.date||'')>=df;});
   if(dt)O=O.filter(function(o){return(o.date||'')<=dt;});
-  // ── TRI ──
-  var _pm={pending:1,confirmed:2,shipped:3,delivered:4,returned:5,cancelled:6};
-  if(sort==='priority'||sort==='date-d'||!sort){
-    // Par défaut : En attente → Confirmées → Expédiées → Livrées → Annulées puis date récente
-    O.sort(function(a,b){
-      var pa=_pm[a.status]||99;var pb=_pm[b.status]||99;
-      if(pa!==pb)return pa-pb;
-      return(b.date||'').localeCompare(a.date||'');
-    });
-  } else if(sort==='date-a'){
-    O.sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
-  } else if(sort==='tot-d'){
-    O.sort(function(a,b){return(b.total||0)-(a.total||0);});
-  } else if(sort==='tot-a'){
-    O.sort(function(a,b){return(a.total||0)-(b.total||0);});
-  } else if(sort==='prof-d'){
-    O.sort(function(a,b){return calcProfit(b)-calcProfit(a);});
-  }
+  var _spm={pending:0,confirmed:1,shipped:2,delivered:3,returned:4,cancelled:5};
+  if(sort==='date-a'){O.sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});}
+  else if(sort==='tot-d'){O.sort(function(a,b){return(b.total||0)-(a.total||0);});}
+  else if(sort==='tot-a'){O.sort(function(a,b){return(a.total||0)-(b.total||0);});}
+  else if(sort==='prof-d'){O.sort(function(a,b){return calcProfit(b)-calcProfit(a);});}
+  else{O.sort(function(a,b){var pa=_spm[a.status]!==undefined?_spm[a.status]:9;var pb=_spm[b.status]!==undefined?_spm[b.status]:9;if(pa!==pb)return pa-pb;return(b.date||'').localeCompare(a.date||'');});}
   (document.getElementById('o-cnt')||{textContent:''}).textContent=O.length+' résultat(s)';
   (document.getElementById('ords-tb')||{innerHTML:''}).innerHTML=O.map(function(o){
     var c=getC(o.clientId);var pr=calcProfit(o);
@@ -4526,7 +4499,6 @@ function renderOrders(){
 }
 function renderOrders(){
   var O=ORDERS.slice();
-  // ── FILTRAGE DYNAMIQUE ET INTELLIGENT (script v2) ──
   var q=((document.getElementById('of-q')||{value:''}).value||'').toLowerCase().trim();
   var cl=(document.getElementById('of-client')||{value:''}).value;
   var st=(document.getElementById('of-status')||{value:''}).value;
@@ -4534,20 +4506,9 @@ function renderOrders(){
   var reg=((document.getElementById('of-region')||{value:''}).value||'').toLowerCase();
   var df=(document.getElementById('of-dfrom')||{value:''}).value;
   var dt=(document.getElementById('of-dto')||{value:''}).value;
-  var sort=(document.getElementById('of-sort')||{value:'priority'}).value;
-  // 1. Recherche mot-clé : N°, nom, ville, téléphone, username
-  if(q)O=O.filter(function(o){
-    var c=getC(o.clientId);
-    var oId=(o.id||'').toLowerCase();
-    var cName=(c.name||'').toLowerCase();
-    var cCity=(c.city||'').toLowerCase();
-    var cPhone=(c.phone||'').toLowerCase();
-    var cUser=(c.username||'').toLowerCase();
-    return oId.includes(q)||cName.includes(q)||cCity.includes(q)||cPhone.includes(q)||cUser.includes(q);
-  });
-  // 2. Statut commande
+  var sort=(document.getElementById('of-sort')||{value:''}).value;
+  if(q)O=O.filter(function(o){var c=getC(o.clientId);return(o.id||'').toLowerCase().includes(q)||(c.name||'').toLowerCase().includes(q)||(c.city||'').toLowerCase().includes(q)||(c.phone||'').toLowerCase().includes(q)||(c.username||'').toLowerCase().includes(q);});
   if(st)O=O.filter(function(o){return o.status===st;});
-  // 3. Statut paiement
   if(pay==='pending')O=O.filter(function(o){return o.payStatus!=='paid';});
   else if(pay==='paid')O=O.filter(function(o){return o.payStatus==='paid';});
   else if(pay==='cmi')O=O.filter(function(o){return o.payStatus==='paid'&&o.payMethod==='cmi';});
@@ -4556,36 +4517,16 @@ function renderOrders(){
   else if(pay==='coupon')O=O.filter(function(o){return o.payStatus==='paid'&&o.payMethod==='coupon';});
   else if(pay==='credit')O=O.filter(function(o){return o.payMethod==='credit';});
   else if(pay==='partial')O=O.filter(function(o){return o.payStatus==='partial';});
-  // 4. Client précis
   if(cl)O=O.filter(function(o){return o.clientId===cl;});
-  // 5. Région/Ville — correspondance partielle
-  if(reg)O=O.filter(function(o){
-    var c=getC(o.clientId);
-    var cReg=(c.region||'').toLowerCase();
-    var cCity=(c.city||'').toLowerCase();
-    return cReg.includes(reg)||cCity.includes(reg);
-  });
-  // 6. Période
+  if(reg)O=O.filter(function(o){var c=getC(o.clientId);return(c.region||'').toLowerCase().includes(reg)||(c.city||'').toLowerCase().includes(reg);});
   if(df)O=O.filter(function(o){return(o.date||'')>=df;});
   if(dt)O=O.filter(function(o){return(o.date||'')<=dt;});
-  // ── TRI ──
-  var _pm={pending:1,confirmed:2,shipped:3,delivered:4,returned:5,cancelled:6};
-  if(sort==='priority'||sort==='date-d'||!sort){
-    // Par défaut : En attente → Confirmées → Expédiées → Livrées → Annulées puis date récente
-    O.sort(function(a,b){
-      var pa=_pm[a.status]||99;var pb=_pm[b.status]||99;
-      if(pa!==pb)return pa-pb;
-      return(b.date||'').localeCompare(a.date||'');
-    });
-  } else if(sort==='date-a'){
-    O.sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});
-  } else if(sort==='tot-d'){
-    O.sort(function(a,b){return(b.total||0)-(a.total||0);});
-  } else if(sort==='tot-a'){
-    O.sort(function(a,b){return(a.total||0)-(b.total||0);});
-  } else if(sort==='prof-d'){
-    O.sort(function(a,b){return calcProfit(b)-calcProfit(a);});
-  }
+  var _spm={pending:0,confirmed:1,shipped:2,delivered:3,returned:4,cancelled:5};
+  if(sort==='date-a'){O.sort(function(a,b){return(a.date||'').localeCompare(b.date||'');});}
+  else if(sort==='tot-d'){O.sort(function(a,b){return(b.total||0)-(a.total||0);});}
+  else if(sort==='tot-a'){O.sort(function(a,b){return(a.total||0)-(b.total||0);});}
+  else if(sort==='prof-d'){O.sort(function(a,b){return calcProfit(b)-calcProfit(a);});}
+  else{O.sort(function(a,b){var pa=_spm[a.status]!==undefined?_spm[a.status]:9;var pb=_spm[b.status]!==undefined?_spm[b.status]:9;if(pa!==pb)return pa-pb;return(b.date||'').localeCompare(a.date||'');});}
   (document.getElementById('o-cnt')||{textContent:''}).textContent=O.length+' résultat(s)';
   (document.getElementById('ords-tb')||{innerHTML:''}).innerHTML=O.map(function(o){
     var c=getC(o.clientId);var pr=calcProfit(o);
@@ -6527,7 +6468,7 @@ function processCMI(){
     for(var id in cart){var p=PRODUCTS.find(function(x){return x.id===id;});items2.push({productId:id,quantity:cart[id],price:p.price,buyPrice:p.buyPrice||0});}
     var profit=items2.reduce(function(s,it){return s+(it.price-(it.buyPrice||0))*it.quantity;},0);
     var o={id:'ORD'+(1000+ORDERS.length),clientId:SESSION.id,items:items2,total:_pendingOrder.total,profit:profit,note:_pendingOrder.note,payStatus:'paid',payMethod:'cmi',status:'pending',date:new Date().toISOString().split('T')[0]};
-    ORDERS.unshift(o);save();var _ob2=document.getElementById('ord-badge');if(_ob2){var _pc2=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob2.textContent=_pc2>0?_pc2:'';_ob2.style.display=_pc2>0?'inline':'none';}if(window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders'&&typeof renderOrders==='function')setTimeout(renderOrders,80);cart={};updCartUI();_pendingOrder=null;
+    ORDERS.unshift(o);save();var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}if(window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders'&&typeof renderOrders==='function')setTimeout(renderOrders,80);cart={};updCartUI();_pendingOrder=null;
     btn.disabled=false;btn.textContent='Payer maintenant →';
     closeAllMd();toast('✅ Paiement CMI accepté ! Commande envoyée.');clRenderProds();
   },1800);
@@ -6542,10 +6483,11 @@ function renderClOrds(){
   var statusProg={pending:1,confirmed:2,shipped:3,delivered:4,paid:4,returned:0,cancelled:0,partial:2};
   var payMethIcon={cash:'💵',transfer:'🏦',cmi:'💳',credit:'🔄',coupon:'🎟️',cheque:'📋'};
   document.getElementById('cl-ords').innerHTML=my.length?my.slice().sort(function(a,b){
-    var _pm={pending:1,confirmed:2,shipped:3,delivered:4,returned:5,cancelled:6};
-    var pa=_pm[a.status]||99; var pb=_pm[b.status]||99;
-    if(pa!==pb) return pa-pb;
-    return (b.date||'').localeCompare(a.date||'');
+    var _m={pending:0,confirmed:1,shipped:2,delivered:3,returned:4,cancelled:5};
+    var pa=_m[a.status]!==undefined?_m[a.status]:9;
+    var pb=_m[b.status]!==undefined?_m[b.status]:9;
+    if(pa!==pb)return pa-pb;
+    return(b.date||'').localeCompare(a.date||'');
   }).map(function(o){
     var retInfo='';
     if(o.returnDate) retInfo+='<div style="font-size:11px;color:var(--ora);margin-top:4px">↩ Retour : '+o.returnDate+(o.returnItems?(' — '+o.returnItems.map(function(r){var p=PRODUCTS.find(function(x){return x.id===r.productId;})||{name:r.productId};return p.name+' ×'+r.quantity;}).join(', ')):'')+'</div>';
@@ -6771,7 +6713,7 @@ function confirmCouponPayment(total, reste, complementMethod){
     payStatus:reste>0&&complementMethod==='credit'?'partial':'paid',
     payMethod:'coupon'+(reste>0?'+'+complementMethod:''),
     status:'pending',date:today,couponUsed:used,couponsUsed:usedCodes,complementMethod:complementMethod||''};
-  ORDERS.unshift(o);save();var _ob2=document.getElementById('ord-badge');if(_ob2){var _pc2=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob2.textContent=_pc2>0?_pc2:'';_ob2.style.display=_pc2>0?'inline':'none';}if(window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders'&&typeof renderOrders==='function')setTimeout(renderOrders,80);
+  ORDERS.unshift(o);save();var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}if(window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders'&&typeof renderOrders==='function')setTimeout(renderOrders,80);
   if(window.saveToCloud) window.saveToCloud();
   cart={};updCartUI();
   // Fermer TOUS les modals
@@ -6899,6 +6841,7 @@ function finalizeCredit(total,creditPart,cashPart,cashMode){
     paidAmount:cashPart,creditAmount:creditPart,resteAmount:0,
     status:'pending',date:today};
   ORDERS.unshift(o);
+var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}if(window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders'&&typeof renderOrders==='function')setTimeout(renderOrders,80);
   try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
   save();if(window.saveToCloud)window.saveToCloud();
   cart={};updCartUI();clRenderProds();
@@ -6924,6 +6867,7 @@ function _finalizeCredit(total,cashPart,cashMode){
     payStatus:'partial',payMethod:'credit',creditAmount:total,paidAmount:0,
     status:'pending',date:today};
   ORDERS.unshift(o);
+var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}if(window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders'&&typeof renderOrders==='function')setTimeout(renderOrders,80);
   try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(e){}
   save();if(window.saveToCloud)window.saveToCloud();
   cart={};updCartUI();clRenderProds();
@@ -7270,6 +7214,7 @@ function confirmPayMethodInput(mode, reste, alreadyPaid, prevModes){
       paySteps: _altPendingOrder._paidSteps.slice()
     };
     ORDERS.unshift(o);
+var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}if(window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders'&&typeof renderOrders==='function')setTimeout(renderOrders,80);
     save(); if(window.saveToCloud) window.saveToCloud();
     cart={}; updCartUI(); _altPendingOrder=null;
     closeAllMd();
@@ -7392,7 +7337,7 @@ function _finalizePartialWithCoupon(couponAmount, alreadyPaid, prevModes){
     var o={id:'ORD'+(1000+ORDERS.length),clientId:SESSION.id,items:items2,total:totalOrder,profit:profit,
       note:_altPendingOrder.note||'',payStatus:'paid',payMethod:prevModes+'+coupon',
       couponsUsed:codes,status:'pending',date:today};
-    ORDERS.unshift(o);save();var _ob2=document.getElementById('ord-badge');if(_ob2){var _pc2=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob2.textContent=_pc2>0?_pc2:'';_ob2.style.display=_pc2>0?'inline':'none';}if(window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders'&&typeof renderOrders==='function')setTimeout(renderOrders,80);if(window.saveToCloud)window.saveToCloud();
+    ORDERS.unshift(o);save();var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}if(window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders'&&typeof renderOrders==='function')setTimeout(renderOrders,80);if(window.saveToCloud)window.saveToCloud();
     cart={};updCartUI();_altPendingOrder=null;closeAllMd();
     toast('✅ Paiement complet : '+fm(alreadyPaid)+' ('+prevModes+') + '+fm(used)+' (coupon)');
     clRenderProds();renderClOrds();
@@ -7445,7 +7390,7 @@ function processAltPay(){
   if(_altPayMode==='cash'){extra.cashGiven=parseFloat(document.getElementById('pay-cash-given').value)||0;extra.change=extra.cashGiven-_altPendingOrder.total;}
   if(_altPayMode==='transfer'){extra.bank=document.getElementById('pay-transfer-bank').value;extra.ref=document.getElementById('pay-transfer-ref').value.trim();}
   var o={id:'ORD'+(1000+ORDERS.length),clientId:SESSION.id,items:items2,total:_altPendingOrder.total,profit:profit,note:_altPendingOrder.note,payStatus:'paid',payMethod:_altPayMode,payExtra:extra,status:'pending',date:new Date().toISOString().split('T')[0]};
-  ORDERS.unshift(o);save();var _ob2=document.getElementById('ord-badge');if(_ob2){var _pc2=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob2.textContent=_pc2>0?_pc2:'';_ob2.style.display=_pc2>0?'inline':'none';}if(window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders'&&typeof renderOrders==='function')setTimeout(renderOrders,80);
+  ORDERS.unshift(o);save();var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}if(window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders'&&typeof renderOrders==='function')setTimeout(renderOrders,80);
   if(window.saveToCloud) window.saveToCloud();
   cart={};updCartUI();_altPendingOrder=null;
   closeAllMd();
@@ -9128,6 +9073,7 @@ processAltPay=function(){
   }
   var o={id:'ORD'+(1000+ORDERS.length),clientId:SESSION.id,items:items2,total:_altPendingOrder.total,profit:profit,note:_altPendingOrder.note,payStatus:'paid',payMethod:_altPayMode,payExtra:extra,status:'pending',date:new Date().toISOString().split('T')[0]};
   ORDERS.unshift(o);
+var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}if(window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders'&&typeof renderOrders==='function')setTimeout(renderOrders,80);
   // Add to credit balance if unpaid portion
   save();cart={};updCartUI();_altPendingOrder=null;
   closeAllMd();
@@ -9897,6 +9843,7 @@ processAltPay = function(){
     payStatus: reste > 0 ? 'partial' : 'paid', payMethod:_altPayMode, payExtra:extra,
     status:'pending', date:new Date().toISOString().split('T')[0]};
   ORDERS.unshift(o);
+var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}if(window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders'&&typeof renderOrders==='function')setTimeout(renderOrders,80);
 
   // Ajouter le reste au crédit client
   if(reste > 0){
@@ -10948,6 +10895,7 @@ function payFullCredit(){
     payStatus:'partial', payMethod:'credit', payExtra:{}, status:'pending',
     date:new Date().toISOString().split('T')[0]};
   ORDERS.unshift(o);
+var _ob=document.getElementById('ord-badge');if(_ob){var _pc=ORDERS.filter(function(x){return x.status==='pending';}).length;_ob.textContent=_pc>0?_pc:'';_ob.style.display=_pc>0?'inline':'none';}if(window.SESSION&&window.SESSION.role==='admin'&&window._currentSec==='orders'&&typeof renderOrders==='function')setTimeout(renderOrders,80);
   cr.balance = newBal;
   cr.transactions = cr.transactions || [];
   cr.transactions.push({date:o.date, type:'credit', amount:total, note:'Achat à crédit '+o.id});
@@ -11202,52 +11150,45 @@ async function loadFromCloud(){
     inj('contact',   'al_contact',    'CONTACT_MSGS',       v=>Array.isArray(v));
     inj('pending_pay','al_pending_pay','PENDING_PAYMENTS',   v=>Array.isArray(v));
     fbShow('synced','✅ Synchronisé');
-    // Re-render après chargement Firebase — TOUTES les sections
     if(window.SESSION && window.SESSION.role==='admin'){
       setTimeout(function(){
         var sec=window._currentSec||'dash';
-        // Toujours rendre le dashboard
         if(typeof renderDashboard==='function') renderDashboard();
-        // Toujours rendre le tableau commandes (en arrière-plan)
         if(typeof renderOrders==='function') renderOrders();
-        // Mettre à jour badge en attente
-        var p=ORDERS.filter(function(o){return o.status==='pending';}).length;
-        var b=document.getElementById('ord-badge');
-        if(b){b.textContent=p>0?p:'';b.style.display=p>0?'inline':'none';}
-        // Rendre la section courante
-        if(sec==='analytics' && typeof renderAnalytics==='function') renderAnalytics();
-        else if(sec==='regional' && typeof renderRegional==='function') renderRegional();
-        else if(sec==='clients' && typeof renderClients==='function') renderClients();
-        else if(sec==='prods' && typeof renderProds==='function') renderProds();
-        else if(sec==='stock' && typeof renderStock==='function') renderStock();
-        else if(sec==='credits' && typeof renderCredits==='function') renderCredits();
-        else if(sec==='coupons' && typeof renderCouponsSection==='function') renderCouponsSection();
-        // Second render pour les graphiques (après peinture complète)
+        var _p=ORDERS.filter(function(o){return o.status==='pending';}).length;
+        var _b=document.getElementById('ord-badge');
+        if(_b){_b.textContent=_p>0?_p:'';_b.style.display=_p>0?'inline':'none';}
+        if(sec==='analytics'&&typeof renderAnalytics==='function') renderAnalytics();
+        if(sec==='regional'&&typeof renderRegional==='function') renderRegional();
+        if(sec==='clients'&&typeof renderClients==='function') renderClients();
+        if(sec==='prods'&&typeof renderProds==='function') renderProds();
+        if(sec==='credits'&&typeof renderCredits==='function') renderCredits();
+        if(sec==='coupons'&&typeof renderCouponsSection==='function') renderCouponsSection();
         setTimeout(function(){
           if(typeof renderDashboard==='function') renderDashboard();
-          if(sec==='analytics' && typeof renderAnalytics==='function') renderAnalytics();
-          if(sec==='regional' && typeof renderRegional==='function') renderRegional();
-          // Re-render commandes une 2ème fois pour s'assurer qu'elles sont visibles
           if(typeof renderOrders==='function') renderOrders();
-        }, 800);
+          if(sec==='analytics'&&typeof renderAnalytics==='function') renderAnalytics();
+          if(sec==='regional'&&typeof renderRegional==='function') renderRegional();
+        }, 700);
       }, 100);
     } else if(window.SESSION && window.clRenderProds){
       window.clRenderProds();
-      // Rendre aussi les commandes client
-      if(typeof renderClOrds==='function') setTimeout(renderClOrds, 200);
+      if(typeof renderClOrds==='function') setTimeout(renderClOrds,200);
     }
   }catch(e){
     fbShow('error','⚠️ Hors-ligne — données locales utilisées');
     console.warn('FB load:',e.message);
-    // En mode hors-ligne: utiliser données locales + render quand même
     if(window.SESSION && window.SESSION.role==='admin'){
       setTimeout(function(){
         if(typeof renderDashboard==='function') renderDashboard();
         if(typeof renderOrders==='function') renderOrders();
-        var p=ORDERS.filter(function(o){return o.status==='pending';}).length;
-        var b=document.getElementById('ord-badge');
-        if(b){b.textContent=p>0?p:'';b.style.display=p>0?'inline':'none';}
-      }, 200);
+        var _p=ORDERS.filter(function(o){return o.status==='pending';}).length;
+        var _b=document.getElementById('ord-badge');
+        if(_b){_b.textContent=_p>0?_p:'';_b.style.display=_p>0?'inline':'none';}
+      },300);
+    } else if(window.SESSION && window.clRenderProds){
+      window.clRenderProds();
+      if(typeof renderClOrds==='function') setTimeout(renderClOrds,200);
     }
   }
 }
@@ -11385,19 +11326,9 @@ function startRealtimeSync(){
           CREDITS = d.credits;
           try{localStorage.setItem('al_credits',JSON.stringify(CREDITS));}catch(ex){}
         }
-        if(d.orders !== undefined && Array.isArray(d.orders) && d.orders.length > 0){
+        if(d.orders !== undefined && Array.isArray(d.orders)){
           ORDERS = d.orders;
           try{localStorage.setItem('al_o',JSON.stringify(ORDERS));}catch(ex){}
-          // Rafraîchir le tableau commandes après chargement Firebase
-          setTimeout(function(){
-            if(typeof renderOrders==='function') renderOrders();
-            var p=ORDERS.filter(function(o){return o.status==='pending';}).length;
-            var b=document.getElementById('ord-badge');
-            if(b){b.textContent=p>0?p:'';b.style.display=p>0?'inline':'none';}
-          },150);
-        } else if(d.orders !== undefined && Array.isArray(d.orders) && d.orders.length === 0){
-          // Ne pas écraser ORDERS avec tableau vide depuis Firebase
-          console.log('[ALITOS] Firebase orders vide - conservation ORDERS local');
         }
         if(d.products !== undefined && Array.isArray(d.products)){
           PRODUCTS = d.products;
@@ -12612,17 +12543,43 @@ function printBarcodeLabels(){
   });
 })();
 
+// ═══ AUTO-INIT orders dès SESSION prête ═══
+(function(){
+  var _t=0,_iv=setInterval(function(){
+    if(++_t>60){clearInterval(_iv);return;}
+    if(window.SESSION&&window.SESSION.role==='admin'&&typeof renderOrders==='function'){
+      clearInterval(_iv);
+      setTimeout(function(){
+        renderOrders();
+        var _p=ORDERS.filter(function(o){return o.status==='pending';}).length;
+        var _b=document.getElementById('ord-badge');
+        if(_b){_b.textContent=_p>0?_p:'';_b.style.display=_p>0?'inline':'none';}
+      },300);
+    }
+  },200);
+})();
 
-// ══════════════════════════════════════════════════════
-//  COUPONS ADMIN — Fonctions manquantes
-// ══════════════════════════════════════════════════════
+// ═══ Reset login lockout depuis URL ═══
+(function(){
+  if(location.search.includes('resetlock')||location.hash.includes('resetlock')){
+    try{
+      localStorage.removeItem('_lock');
+      localStorage.removeItem('_lockAdmin');
+      var keys=[];for(var k in localStorage){if(k.startsWith('_lock'))keys.push(k);}
+      keys.forEach(function(k){localStorage.removeItem(k);});
+      alert('Blocage réinitialisé. Vous pouvez vous connecter maintenant.');
+      history.replaceState(null,'',location.pathname);
+    }catch(e){}
+  }
+})();
+
+// ═══ COUPONS ADMIN ═══
 function openAddCouponForm(){
-  var f=document.getElementById('cpn-add-form');
-  if(!f)return;
+  var f=document.getElementById('cpn-add-form');if(!f)return;
   f.style.display=f.style.display==='none'?'block':'none';
   if(f.style.display==='block'){
-    var sel=document.getElementById('cpn-new-client');
-    if(sel){sel.innerHTML='<option value="">— Client —</option>'+CLIENTS.map(function(c){return'<option value="'+c.id+'">'+c.name+'</option>';}).join('');}
+    var s=document.getElementById('cpn-new-client');
+    if(s){s.innerHTML='<option value="">— Client —</option>'+CLIENTS.map(function(c){return'<option value="'+c.id+'">'+c.name+'</option>';}).join('');}
     var a=document.getElementById('cpn-new-amount');if(a)a.value='';
     var r=document.getElementById('cpn-new-reason');if(r)r.value='';
     f.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -12633,128 +12590,111 @@ function addManualCoupon(){
   var amt=parseFloat((document.getElementById('cpn-new-amount')||{}).value)||0;
   var typ=(document.getElementById('cpn-new-type')||{}).value||'manuel';
   var rsn=((document.getElementById('cpn-new-reason')||{}).value||'').trim();
-  if(!cid){toast('⚠️ Sélectionnez un client',true);return;}
-  if(amt<=0){toast('⚠️ Montant doit être > 0',true);return;}
-  var client=CLIENTS.find(function(c){return c.id===cid;});
-  if(!client){toast('Client introuvable',true);return;}
+  if(!cid){toast('Sélectionnez un client',true);return;}
+  if(amt<=0){toast('Montant invalide',true);return;}
+  var cli=CLIENTS.find(function(c){return c.id===cid;});if(!cli){toast('Client introuvable',true);return;}
   var code='CPN-'+Date.now().toString(36).toUpperCase().slice(-6);
-  var cr=getClientCredit(cid);
-  if(!cr.coupons)cr.coupons=[];
+  var cr=getClientCredit(cid);if(!cr.coupons)cr.coupons=[];
   cr.coupons.push({id:code,code:code,amount:amt,remaining:amt,type:typ,reason:rsn||typ,createdAt:new Date().toISOString().split('T')[0],used:false,cancelled:false,createdBy:'admin'});
   CREDITS[cid]=cr;save();if(window.saveToCloud)setTimeout(window.saveToCloud,300);
-  toast('✅ Coupon '+code+' créé — '+fm(amt)+' pour '+client.name);
-  document.getElementById('cpn-add-form').style.display='none';
-  renderCouponsSection();
+  toast('Coupon '+code+' cree pour '+cli.name);
+  document.getElementById('cpn-add-form').style.display='none';renderCouponsSection();
 }
 function openDistributeCoupons(){
-  var f=document.getElementById('cpn-dist-form');
-  if(!f)return;
+  var f=document.getElementById('cpn-dist-form');if(!f)return;
   f.style.display=f.style.display==='none'?'block':'none';
-  if(f.style.display==='block') f.scrollIntoView({behavior:'smooth',block:'nearest'});
+  if(f.style.display==='block')f.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 function distributeCoupons(){
   var amt=parseFloat((document.getElementById('cpn-dist-amount')||{}).value)||0;
   var typ=(document.getElementById('cpn-dist-type')||{}).value||'distribution';
-  var rsn=((document.getElementById('cpn-dist-reason')||{}).value||'').trim()||'Distribution admin';
+  var rsn=((document.getElementById('cpn-dist-reason')||{}).value||'').trim()||'Distribution';
   var tgt=(document.getElementById('cpn-dist-target')||{}).value||'all';
-  if(amt<=0){toast('⚠️ Montant requis',true);return;}
+  if(amt<=0){toast('Montant requis',true);return;}
   var targets=CLIENTS.slice();
   if(tgt==='credit')targets=targets.filter(function(c){return getClientCredit(c.id).balance>0;});
   else if(tgt==='nocoupon')targets=targets.filter(function(c){return!(getClientCredit(c.id).coupons||[]).some(function(x){return!x.used&&!x.cancelled;});});
-  else if(tgt==='vip')targets=targets.sort(function(a,b){var caA=ORDERS.filter(function(o){return o.clientId===a.id&&o.status==='delivered';}).reduce(function(s,o){return s+o.total;},0);var caB=ORDERS.filter(function(o){return o.clientId===b.id&&o.status==='delivered';}).reduce(function(s,o){return s+o.total;},0);return caB-caA;}).slice(0,5);
-  if(targets.length===0){toast('⚠️ Aucun client ciblé',true);return;}
-  if(!confirm('Distribuer '+fm(amt)+' à '+targets.length+' client(s) ?'))return;
+  else if(tgt==='vip')targets=targets.sort(function(a,b){var A=ORDERS.filter(function(o){return o.clientId===a.id&&o.status==='delivered';}).reduce(function(s,o){return s+o.total;},0);var B=ORDERS.filter(function(o){return o.clientId===b.id&&o.status==='delivered';}).reduce(function(s,o){return s+o.total;},0);return B-A;}).slice(0,5);
+  if(!targets.length){toast('Aucun client cible',true);return;}
+  if(!confirm('Distribuer '+fm(amt)+' a '+targets.length+' client(s)?'))return;
   var today=new Date().toISOString().split('T')[0];
-  targets.forEach(function(c){
-    var cr=getClientCredit(c.id);if(!cr.coupons)cr.coupons=[];
-    var code='DIST-'+Date.now().toString(36).toUpperCase().slice(-5)+'-'+c.id.slice(-3).toUpperCase();
-    cr.coupons.push({id:code,code:code,amount:amt,remaining:amt,type:typ,reason:rsn,createdAt:today,used:false,cancelled:false,createdBy:'admin'});
-    CREDITS[c.id]=cr;
-  });
+  targets.forEach(function(c){var cr=getClientCredit(c.id);if(!cr.coupons)cr.coupons=[];var code='DIST-'+Date.now().toString(36).toUpperCase().slice(-4)+'-'+c.id.slice(-3).toUpperCase();cr.coupons.push({id:code,code:code,amount:amt,remaining:amt,type:typ,reason:rsn,createdAt:today,used:false,cancelled:false,createdBy:'admin'});CREDITS[c.id]=cr;});
   save();if(window.saveToCloud)setTimeout(window.saveToCloud,300);
   document.getElementById('cpn-dist-form').style.display='none';
-  toast('✅ '+targets.length+' coupon(s) distribué(s) — '+fm(amt)+' chacun');
-  renderCouponsSection();
+  toast(targets.length+' coupon(s) distribues');renderCouponsSection();
 }
-function cancelCoupon(clientId,couponId){
-  var cr=getClientCredit(clientId);
-  var cp=(cr.coupons||[]).find(function(x){return x.id===couponId;});
-  if(!cp)return;
-  if(!confirm('Annuler le coupon '+cp.code+' ?'))return;
+function cancelCoupon(cid,cpnId){
+  var cr=getClientCredit(cid);var cp=(cr.coupons||[]).find(function(x){return x.id===cpnId;});
+  if(!cp||!confirm('Annuler '+cp.code+'?'))return;
   cp.cancelled=true;cp.cancelledAt=new Date().toISOString().split('T')[0];
-  CREDITS[clientId]=cr;save();if(window.saveToCloud)setTimeout(window.saveToCloud,300);
-  toast('Coupon '+cp.code+' annulé');renderCouponsSection();
+  CREDITS[cid]=cr;save();if(window.saveToCloud)setTimeout(window.saveToCloud,300);
+  toast('Coupon annule');renderCouponsSection();
 }
 function renderCouponsSection(){
-  var statsEl=document.getElementById('cpn-sec-stats');
-  if(statsEl){
-    var total=0,active=0,used=0,cancelled=0,totalAmt=0;
-    CLIENTS.forEach(function(c){(getClientCredit(c.id).coupons||[]).forEach(function(cp){total++;if(!cp.used&&!cp.cancelled){active++;totalAmt+=(cp.remaining||cp.amount||0);}else if(cp.used)used++;else if(cp.cancelled)cancelled++;});});
-    statsEl.innerHTML=[{l:'Total',v:total,i:'🎟️'},{l:'Actifs',v:active,i:'✅'},{l:'Utilisés',v:used,i:'✔'},{l:'Annulés',v:cancelled,i:'❌'},{l:'En circulation',v:fm(totalAmt),i:'💰'}].map(function(k){return'<div class="kpi" style="text-align:center"><div class="kl">'+k.i+' '+k.l+'</div><div class="kv" style="font-size:18px">'+k.v+'</div></div>';}).join('');
+  var sEl=document.getElementById('cpn-sec-stats');
+  if(sEl){
+    var tot=0,act=0,us=0,can=0,totAmt=0;
+    CLIENTS.forEach(function(c){
+      (getClientCredit(c.id).coupons||[]).forEach(function(cp){
+        tot++;
+        if(!cp.used&&!cp.cancelled){act++;totAmt+=(cp.remaining||cp.amount||0);}
+        else if(cp.used)us++;
+        else if(cp.cancelled)can++;
+      });
+    });
+    sEl.innerHTML=[
+      {l:'Total',v:tot},{l:'Actifs',v:act},{l:'Utilises',v:us},
+      {l:'Annules',v:can},{l:'Circulation',v:fm(totAmt)}
+    ].map(function(k){
+      return '<div class="kpi" style="text-align:center"><div class="kl">'+k.l+'</div><div class="kv" style="font-size:18px">'+k.v+'</div></div>';
+    }).join('');
   }
-  var clientSel=document.getElementById('cpn-sec-filter-client');
-  if(clientSel&&clientSel.options.length<=1){CLIENTS.forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.name;clientSel.appendChild(o);});}
-  var search=((document.getElementById('cpn-search')||{}).value||'').toLowerCase();
-  var filterClient=(document.getElementById('cpn-sec-filter-client')||{}).value||'';
-  var filterStatus=(document.getElementById('cpn-sec-filter-status')||{}).value||'';
-  var filterType=(document.getElementById('cpn-sec-filter-type')||{}).value||'';
+  var cSel=document.getElementById('cpn-sec-filter-client');
+  if(cSel&&cSel.options.length<=1){
+    CLIENTS.forEach(function(c){var o=document.createElement('option');o.value=c.id;o.textContent=c.name;cSel.appendChild(o);});
+  }
+  var q=((document.getElementById('cpn-search')||{}).value||'').toLowerCase();
+  var fc=(document.getElementById('cpn-sec-filter-client')||{}).value||'';
+  var fs=(document.getElementById('cpn-sec-filter-status')||{}).value||'';
+  var ft=(document.getElementById('cpn-sec-filter-type')||{}).value||'';
   var rows=[];
   CLIENTS.forEach(function(c){
-    if(filterClient&&c.id!==filterClient)return;
+    if(fc&&c.id!==fc)return;
     (getClientCredit(c.id).coupons||[]).forEach(function(cp){
       var st=cp.used?'used':cp.cancelled?'cancelled':'active';
-      if(filterStatus&&st!==filterStatus)return;
-      if(filterType&&cp.type!==filterType)return;
-      if(search&&!(cp.code||'').toLowerCase().includes(search)&&!c.name.toLowerCase().includes(search)&&!(cp.reason||'').toLowerCase().includes(search))return;
+      if(fs&&st!==fs)return;
+      if(ft&&cp.type!==ft)return;
+      if(q&&!(cp.code||'').toLowerCase().includes(q)&&!c.name.toLowerCase().includes(q))return;
       rows.push({c:c,cp:cp,st:st});
     });
   });
-  var listEl=document.getElementById('cpn-sec-list');
-  if(!listEl)return;
-  if(rows.length===0){listEl.innerHTML='<div style="padding:28px;text-align:center;color:var(--tx3)">🎟️ Aucun coupon. Cliquez sur ➕ Nouveau coupon.</div>';return;}
-  var typeL={avoir:'📄 Avoir',fidelite:'⭐ Fidélité',dedommagement:'🤝 Dédomm.',distribution:'📤 Distribution',manuel:'✍️ Manuel'};
-  listEl.innerHTML='<div style="overflow-x:auto"><table style="width:100%;min-width:700px"><thead><tr><th>Code</th><th>Client</th><th>Montant</th><th>Restant</th><th>Type</th><th>Raison</th><th>Créé le</th><th>Statut</th><th>Action</th></tr></thead><tbody>'+rows.map(function(r){var cp=r.cp,c=r.c;var stB=r.st==='active'?'<span class="sb sd">✅ Actif</span>':r.st==='used'?'<span class="sb sc">✔ Utilisé</span>':'<span class="sb sp">❌ Annulé</span>';return'<tr><td><strong style="color:var(--gold)">'+(cp.code||cp.id||'—')+'</strong></td><td>'+c.name+'</td><td>'+fm(cp.amount||0)+'</td><td>'+(r.st==='active'?'<strong style="color:var(--grn)">'+fm(cp.remaining||cp.amount||0)+'</strong>':'—')+'</td><td style="font-size:11px">'+(typeL[cp.type]||cp.type||'—')+'</td><td style="color:var(--tx3);font-size:11px">'+(cp.reason||'—')+'</td><td style="color:var(--tx3);font-size:11px">'+(cp.createdAt||'—')+'</td><td>'+stB+'</td><td>'+(r.st==='active'?'<button class="btn btn-r btn-sm" onclick="cancelCoupon(''+c.id+'',''+cp.id+'')">✕</button>':'')+'</td></tr>';}).join('')+'</tbody></table></div>';
+  var lEl=document.getElementById('cpn-sec-list');
+  if(!lEl)return;
+  if(!rows.length){
+    lEl.innerHTML='<div style="padding:24px;text-align:center;color:var(--tx3)">Aucun coupon.</div>';
+    return;
+  }
+  var tL={avoir:'Avoir',fidelite:'Fidelite',dedommagement:'Dedomm.',distribution:'Distrib.',manuel:'Manuel'};
+  var html='<div style="overflow-x:auto"><table style="width:100%;min-width:680px">';
+  html+='<thead><tr><th>Code</th><th>Client</th><th>Montant</th><th>Restant</th>';
+  html+='<th>Type</th><th>Cree le</th><th>Statut</th><th>Action</th></tr></thead><tbody>';
+  rows.forEach(function(r){
+    var cp=r.cp,c=r.c;
+    var stB=r.st==='active'?'Actif':r.st==='used'?'Utilise':'Annule';
+    var actBtn=r.st==='active'?('<button class="btn btn-r btn-sm" onclick="cancelCoupon(this.dataset.cid,this.dataset.cpn)" data-cid="'+c.id+'" data-cpn="'+cp.id+'">X</button>'):'';
+    html+='<tr>';
+    html+='<td><strong>'+(cp.code||'')+'</strong></td>';
+    html+='<td>'+c.name+'</td>';
+    html+='<td>'+fm(cp.amount||0)+'</td>';
+    html+='<td>'+(r.st==='active'?fm(cp.remaining||cp.amount||0):'—')+'</td>';
+    html+='<td>'+(tL[cp.type]||cp.type||'')+'</td>';
+    html+='<td>'+(cp.createdAt||'')+'</td>';
+    html+='<td>'+stB+'</td>';
+    html+='<td>'+actBtn+'</td>';
+    html+='</tr>';
+  });
+  html+='</tbody></table></div>';
+  lEl.innerHTML=html;
 }
-// ══════════════════════════════════════════════════════
-//  AUTO-INIT: renderOrders dès que SESSION admin prête
-// ══════════════════════════════════════════════════════
-(function(){
-  var _tries=0;
-  var _iv=setInterval(function(){
-    _tries++;
-    if(_tries>50){clearInterval(_iv);return;}
-    if(window.SESSION&&window.SESSION.role==='admin'&&typeof renderOrders==='function'){
-      clearInterval(_iv);
-      setTimeout(function(){
-        renderOrders();
-        var p=ORDERS.filter(function(o){return o.status==='pending';}).length;
-        var b=document.getElementById('ord-badge');
-        if(b){b.textContent=p>0?p:'';b.style.display=p>0?'inline':'none';}
-      },200);
-    }
-  },200);
-})();
-
-// ORDERS.unshift patch: badge + refresh si admin sur tableau commandes
-(function(){
-  var _orig=Array.prototype.unshift;
-  // Patch ORDERS specifically via save() interception
-})();
-
-// ═══ AUTO-INIT: renderOrders dès que SESSION admin prête ═══
-(function(){
-  var _t=0,_iv=setInterval(function(){
-    if(++_t>60){clearInterval(_iv);return;}
-    if(window.SESSION&&window.SESSION.role==='admin'&&typeof renderOrders==='function'){
-      clearInterval(_iv);
-      setTimeout(function(){
-        renderOrders();
-        var p=ORDERS.filter(function(o){return o.status==='pending';}).length;
-        var b=document.getElementById('ord-badge');
-        if(b){b.textContent=p>0?p:'';b.style.display=p>0?'inline':'none';}
-      },400);
-    }
-  },200);
-})();
 </script>
 </html>
