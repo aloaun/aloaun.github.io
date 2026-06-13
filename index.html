@@ -1637,6 +1637,73 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
 </style>
 </head>
 <body>
+
+<button id="_diagBtn" onclick="(function(){
+  var p=document.getElementById('_diagPanel');
+  if(!p)return;
+  var info='';
+  info+='window._currentSec: '+window._currentSec+'\n';
+  info+='SESSION: '+(window.SESSION?window.SESSION.role:'null')+'\n';
+  info+='ORDERS.length: '+(window.ORDERS?window.ORDERS.length:'undefined')+'\n';
+  info+='CLIENTS.length: '+(window.CLIENTS?window.CLIENTS.length:'undefined')+'\n\n';
+  var ordsTb=document.getElementById('ords-tb');
+  info+='ords-tb exists: '+(!!ordsTb)+'\n';
+  info+='ords-tb.innerHTML.length: '+(ordsTb?ordsTb.innerHTML.length:'N/A')+'\n';
+  var oCnt=document.getElementById('o-cnt');
+  info+='o-cnt text: '+(oCnt?oCnt.textContent:'N/A')+'\n\n';
+  var chCa=document.getElementById('ch-ca');
+  info+='ch-ca exists: '+(!!chCa)+'\n';
+  info+='ch-ca.offsetWidth: '+(chCa?chCa.offsetWidth:'N/A')+'\n';
+  info+='ch-ca.offsetHeight: '+(chCa?chCa.offsetHeight:'N/A')+'\n';
+  info+='ch-ca.innerHTML.length: '+(chCa?chCa.innerHTML.length:'N/A')+'\n';
+  if(chCa)info+='ch-ca content: '+chCa.innerHTML.substring(0,150)+'\n\n';
+  info+='Erreurs JS capturées: '+(window._debugErrors?window._debugErrors.length:0)+'\n';
+  if(window._debugErrors)window._debugErrors.forEach(function(e){info+='  - L'+e.line+': '+e.msg+'\n';});
+  info+='\n--- Test manuel renderOrders() ---\n';
+  try{
+    if(typeof initOrderFilters==='function')initOrderFilters();
+    if(typeof renderOrders==='function')renderOrders();
+    info+='renderOrders() exécuté sans erreur\n';
+    var tb2=document.getElementById('ords-tb');
+    info+='ords-tb après appel: '+(tb2?tb2.innerHTML.length:'N/A')+' chars\n';
+  }catch(e){
+    info+='ERREUR renderOrders(): '+e.message+'\n'+e.stack;
+  }
+  info+='\n--- Test manuel renderDashboard() ---\n';
+  try{
+    if(typeof renderDashboard==='function')renderDashboard();
+    info+='renderDashboard() exécuté sans erreur\n';
+    var ch2=document.getElementById('ch-ca');
+    info+='ch-ca après appel: '+(ch2?ch2.innerHTML.length:'N/A')+' chars\n';
+  }catch(e){
+    info+='ERREUR renderDashboard(): '+e.message+'\n'+e.stack;
+  }
+  p.textContent=info;
+  p.style.display='block';
+})()" style="position:fixed;top:8px;right:8px;z-index:100000;background:#C9A84C;color:#000;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer">🔧 DIAGNOSTIC</button>
+<pre id="_diagPanel" style="display:none;position:fixed;top:40px;left:8px;right:8px;bottom:8px;z-index:99999;background:#000;color:#0f0;font-size:10px;font-family:monospace;padding:10px;overflow:auto;border:2px solid #C9A84C;border-radius:8px;white-space:pre-wrap"></pre>
+
+<script>
+window._debugErrors=[];
+window.onerror=function(msg,url,line,col,err){
+  window._debugErrors.push({msg:msg,line:line,col:col,stack:err&&err.stack});
+  try{
+    var box=document.getElementById('_dbgbox');
+    if(!box){
+      box=document.createElement('div');
+      box.id='_dbgbox';
+      box.style.cssText='position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow:auto;background:#300;color:#f88;font-size:11px;font-family:monospace;padding:8px;z-index:99999;border-top:3px solid red;white-space:pre-wrap';
+      (document.body||document.documentElement).appendChild(box);
+    }
+    box.innerHTML+='<div style="border-bottom:1px solid #500;margin-bottom:4px;padding-bottom:4px">ERREUR L'+line+':'+col+' - '+msg+(err&&err.stack?'\n'+err.stack:'')+'</div>';
+  }catch(e){}
+  return false;
+};
+window.addEventListener('unhandledrejection',function(ev){
+  window.onerror('Promise rejetée: '+(ev.reason&&ev.reason.message||ev.reason),'',0,0,ev.reason);
+});
+</script>
+
 <div class="toast" id="toast"></div>
 
 <!-- HIDDEN FILE INPUT -->
