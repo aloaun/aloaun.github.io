@@ -1638,69 +1638,17 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
 </head>
 <body>
 
-<button id="_diagBtn" onclick="(function(){
-  var p=document.getElementById('_diagPanel');
-  if(!p)return;
-  var info='';
-  info+='window._currentSec: '+window._currentSec+'\n';
-  info+='SESSION: '+(window.SESSION?window.SESSION.role:'null')+'\n';
-  info+='ORDERS.length: '+(window.ORDERS?window.ORDERS.length:'undefined')+'\n';
-  info+='CLIENTS.length: '+(window.CLIENTS?window.CLIENTS.length:'undefined')+'\n\n';
-  var ordsTb=document.getElementById('ords-tb');
-  info+='ords-tb exists: '+(!!ordsTb)+'\n';
-  info+='ords-tb.innerHTML.length: '+(ordsTb?ordsTb.innerHTML.length:'N/A')+'\n';
-  var oCnt=document.getElementById('o-cnt');
-  info+='o-cnt text: '+(oCnt?oCnt.textContent:'N/A')+'\n\n';
-  var chCa=document.getElementById('ch-ca');
-  info+='ch-ca exists: '+(!!chCa)+'\n';
-  info+='ch-ca.offsetWidth: '+(chCa?chCa.offsetWidth:'N/A')+'\n';
-  info+='ch-ca.offsetHeight: '+(chCa?chCa.offsetHeight:'N/A')+'\n';
-  info+='ch-ca.innerHTML.length: '+(chCa?chCa.innerHTML.length:'N/A')+'\n';
-  if(chCa)info+='ch-ca content: '+chCa.innerHTML.substring(0,150)+'\n\n';
-  info+='Erreurs JS capturées: '+(window._debugErrors?window._debugErrors.length:0)+'\n';
-  if(window._debugErrors)window._debugErrors.forEach(function(e){info+='  - L'+e.line+': '+e.msg+'\n';});
-  info+='\n--- Test manuel renderOrders() ---\n';
-  try{
-    if(typeof initOrderFilters==='function')initOrderFilters();
-    if(typeof renderOrders==='function')renderOrders();
-    info+='renderOrders() exécuté sans erreur\n';
-    var tb2=document.getElementById('ords-tb');
-    info+='ords-tb après appel: '+(tb2?tb2.innerHTML.length:'N/A')+' chars\n';
-  }catch(e){
-    info+='ERREUR renderOrders(): '+e.message+'\n'+e.stack;
-  }
-  info+='\n--- Test manuel renderDashboard() ---\n';
-  try{
-    if(typeof renderDashboard==='function')renderDashboard();
-    info+='renderDashboard() exécuté sans erreur\n';
-    var ch2=document.getElementById('ch-ca');
-    info+='ch-ca après appel: '+(ch2?ch2.innerHTML.length:'N/A')+' chars\n';
-  }catch(e){
-    info+='ERREUR renderDashboard(): '+e.message+'\n'+e.stack;
-  }
-  p.textContent=info;
-  p.style.display='block';
-})()" style="position:fixed;top:8px;right:8px;z-index:100000;background:#C9A84C;color:#000;border:none;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer">🔧 DIAGNOSTIC</button>
-<pre id="_diagPanel" style="display:none;position:fixed;top:40px;left:8px;right:8px;bottom:8px;z-index:99999;background:#000;color:#0f0;font-size:10px;font-family:monospace;padding:10px;overflow:auto;border:2px solid #C9A84C;border-radius:8px;white-space:pre-wrap"></pre>
+
 
 <script>
 window._debugErrors=[];
 window.onerror=function(msg,url,line,col,err){
   window._debugErrors.push({msg:msg,line:line,col:col,stack:err&&err.stack});
-  try{
-    var box=document.getElementById('_dbgbox');
-    if(!box){
-      box=document.createElement('div');
-      box.id='_dbgbox';
-      box.style.cssText='position:fixed;bottom:0;left:0;right:0;max-height:40vh;overflow:auto;background:#300;color:#f88;font-size:11px;font-family:monospace;padding:8px;z-index:99999;border-top:3px solid red;white-space:pre-wrap';
-      (document.body||document.documentElement).appendChild(box);
-    }
-    box.innerHTML+='<div style="border-bottom:1px solid #500;margin-bottom:4px;padding-bottom:4px">ERREUR L'+line+':'+col+' - '+msg+(err&&err.stack?'\n'+err.stack:'')+'</div>';
-  }catch(e){}
+  console.error('Erreur globale capturee:',msg,'L'+line+':'+col,err&&err.stack);
   return false;
 };
 window.addEventListener('unhandledrejection',function(ev){
-  window.onerror('Promise rejetée: '+(ev.reason&&ev.reason.message||ev.reason),'',0,0,ev.reason);
+  console.error('Promise rejetee:',ev.reason);
 });
 </script>
 
@@ -3400,7 +3348,7 @@ var ORDERS=(function(){
 
 try{var t=localStorage.getItem('al_c');if(t){var v=JSON.parse(t);if(v&&v.length)CLIENTS=v;}}catch(e){}
 try{var t=localStorage.getItem('al_p');if(t){var v=JSON.parse(t);if(v&&v.length)PRODUCTS=v;}}catch(e){}
-try{var t=localStorage.getItem('al_o');if(t){var v=JSON.parse(t);if(v&&v.length)ORDERS=v;}}catch(e){}
+try{var t=localStorage.getItem('al_o');if(t){var v=JSON.parse(t);if(v&&v.length)ORDERS=normalizeOrders(v);}}catch(e){}
 
 // ── NEW DATA STORES ──
 var COMPANY={name:'ALITOS',tagline:'Commerce & Distribution',address:'Maroc',phone:'+212 5 22 00 00 00',email:'contact@alitos.ma',ice:'000000000000000',logo:''};
@@ -3479,7 +3427,19 @@ function payB(ps,pm,o){
   return'<span class="sb sx" style="font-size:10px">Non payé</span>';
 }
 function stkSt(p){var t=p.threshold||10;if(p.stock===0)return{cls:'sx',lbl:'⚠️ Rupture',col:'#E05252'};if(p.stock<=t)return{cls:'sp',lbl:'⚠️ Bas ('+p.stock+')',col:'#E8834A'};return{cls:'sd',lbl:'✅ '+p.stock+' en stock',col:'#52C97A'};}
-function calcProfit(o){return o.items.reduce(function(s,it){var bp=it.buyPrice!==undefined?it.buyPrice:(getP(it.productId).buyPrice||0);return s+(it.price-bp)*it.quantity;},0);}
+function calcProfit(o){return (o.items||[]).reduce(function(s,it){var bp=it.buyPrice!==undefined?it.buyPrice:(getP(it.productId).buyPrice||0);return s+(it.price-bp)*it.quantity;},0);}
+function normalizeOrders(arr){
+  if(!Array.isArray(arr))return [];
+  return arr.map(function(o){
+    if(!o)return o;
+    if(!Array.isArray(o.items))o.items=[];
+    if(typeof o.total!=='number')o.total=(o.items||[]).reduce(function(s,it){return s+((it.price||0)*(it.quantity||0));},0);
+    if(!o.status)o.status='pending';
+    if(!o.date)o.date=new Date().toISOString().split('T')[0];
+    if(!Array.isArray(o.returnItems))o.returnItems=[];
+    return o;
+  });
+}
 function toast(msg,err){var t=document.getElementById('toast');t.textContent=msg;t.className='toast'+(err?' err':'');t.classList.add('on');setTimeout(function(){t.classList.remove('on');},3000);}
 function clientAvatar(c){return (c.photo&&(c.photo.startsWith('http')||c.photo.startsWith('data:')))?c.photo:('https://ui-avatars.com/api/?name='+encodeURIComponent(c.name||'?')+'&background=C9A84C&color=0A0A0A&size=128');}
 function prodImg(p){return (p.image&&p.image.length>0)?p.image:'https://via.placeholder.com/200x130?text=Photo';}
@@ -4313,7 +4273,7 @@ function renderDashboard(){
   _svgDonut(document.getElementById('ch-reg'),Object.keys(rCA),Object.values(rCA).map(Math.round),['#C9A84C','#4A9EE8','#52C97A','#9B6BDB','#E8834A','#E05252']);
   var pQ={};
   O.filter(function(o){return o.status!=='cancelled';}).forEach(function(o){
-    o.items.forEach(function(it){
+    (o.items||[]).forEach(function(it){
       var netQty=it.quantity;
       if(o.returnItems){var ret=o.returnItems.find(function(r){return r.productId===it.productId;});if(ret) netQty=Math.max(0,netQty-ret.quantity);}
       if(netQty>0) pQ[it.productId]=(pQ[it.productId]||0)+netQty;
@@ -4430,7 +4390,7 @@ function qVal(id){
   if(o && o.status==='pending'){
     o.status='confirmed';
     o.confirmedDate=new Date().toISOString().split('T')[0];
-    o.items.forEach(function(it){
+    (o.items||[]).forEach(function(it){
       var p=PRODUCTS.find(function(x){return x.id===it.productId;});
       if(p) p.stock=Math.max(0, p.stock - it.quantity);
     });
@@ -4559,7 +4519,7 @@ function bulkConfirm(){
     var o=ORDERS.find(function(x){return x.id===id;});
     if(o&&o.status==='pending'){
       o.status='confirmed';o.confirmedDate=today;
-      o.items.forEach(function(it){var p=PRODUCTS.find(function(x){return x.id===it.productId;});if(p)p.stock=Math.max(0,p.stock-it.quantity);});
+      (o.items||[]).forEach(function(it){var p=PRODUCTS.find(function(x){return x.id===it.productId;});if(p)p.stock=Math.max(0,p.stock-it.quantity);});
       count++;
     }
   });
@@ -4678,7 +4638,7 @@ function renderOrders(){
     var retHtml='<span style="color:var(--tx3)">—</span>';
     if(o.returnItems&&o.returnItems.length>0){
       var totR=o.returnItems.reduce(function(s,it){return s+it.quantity;},0);
-      var totO=o.items.reduce(function(s,it){return s+it.quantity;},0);
+      var totO=(o.items||[]).reduce(function(s,it){return s+it.quantity;},0);
       var det=o.returnItems.map(function(it){return getP(it.productId).name.split(' ')[0]+' x'+it.quantity;}).join(', ');
       retHtml=totR<totO
         ?'<span style="color:var(--ora);font-size:11px">Partiel: '+det+'</span>'
@@ -4718,7 +4678,7 @@ function renderOrders(){
       +'</div></td>'
       +'<td style="font-size:11px;color:var(--tx2)">'+(cl.city||'—')+'</td>'
       +'<td style="font-size:11px;color:var(--tx3)">'+(cl.region||'—')+'</td>'
-      +'<td>'+o.items.map(function(it){
+      +'<td>'+(o.items||[]).map(function(it){
         return '<div style="font-size:11px;white-space:nowrap">'
           +getP(it.productId).name.substring(0,14)
           +' <span style="color:var(--gold)">x'+it.quantity+'</span></div>';
@@ -4815,7 +4775,7 @@ function renderOrders(){
     var retHtml='<span style="color:var(--tx3)">—</span>';
     if(o.returnItems&&o.returnItems.length>0){
       var totR=o.returnItems.reduce(function(s,it){return s+it.quantity;},0);
-      var totO=o.items.reduce(function(s,it){return s+it.quantity;},0);
+      var totO=(o.items||[]).reduce(function(s,it){return s+it.quantity;},0);
       var det=o.returnItems.map(function(it){return getP(it.productId).name.split(' ')[0]+' x'+it.quantity;}).join(', ');
       retHtml=totR<totO
         ?'<span style="color:var(--ora);font-size:11px">Partiel: '+det+'</span>'
@@ -4855,7 +4815,7 @@ function renderOrders(){
       +'</div></td>'
       +'<td style="font-size:11px;color:var(--tx2)">'+(cl.city||'—')+'</td>'
       +'<td style="font-size:11px;color:var(--tx3)">'+(cl.region||'—')+'</td>'
-      +'<td>'+o.items.map(function(it){
+      +'<td>'+(o.items||[]).map(function(it){
         return '<div style="font-size:11px;white-space:nowrap">'
           +getP(it.productId).name.substring(0,14)
           +' <span style="color:var(--gold)">x'+it.quantity+'</span></div>';
@@ -4886,7 +4846,7 @@ function updOrd(id,s){
   if(s==='shipped' && prev!=='shipped') o.shippedDate=today;
   // ── Diminuer stock quand confirmée ──
   if(s==='confirmed' && prev!=='confirmed'){
-    o.items.forEach(function(it){
+    (o.items||[]).forEach(function(it){
       var p=PRODUCTS.find(function(x){return x.id===it.productId;});
       if(p) p.stock=Math.max(0, p.stock - it.quantity);
     });
@@ -4895,7 +4855,7 @@ function updOrd(id,s){
   if(s==='returned'){
     var retQty={};
     if(o.returnItems){ o.returnItems.forEach(function(it){ retQty[it.productId]=it.quantity; }); }
-    else{ o.items.forEach(function(it){ retQty[it.productId]=it.quantity; }); }
+    else{ (o.items||[]).forEach(function(it){ retQty[it.productId]=it.quantity; }); }
     Object.keys(retQty).forEach(function(pid){
       var p=PRODUCTS.find(function(x){return x.id===pid;});
       if(p) p.stock += retQty[pid];
@@ -4903,7 +4863,7 @@ function updOrd(id,s){
   }
   // ── Annuler commande non payée ──
   if(s==='cancelled' && prev==='confirmed'){
-    o.items.forEach(function(it){
+    (o.items||[]).forEach(function(it){
       var p=PRODUCTS.find(function(x){return x.id===it.productId;});
       if(p) p.stock += it.quantity;
     });
@@ -4983,7 +4943,7 @@ function openReturnOrd(id){
   if(!o) return;
   var html='<h3 style="color:var(--gold);margin-bottom:14px">↩ Retour — '+id+'</h3>'+
     '<div style="font-size:12px;color:var(--tx3);margin-bottom:12px">Quantités retournées (max = quantité commandée) :</div>'+
-    o.items.map(function(it){
+    (o.items||[]).map(function(it){
       var p=getP(it.productId);
       var alreadyRet=o.returnItems?o.returnItems.reduce(function(s,r){return r.productId===it.productId?s+r.quantity:s;},0):0;
       var maxRet=it.quantity-alreadyRet;
@@ -5002,7 +4962,7 @@ function confirmReturn(id){
   if(!o) return;
   var retItems=[];
   var hasError=false;
-  o.items.forEach(function(it){
+  (o.items||[]).forEach(function(it){
     var inp=document.getElementById('ret-'+it.productId);
     if(!inp) return;
     var val=inp.value.trim();
@@ -5037,13 +4997,13 @@ function confirmReturn(id){
     else o.returnItems.push(newRet);
   });
   // Check if fully returned
-  var totalOrd=o.items.reduce(function(s,it){return s+it.quantity;},0);
+  var totalOrd=(o.items||[]).reduce(function(s,it){return s+it.quantity;},0);
   var totalRet=o.returnItems.reduce(function(s,it){return s+it.quantity;},0);
   o.status=totalRet>=totalOrd?'returned':'partial_return';
   var today=new Date().toISOString().split('T')[0];
   o.returnDate=today;
   var retTotal=retItems.reduce(function(s,it){
-    var item=o.items.find(function(x){return x.productId===it.productId;});
+    var item=(o.items||[]).find(function(x){return x.productId===it.productId;});
     return s+(item?(it.price||item.price)*it.quantity:0);
   },0);
   var cr=getClientCredit(o.clientId);
@@ -5169,7 +5129,7 @@ function viewOrd(id){
       '<th style="padding:6px 8px;font-size:10px;color:var(--tx3);border-bottom:1px solid var(--bo2);text-align:center">Qté</th>'+
       '<th style="padding:6px 8px;font-size:10px;color:var(--tx3);border-bottom:1px solid var(--bo2);text-align:right">Prix</th>'+
       '<th style="padding:6px 8px;font-size:10px;color:var(--tx3);border-bottom:1px solid var(--bo2);text-align:right">Total</th></tr></thead><tbody>'+
-      o.items.map(function(it){var p=getP(it.productId);return '<tr><td style="padding:8px;font-size:13px">'+p.name+'</td><td style="padding:8px;text-align:center">'+it.quantity+'</td><td style="padding:8px;text-align:right">'+fm(it.price)+'</td><td style="padding:8px;text-align:right;font-weight:600;color:var(--gold)">'+fm(it.price*it.quantity)+'</td></tr>';}).join('')+
+      (o.items||[]).map(function(it){var p=getP(it.productId);return '<tr><td style="padding:8px;font-size:13px">'+p.name+'</td><td style="padding:8px;text-align:center">'+it.quantity+'</td><td style="padding:8px;text-align:right">'+fm(it.price)+'</td><td style="padding:8px;text-align:right;font-weight:600;color:var(--gold)">'+fm(it.price*it.quantity)+'</td></tr>';}).join('')+
     '</tbody></table>'+
     '<div style="text-align:right;font-size:17px;font-weight:600;color:var(--gold)">Total : '+fm(o.total)+'</div>';
   openMd('ord');
@@ -6315,7 +6275,7 @@ function renderAnalytics(){
   // Pre-compute product margins for analytics
   window._prodMargins = PRODUCTS.map(function(p){
     var sold=ORDERS.filter(function(o){return o.status!=='cancelled';}).reduce(function(s,o){
-      var it=o.items.find(function(x){return x.productId===p.id;});
+      var it=(o.items||[]).find(function(x){return x.productId===p.id;});
       return s+(it?it.quantity-(o.returnItems?(o.returnItems.find(function(r){return r.productId===p.id;})||{quantity:0}).quantity:0):0);
     },0);
     var margin=p.buyPrice>0?Math.round((p.price-p.buyPrice)/p.buyPrice*100):0;
@@ -6338,7 +6298,7 @@ function renderAnalytics(){
   _svgBar(document.getElementById('ch-sec'),Object.keys(sCA),Object.values(sCA).map(Math.round),'#4A9EE8',{horizontal:true});
   },200); // end setTimeout analytics charts
   var pCA={},pQT={},pCost={};
-  O.forEach(function(o){o.items.forEach(function(it){pCA[it.productId]=(pCA[it.productId]||0)+it.price*it.quantity;pQT[it.productId]=(pQT[it.productId]||0)+it.quantity;var bp=it.buyPrice!==undefined?it.buyPrice:(getP(it.productId).buyPrice||0);pCost[it.productId]=(pCost[it.productId]||0)+bp*it.quantity;});});
+  O.forEach(function(o){(o.items||[]).forEach(function(it){pCA[it.productId]=(pCA[it.productId]||0)+it.price*it.quantity;pQT[it.productId]=(pQT[it.productId]||0)+it.quantity;var bp=it.buyPrice!==undefined?it.buyPrice:(getP(it.productId).buyPrice||0);pCost[it.productId]=(pCost[it.productId]||0)+bp*it.quantity;});});
   var grand=Object.values(pCA).reduce(function(s,v){return s+v;},0)||1;
   (document.getElementById('top-prods')||{innerHTML:''}).innerHTML=Object.entries(pCA).sort(function(a,b){return b[1]-a[1];}).map(function(e){
     var p=getP(e[0]);var cost=pCost[e[0]]||0;var prof=e[1]-cost;var marg2=e[1]>0?Math.round(prof/e[1]*100):0;var pct=Math.round(e[1]/grand*100);
@@ -6472,7 +6432,7 @@ function renderInvoice(){
         '</div>'+
         '<div class="inv-table-container">'+
           '<table class="inv-table"><thead><tr><th>#</th><th>Produit</th><th>Qté</th><th>P.U. HT</th><th>Total HT</th></tr></thead><tbody>'+
-            o.items.map(function(it,idx){var p=getP(it.productId);var htU=Math.round(it.price/1.2);return'<tr><td style="color:#999">'+(idx+1)+'</td><td>'+p.name+'</td><td style="text-align:center">'+it.quantity+'</td><td style="text-align:right">'+fm(htU)+'</td><td style="text-align:right;color:#C9A84C">'+fm(htU*it.quantity)+'</td></tr>';}).join('')+
+            (o.items||[]).map(function(it,idx){var p=getP(it.productId);var htU=Math.round(it.price/1.2);return'<tr><td style="color:#999">'+(idx+1)+'</td><td>'+p.name+'</td><td style="text-align:center">'+it.quantity+'</td><td style="text-align:right">'+fm(htU)+'</td><td style="text-align:right;color:#C9A84C">'+fm(htU*it.quantity)+'</td></tr>';}).join('')+
           '</tbody></table>'+
         '</div>'+
         '<div class="inv-totals-row">'+
@@ -6807,7 +6767,7 @@ function renderClOrds(){
         '<div style="display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end">'+badge(o.status)+payB(o.payStatus,o.payMethod,o)+'</div>'+
       '</div>'+
       '<div style="margin-bottom:6px">'+
-        o.items.map(function(it){
+        (o.items||[]).map(function(it){
           var p=PRODUCTS.find(function(x){return x.id===it.productId;})||{name:it.productId,image:''};
           return'<span style="display:inline-flex;align-items:center;gap:4px;background:var(--dk4);border-radius:6px;padding:2px 8px;margin:2px;font-size:11px">'+
             (p.image?'<img src="'+p.image+'" style="width:16px;height:16px;border-radius:3px;object-fit:cover" onerror="this.style.display=\'none\'">':'')+
@@ -8212,7 +8172,7 @@ function renderRegional(){
     if(filterSector && (c.sector||'')!==filterSector) return;
     var key=groupKey(o);
     if(!regionProd[key])regionProd[key]={};
-    o.items.forEach(function(it){
+    (o.items||[]).forEach(function(it){
       if(filterProd && it.productId!==filterProd) return;
       regionProd[key][it.productId]=(regionProd[key][it.productId]||0)+it.quantity;
     });
@@ -8264,7 +8224,7 @@ function renderRegional(){
       if(oKey!==zone) return;
       var sec=c.sector||'Non défini';
       if(!sectorData[sec]) sectorData[sec]={qty:0,ca:0,clients:{}};
-      o.items.forEach(function(it){
+      (o.items||[]).forEach(function(it){
         if(filterProd&&it.productId!==filterProd) return;
         sectorData[sec].qty+=it.quantity;
         sectorData[sec].ca+=getP(it.productId).price*it.quantity;
@@ -8321,7 +8281,7 @@ function renderRegional(){
     if(filterSector && (c.sector||'')!==filterSector) return;
     var key=groupKey(o);
     if(!regionProd[key])regionProd[key]={};
-    o.items.forEach(function(it){
+    (o.items||[]).forEach(function(it){
       if(filterProd && it.productId!==filterProd) return;
       regionProd[key][it.productId]=(regionProd[key][it.productId]||0)+it.quantity;
     });
@@ -8373,7 +8333,7 @@ function renderRegional(){
       if(oKey!==zone) return;
       var sec=c.sector||'Non défini';
       if(!sectorData[sec]) sectorData[sec]={qty:0,ca:0,clients:{}};
-      o.items.forEach(function(it){
+      (o.items||[]).forEach(function(it){
         if(filterProd&&it.productId!==filterProd) return;
         sectorData[sec].qty+=it.quantity;
         sectorData[sec].ca+=getP(it.productId).price*it.quantity;
@@ -8606,7 +8566,7 @@ function generateInvoicePDF(id){
 
   // Products table
   var tableY=y+35;
-  var rows=o.items.map(function(it){
+  var rows=(o.items||[]).map(function(it){
     var p=getP(it.productId);
     var htU=Math.round(it.price/1.2);
     return [p.name, it.quantity, fm(it.price), fm(it.price*it.quantity)];
@@ -8755,7 +8715,7 @@ function sendInvoiceWhatsApp(){
   if(!phone){toast('Ce client n\'a pas de téléphone enregistré',true);return;}
   var waPhone=phone.replace(/[^0-9]/g,'');
   if(waPhone.startsWith('0')) waPhone='212'+waPhone.substring(1);
-  var items=o.items.map(function(it){var p=getP(it.productId);return '• '+p.name+' x'+it.quantity+' = '+fm(it.price*it.quantity);}).join('\n');
+  var items=(o.items||[]).map(function(it){var p=getP(it.productId);return '• '+p.name+' x'+it.quantity+' = '+fm(it.price*it.quantity);}).join('\n');
   var msg='🧾 *Facture N° '+o.id+'*\n'+(COMPANY.name||'Alitos')+'\n'+'─────────────────\n'+items+'\n'+'─────────────────\n'+'*Total : '+fm(o.total)+'*\nDate : '+o.date+'\n\nMerci pour votre commande ! 🙏';
   window.open('https://wa.me/'+waPhone+'?text='+encodeURIComponent(msg),'_blank');
   toast('WhatsApp ouvert pour '+phone);
@@ -8777,7 +8737,7 @@ function sendInvoiceByEmail(){
   var doc=isAvoir?generateAvoirPDF(id):generateInvoicePDF(id);
   if(!doc) return;
   var pdfBase64=doc.output('datauristring').split(',')[1];
-  var items=o.items.map(function(it){var p=getP(it.productId);return p.name+' ×'+it.quantity+' = '+fm(it.price*it.quantity);}).join('<br>');
+  var items=(o.items||[]).map(function(it){var p=getP(it.productId);return p.name+' ×'+it.quantity+' = '+fm(it.price*it.quantity);}).join('<br>');
   var btn=document.getElementById('btn-email-inv');
   if(btn){btn.disabled=true;btn.textContent='⏳ Envoi...';}
   fetch(window.WORKER_URL,{
@@ -9406,7 +9366,7 @@ renderInvoice=function(){
         '</div>'+
         '<div class="inv-table-container">'+
           '<table class="inv-table"><thead><tr><th>#</th><th>Produit</th><th>Qté</th><th>P.U. HT</th><th>Total HT</th></tr></thead><tbody>'+
-            o.items.map(function(it,idx){var p=getP(it.productId);var htU=Math.round(it.price/1.2);return'<tr><td style="color:#999">'+(idx+1)+'</td><td>'+p.name+'</td><td style="text-align:center">'+it.quantity+'</td><td style="text-align:right">'+fm(htU)+'</td><td style="text-align:right;color:#C9A84C">'+fm(htU*it.quantity)+'</td></tr>';}).join('')+
+            (o.items||[]).map(function(it,idx){var p=getP(it.productId);var htU=Math.round(it.price/1.2);return'<tr><td style="color:#999">'+(idx+1)+'</td><td>'+p.name+'</td><td style="text-align:center">'+it.quantity+'</td><td style="text-align:right">'+fm(htU)+'</td><td style="text-align:right;color:#C9A84C">'+fm(htU*it.quantity)+'</td></tr>';}).join('')+
           '</tbody></table>'+
         '</div>'+
         '<div class="inv-totals-row">'+
@@ -10251,7 +10211,7 @@ renderClOrds = function(){
         '<span style="color:var(--gold);font-weight:600;font-size:13px">'+o.id+'</span>'+
         '<div style="display:flex;gap:5px">'+badge(o.status)+payB(o.payStatus, o.payMethod)+'</div>'+
       '</div>'+
-      '<div style="font-size:12px;color:var(--tx2);margin-bottom:6px">'+o.items.map(function(it){var p=PRODUCTS.find(function(x){return x.id===it.productId;})||{name:it.productId};return p.name+' ×'+it.quantity;}).join(' · ')+'</div>'+
+      '<div style="font-size:12px;color:var(--tx2);margin-bottom:6px">'+(o.items||[]).map(function(it){var p=PRODUCTS.find(function(x){return x.id===it.productId;})||{name:it.productId};return p.name+' ×'+it.quantity;}).join(' · ')+'</div>'+
       '<div style="display:flex;justify-content:space-between;align-items:center">'+
         '<span style="font-size:12px;color:var(--tx3)">'+o.date+'</span>'+
         '<strong style="color:var(--gold)">'+fm(o.total)+'</strong>'+
@@ -11412,6 +11372,7 @@ async function loadFromCloud(){
     inj('clients',   'al_c',          'CLIENTS',            v=>Array.isArray(v)&&v.length>0);
     inj('products',  'al_p',          'PRODUCTS',           v=>Array.isArray(v)&&v.length>0);
     inj('orders',    'al_o',          'ORDERS',             v=>Array.isArray(v)&&v.length>0);
+    if(Array.isArray(window.ORDERS))window.ORDERS=normalizeOrders(window.ORDERS);
     // Recharger ADMIN depuis Firebase — mais garder le mot de passe local en priorité
     if(d.admin && d.admin.username){
       var fbAdmin = d.admin;
@@ -11471,6 +11432,7 @@ function injectData(d){
   inj('clients',   'al_c',          'CLIENTS',            v=>Array.isArray(v)&&v.length>0);
   inj('products',  'al_p',          'PRODUCTS',           v=>Array.isArray(v)&&v.length>0);
   inj('orders',    'al_o',          'ORDERS',             v=>Array.isArray(v)&&v.length>0);
+    if(Array.isArray(window.ORDERS))window.ORDERS=normalizeOrders(window.ORDERS);
   // NE PAS écraser ADMIN depuis Firebase SSE
   inj('admins',    'al_admins',     'ADMINS',             v=>Array.isArray(v));
   inj('cats',      'al_cats',       'PRODUCT_CATEGORIES', v=>Array.isArray(v)&&v.length>0);
