@@ -1855,12 +1855,13 @@ window.addEventListener('unhandledrejection',function(ev){
 
 </div>
 <div class="tc">
-      <div class="tc-h"><h3>Commandes</h3><div style="display:flex;gap:6px;align-items:center"><button class="btn btn-gn btn-sm" onclick="bulkDeliver()" title="Livrer la sélection ou toutes les expédiées">📬 Livrer</button><span id="o-cnt" style="font-size:12px;color:var(--tx3)"></span></div></div>
+      <div class="tc-h"><h3>Commandes</h3><div style="display:flex;gap:6px;align-items:center"><button class="btn btn-gn btn-sm" onclick="bulkDeliver()" title="Livrer la sélection ou toutes les expédiées">📬 Livrer</button><button class="btn btn-r btn-sm" id="del-all-ord-btn" onclick="deleteAllOrders()" title="Supprimer toutes les commandes (super admin)" style="display:none">🗑️ Tout supprimer</button><span id="o-cnt" style="font-size:12px;color:var(--tx3)"></span></div></div>
       <!-- Barre actions bulk -->
       <div id="bulk-bar" style="display:none;align-items:center;gap:8px;background:rgba(201,168,76,0.1);border:1px solid var(--gold);border-radius:8px;padding:8px 12px;margin-bottom:10px;flex-wrap:wrap">
        <span id="bulk-lbl" style="font-size:12px;color:var(--gold);font-weight:600"></span>
        <button class="btn btn-gn btn-sm" onclick="bulkDeliver()">✅ Livrer sélection</button>
        <button class="btn btn-b btn-sm" onclick="bulkConfirm()">✓ Confirmer sélection</button>
+       <button class="btn btn-r btn-sm" id="bulk-delete-btn" onclick="bulkDeleteOrders()" style="display:none">🗑️ Supprimer sélection</button>
        <button class="btn btn-o btn-sm" onclick="_selectedOrders.clear();document.querySelectorAll('.ord-chk').forEach(function(c){c.checked=false;});updateBulkBar()">✕ Désélectionner</button>
       </div>
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;border-radius:0 0 14px 14px"><table><thead><tr><th><input type="checkbox" onclick="toggleAllOrders()" title="Tout sélectionner" style="cursor:pointer"></th><th>N°</th><th>Client</th><th>Ville</th><th>Région</th><th>Produits</th><th>Retour</th><th>Montant</th><th>Profit</th><th>Date</th><th>Statut</th><th>Paiement</th><th>Actions</th></tr></thead><tbody id="ords-tb"></tbody></table></div>
@@ -4514,6 +4515,8 @@ function updateBulkBar(){
   bar.style.display=n>0?'flex':'none';
   var lbl=document.getElementById('bulk-lbl');
   if(lbl) lbl.textContent=n+' commande(s) sélectionnée(s)';
+  var delBtn=document.getElementById('bulk-delete-btn');
+  if(delBtn) delBtn.style.display=isSuperAdmin()?'inline-flex':'none';
 }
 function bulkDeliver(){
   if(_selectedOrders.size>0){
@@ -4622,6 +4625,8 @@ function exportOrdersCSV(){
   toast('✅ Export CSV — '+O.length+' commandes téléchargées');
 }
 function renderOrders(){
+  var delAllBtn=document.getElementById('del-all-ord-btn');
+  if(delAllBtn) delAllBtn.style.display=isSuperAdmin()?'inline-flex':'none';
   var O=ORDERS.slice();
   var orderQuery=((document.getElementById('of-q')||{value:''}).value||'').toLowerCase().trim();
   var orderStatusFilter=(document.getElementById('of-status')||{value:''}).value||'';
@@ -4735,6 +4740,9 @@ function renderOrders(){
         if(diff>7) canR=false;
       }
       if(canR) acts+='<button class="btn btn-o btn-sm" onclick="openReturnOrd(this.dataset.id)" data-id="'+oid+'" title="Retour (7j)">↩</button>';
+    }
+    if(isSuperAdmin()){
+      acts+='<button class="btn btn-r btn-sm" onclick="deleteOrderAdmin(this.dataset.id)" data-id="'+oid+'" title="Supprimer (super admin)">🗑️</button>';
     }
     var bg=o.status==='pending'
       ?'background:rgba(201,168,76,0.13);border-left:4px solid #C9A84C'
@@ -4770,6 +4778,8 @@ function renderOrders(){
 }
 
 function renderOrders(){
+  var delAllBtn=document.getElementById('del-all-ord-btn');
+  if(delAllBtn) delAllBtn.style.display=isSuperAdmin()?'inline-flex':'none';
   var O=ORDERS.slice();
   var orderQuery=((document.getElementById('of-q')||{value:''}).value||'').toLowerCase().trim();
   var orderStatusFilter=(document.getElementById('of-status')||{value:''}).value||'';
@@ -4883,6 +4893,9 @@ function renderOrders(){
         if(diff>7) canR=false;
       }
       if(canR) acts+='<button class="btn btn-o btn-sm" onclick="openReturnOrd(this.dataset.id)" data-id="'+oid+'" title="Retour (7j)">↩</button>';
+    }
+    if(isSuperAdmin()){
+      acts+='<button class="btn btn-r btn-sm" onclick="deleteOrderAdmin(this.dataset.id)" data-id="'+oid+'" title="Supprimer (super admin)">🗑️</button>';
     }
     var bg=o.status==='pending'
       ?'background:rgba(201,168,76,0.13);border-left:4px solid #C9A84C'
@@ -11781,6 +11794,51 @@ function openApproForm(productId){
 function openProdEdit(id){
   if(typeof openEditProd==='function') openEditProd(id);
 }
+
+
+// ═══════════ SUPPRESSION COMMANDES (SUPER ADMIN) ═══════════
+
+function deleteOrderAdmin(id){
+  if(!isSuperAdmin()){toast('⛔ Réservé au super administrateur',true);return;}
+  var o=ORDERS.find(function(x){return x.id===id;});
+  if(!o){toast('Commande introuvable',true);return;}
+  if(!confirm('Supprimer définitivement la commande '+id+' ?\n\nCette action est irréversible.')) return;
+  ORDERS=ORDERS.filter(function(x){return x.id!==id;});
+  _selectedOrders.delete(id);
+  save();if(window.saveToCloud)window.saveToCloud();
+  renderOrders();renderDashboard();
+  toast('🗑️ Commande '+id+' supprimée');
+}
+
+function bulkDeleteOrders(){
+  if(!isSuperAdmin()){toast('⛔ Réservé au super administrateur',true);return;}
+  if(_selectedOrders.size===0){toast('Aucune commande sélectionnée',true);return;}
+  var ids=[..._selectedOrders];
+  if(!confirm('Supprimer définitivement '+ids.length+' commande(s) ?\n\nCette action est irréversible.')) return;
+  ORDERS=ORDERS.filter(function(o){return !_selectedOrders.has(o.id);});
+  _selectedOrders.clear();
+  save();if(window.saveToCloud)window.saveToCloud();
+  renderOrders();renderDashboard();
+  toast('🗑️ '+ids.length+' commande(s) supprimée(s)');
+}
+
+function deleteAllOrders(){
+  if(!isSuperAdmin()){toast('⛔ Réservé au super administrateur',true);return;}
+  if(ORDERS.length===0){toast('Aucune commande à supprimer',true);return;}
+  var total=ORDERS.length;
+  if(!confirm('⚠️ ATTENTION ⚠️\n\nSupprimer TOUTES les '+total+' commandes ?\n\nCette action est IRRÉVERSIBLE et supprimera l\'historique complet des ventes.\n\nTapez OK pour confirmer.')) return;
+  if(!confirm('Dernière confirmation : supprimer définitivement les '+total+' commandes ?')) return;
+  ORDERS=[];
+  _selectedOrders.clear();
+  save();if(window.saveToCloud)window.saveToCloud();
+  renderOrders();renderDashboard();
+  toast('🗑️ Toutes les commandes ('+total+') ont été supprimées');
+}
+
+window.deleteOrderAdmin=deleteOrderAdmin;
+window.bulkDeleteOrders=bulkDeleteOrders;
+window.deleteAllOrders=deleteAllOrders;
+
 window.openApproForm=openApproForm;
 window.openProdEdit=openProdEdit;
 
