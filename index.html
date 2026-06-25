@@ -137,6 +137,85 @@ canvas,.chart-div{display:block!important;width:100%!important;height:100%!impor
   /* Cacher colonnes moins importantes sur mobile */
   }
 
+
+/* ── AMÉLIORATIONS DESIGN ALITOS ── */
+
+/* Bouton coeur favoris */
+.fav-btn:active{transform:scale(1.2)!important}
+.fav-btn:hover{background:rgba(8,8,8,0.8)!important}
+
+/* Cartes KPI - effet brillance au hover */
+.kpi:hover{transform:translateY(-3px)!important;box-shadow:0 8px 32px rgba(201,168,76,0.15)!important}
+.kpi::after{content:'';position:absolute;top:0;left:-100%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent);transition:.6s}
+.kpi:hover::after{left:150%}
+
+/* Transitions globales plus fluides */
+.ni{transition:background .15s,color .15s,border-color .15s}
+.ni:hover{background:rgba(201,168,76,0.08)!important}
+.ni.on{border-left:3px solid var(--gold);background:rgba(201,168,76,0.1)!important}
+
+/* Amélioration des badges statut */
+.sb{box-shadow:0 1px 4px rgba(0,0,0,.25)}
+.sb.sd{background:rgba(82,201,122,.18)!important;color:var(--grn)!important}
+.sb.sc{background:rgba(74,158,232,.18)!important;color:var(--blu)!important}
+.sb.ss{background:rgba(155,107,219,.18)!important;color:var(--pur)!important}
+.sb.sp{background:rgba(201,168,76,.18)!important;color:var(--gold)!important}
+.sb.sx{background:rgba(224,82,82,.18)!important;color:var(--red)!important}
+
+/* Scrollbar custom sombre */
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--dk2)}
+::-webkit-scrollbar-thumb{background:var(--bo2);border-radius:4px}
+::-webkit-scrollbar-thumb:hover{background:var(--gold)}
+
+/* Inputs focus amélioré */
+input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(--gold)!important;box-shadow:0 0 0 3px rgba(201,168,76,0.12)!important}
+
+/* Amélioration cartes commandes client */
+.cl-ord-card{background:var(--dk3);border:1px solid var(--bo);border-radius:14px;padding:14px 16px;transition:.2s;cursor:pointer}
+.cl-ord-card:hover{border-color:rgba(201,168,76,.4);transform:translateY(-1px)}
+.cl-ord-card:active{transform:scale(.99)}
+
+/* Timeline stepper */
+.stepper-line{height:3px;background:var(--dk5);border-radius:3px;margin-top:-14px;position:relative;z-index:0}
+.stepper-fill{height:100%;background:var(--gold);border-radius:3px;transition:width .6s cubic-bezier(.4,0,.2,1)}
+
+/* Pulse animation pour alertes urgentes */
+@keyframes urgentPulse{0%,100%{box-shadow:0 0 0 0 rgba(224,82,82,.4)}50%{box-shadow:0 0 0 6px rgba(224,82,82,0)}}
+.urgent-alert{animation:urgentPulse 2s infinite}
+
+/* Toast amélioré */
+#toast{border-radius:12px!important;backdrop-filter:blur(10px)!important;font-weight:600!important}
+
+/* Amélioration sidebar - items avec icône alignées */
+.ns{padding:6px 14px 4px;font-size:9px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:1.5px;margin-top:6px}
+
+/* Boutons actions tableau améliorés */
+.btn-xs{padding:4px 8px!important;font-size:11px!important}
+.btn-sm{padding:6px 12px!important;font-size:12px!important}
+
+/* Cards client bottom tab active */
+.bot-nav .bn-item.on span:first-child{color:var(--gold)!important}
+.bot-nav .bn-item.on small{color:var(--gold)!important}
+.bot-nav .bn-item{transition:.15s}
+.bot-nav .bn-item:active{transform:scale(.95)}
+
+/* Grille produits responsive améliorée */
+@media(min-width:400px){
+  #cl-prods-grid{grid-template-columns:repeat(2,1fr)!important}
+}
+@media(min-width:700px){
+  #cl-prods-grid{grid-template-columns:repeat(3,1fr)!important}
+}
+
+/* Section header amélioré */
+.sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--bo)}
+.sec-hdr h2{font-size:18px;font-weight:700;margin:0;background:linear-gradient(135deg,var(--tx),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+/* Animations de chargement skeleton */
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+.skeleton{background:linear-gradient(90deg,var(--dk4) 25%,var(--dk5) 50%,var(--dk4) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px}
+
 </style>
 <script>/* @preserve * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com * (c) 2010-2023 Vladimir Agafonkin, (c) 2010-2011 CloudMade */ !function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"function"==typeof define&&define.amd?define(["exports"],e):e((t="undefined"!=typeof globalThis?globalThis:t||self).leaflet={})}(this,function(t){"use strict";function l(t){for(var e,i,n=1,o=arguments.length;n<o;n++)for(e in i=arguments[n])t[e]=i[e];return t}
 var R=Object.create||function(t){return N.prototype=t,new N};function N(){}
@@ -3278,6 +3357,20 @@ window.addEventListener('unhandledrejection',function(ev){
     <div id="pr-addr-w" style="display:none;margin-bottom:9px"><div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:2px">Adresse</div><div id="pr-addr" style="font-size:14px"></div></div>
     <div id="pr-gps-w" style="display:none"><div style="font-size:10px;color:var(--tx3);margin-bottom:6px;text-transform:uppercase;letter-spacing:1px">Localisation</div><a id="pr-gps" href="#" target="_blank" style="display:inline-flex;align-items:center;gap:5px;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.2);border-radius:8px;padding:7px 12px;color:var(--gold);font-size:12px;text-decoration:none">📍 Voir sur la carte</a></div>
    </div>
+   <!-- Programme Fidélité -->
+   <div style="background:linear-gradient(135deg,rgba(201,168,76,0.1),rgba(201,168,76,0.05));border:1px solid rgba(201,168,76,0.25);border-radius:14px;padding:16px;margin-bottom:12px">
+     <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+       <span style="font-size:24px">🌟</span>
+       <div><div style="font-size:14px;font-weight:700;color:var(--gold)">Programme Fidélité</div>
+       <div style="font-size:11px;color:var(--tx3)" id="cl-fid-level">Calculé à partir de vos achats</div></div>
+     </div>
+     <div id="cl-fid-stats" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px"></div>
+     <div id="cl-coupons-list"></div>
+   </div>
+
+   <!-- Mes Favoris (accès rapide depuis profil) -->
+   <button onclick="activeCat='__fav__';clPage('cl-pg-cat')" style="width:100%;padding:11px;background:rgba(224,82,82,0.08);border:1px solid rgba(224,82,82,0.18);border-radius:10px;color:var(--red);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;margin-bottom:9px;display:flex;align-items:center;justify-content:center;gap:8px">♥ Voir mes favoris <span id="cl-fav-count-badge" style="background:var(--red);color:#fff;border-radius:20px;padding:1px 8px;font-size:11px"></span></button>
+
    <button onclick="openMd('cl-creds')" style="width:100%;padding:11px;background:rgba(201,168,76,0.08);border:1px solid var(--bo);border-radius:10px;color:var(--gold);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;margin-bottom:9px">🔑 Modifier mes identifiants</button>
    <button onclick="doLogout()" style="width:100%;padding:11px;background:rgba(224,82,82,0.09);border:1px solid rgba(224,82,82,0.18);border-radius:10px;color:var(--red);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer">Déconnexion</button>
   </div>
@@ -6728,6 +6821,7 @@ function closeAllMd(){
 var cart={},activeCat='Tous',activeOF='';
 function initClient(){
   var s=SESSION;
+  loadFavorites();
   function setEl(id,val){ var e=document.getElementById(id);if(e)e.textContent=val; }
   function setSrc(id,src){ var e=document.getElementById(id);if(e)e.src=src||''; }
   setEl('cl-name',s.name.split(' ')[0]);
@@ -10021,9 +10115,13 @@ function clRenderProds(){
   var srchEl=document.getElementById('cl-srch');
   var s=(srchEl?srchEl.value||'':'').toLowerCase();
   var cats=['Tous'];PRODUCTS.forEach(function(p){if(cats.indexOf(p.category)<0)cats.push(p.category);});
-  document.getElementById('cl-cats').innerHTML=cats.map(function(c){return'<div class="cat-btn'+(c===activeCat?' on':'')+'" onclick="setCat(\''+c+'\')">'+c+'</div>';}).join('');
+  var favCount=(window._favorites?window._favorites.size:0);
+  document.getElementById('cl-cats').innerHTML=
+    '<div class="cat-btn'+(activeCat==='__fav__'?' on':'')+'" onclick="setCat(\'__fav__\')" style="white-space:nowrap">♥ Favoris'+(favCount>0?' ('+favCount+')':'')+'</div>'+
+    cats.map(function(c){return'<div class="cat-btn'+(c===activeCat?' on':'')+'" onclick="setCat(\''+c+'\')">'+c+'</div>';}).join('');
   var F=PRODUCTS;
-  if(activeCat!=='Tous')F=F.filter(function(p){return p.category===activeCat;});
+  if(activeCat==='__fav__')F=F.filter(function(p){return isFavorite(p.id);});
+  else if(activeCat!=='Tous')F=F.filter(function(p){return p.category===activeCat;});
   if(s)F=F.filter(function(p){return p.name.toLowerCase().includes(s)||( p.category&&p.category.toLowerCase().includes(s));});
   var sortEl=document.getElementById('cl-sort');
   var sortVal=sortEl?sortEl.value:'default';
@@ -10034,8 +10132,8 @@ function clRenderProds(){
   var thirtyDaysAgo=new Date(Date.now()-30*24*60*60*1000).toISOString().split('T')[0];
   document.getElementById('cl-prods').innerHTML=(!F.length?(function(){
     var srchVal=srchEl?srchEl.value:'';
-    var msg=srchVal?'Aucun résultat pour "'+srchVal+'"':'Aucun produit dans cette catégorie';
-    return'<div style="grid-column:1/-1;text-align:center;padding:48px 16px;color:var(--tx3)"><div style="font-size:48px;margin-bottom:14px">🔍</div><div style="font-size:14px;margin-bottom:8px">'+msg+'</div>'+(srchVal?'<button class="btn btn-o btn-sm" onclick="document.getElementById(\'cl-srch\').value=\'\';clRenderProds()">Effacer la recherche</button>':'')+'</div>';
+    var msg=srchVal?'Aucun résultat pour "'+srchVal+'"':(activeCat==='__fav__'?'Aucun favori pour le moment':'Aucun produit dans cette catégorie');
+    return'<div style="grid-column:1/-1;text-align:center;padding:48px 16px;color:var(--tx3)"><div style="font-size:48px;margin-bottom:14px">'+(activeCat==='__fav__'&&!srchVal?'♡':'🔍')+'</div><div style="font-size:14px;margin-bottom:8px">'+msg+'</div>'+(srchVal?'<button class="btn btn-o btn-sm" onclick="document.getElementById(\'cl-srch\').value=\'\';clRenderProds()">Effacer la recherche</button>':'')+'</div>';
   }()):'')+F.map(function(p){
     var q=cart[p.id]||0,oos=p.stock===0,low=!oos&&p.stock<=(p.threshold||10);
     var isNew=p.createdDate&&p.createdDate>thirtyDaysAgo;
@@ -10053,7 +10151,8 @@ function clRenderProds(){
       '<input type="number" class="qv" min="1" max="'+p.stock+'" value="'+q+'" onchange="setCartQty(\''+p.id+'\',this.value)" onclick="event.stopPropagation()" style="width:40px;text-align:center;background:var(--dk4);border:1px solid var(--bo);border-radius:5px;color:var(--tx);font-size:13px;padding:2px 0">'+
       '<button class="qb" onclick="addCart(\''+p.id+'\')"'+(q>=p.stock?' disabled':'')+' aria-label="Augmenter">+</button>'+
     '</div>';
-    return'<div class="p-c" role="listitem">'+bdg+newBdg+
+    var favBtn='<button class="fav-btn" onclick="event.stopPropagation();toggleFavorite(\''+p.id+'\')" aria-label="Favori" style="position:absolute;top:6px;left:6px;z-index:3;width:30px;height:30px;border-radius:50%;background:rgba(8,8,8,0.55);backdrop-filter:blur(4px);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:transform .15s">'+(isFavorite(p.id)?'<span style="color:var(--gold)">♥</span>':'<span style="color:#fff">♡</span>')+'</button>';
+    return'<div class="p-c" role="listitem">'+bdg+newBdg+favBtn+
       '<img src="'+prodImg(p)+'" onerror="this.src=\'https://placehold.co/200x200/1a1a1a/C9A84C?text='+encodeURIComponent((p.name||'').split(' ')[0])+'\'" loading="lazy" alt="'+p.name+'"'+(oos?' style="filter:grayscale(50%)opacity(.7)"':'')+'>'+
       '<div class="pb">'+
         '<div class="pcat" style="margin-bottom:3px">'+p.category+'</div>'+
@@ -11835,6 +11934,190 @@ function deleteAllOrders(){
   toast('🗑️ Toutes les commandes ('+total+') ont été supprimées');
 }
 
+
+
+// ═══════════ FAVORIS (WISHLIST) ═══════════
+window._favorites = new Set();
+
+function loadFavorites(){
+  if(!SESSION || !SESSION.id){ window._favorites=new Set(); return; }
+  try{
+    var raw=localStorage.getItem('al_fav_'+SESSION.id);
+    window._favorites = raw ? new Set(JSON.parse(raw)) : new Set();
+  }catch(e){ window._favorites=new Set(); }
+}
+
+function saveFavorites(){
+  if(!SESSION || !SESSION.id) return;
+  try{
+    localStorage.setItem('al_fav_'+SESSION.id, JSON.stringify([...window._favorites]));
+  }catch(e){}
+}
+
+function isFavorite(productId){
+  return window._favorites && window._favorites.has(productId);
+}
+
+function toggleFavorite(productId){
+  if(!SESSION){ toast('Connectez-vous pour ajouter des favoris', true); return; }
+  if(!window._favorites) window._favorites = new Set();
+  var wasIn = window._favorites.has(productId);
+  if(wasIn) window._favorites.delete(productId);
+  else window._favorites.add(productId);
+  saveFavorites();
+  if(typeof clRenderProds === 'function') clRenderProds();
+  var p = getP(productId);
+  toast(wasIn ? '♡ '+p.name+' retiré des favoris' : '♥ '+p.name+' ajouté aux favoris');
+}
+
+
+
+// ═══════════ DÉTAIL COMMANDE CLIENT ═══════════
+function clViewOrder(orderId){
+  var o=ORDERS.find(function(x){return x.id===orderId;});
+  if(!o){toast('Commande introuvable',true);return;}
+  var statusProg={pending:1,confirmed:2,shipped:3,delivered:4,returned:0,cancelled:0,partial:2};
+  var steps=['Reçue','Confirmée','Expédiée','Livrée'];
+  var prog=statusProg[o.status]||0;
+  var payMethIcon={cash:'💵',transfer:'🏦',cmi:'💳',credit:'🔄',coupon:'🎟️',cheque:'📋'};
+
+  var html='<div style="padding:4px">';
+  html+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">'+
+    '<div><h2 style="font-size:18px;margin:0;color:var(--gold)">'+o.id+'</h2>'+
+    '<div style="font-size:12px;color:var(--tx3);margin-top:2px">📅 '+o.date+'</div></div>'+
+    badge(o.status)+'</div>';
+
+  // Timeline visuelle
+  if(prog>0&&prog<5){
+    html+='<div style="margin:0 0 18px">'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:6px">'+
+      steps.map(function(s,i){
+        return '<div style="text-align:center;flex:1"><div style="width:22px;height:22px;border-radius:50%;margin:0 auto 3px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:'+(i<prog?'var(--gold)':'var(--dk5)')+';color:'+(i<prog?'#000':'var(--tx3)')+'">'+(i<prog?'✓':i+1)+'</div>'+
+        '<span style="font-size:9px;color:'+(i<prog?'var(--gold)':'var(--tx3)')+'">'+s+'</span></div>';
+      }).join('')+'</div>'+
+      '<div style="height:3px;background:var(--dk5);border-radius:3px;overflow:hidden;margin-top:-14px;z-index:-1;position:relative">'+
+      '<div style="height:100%;width:'+((prog-1)/3*100)+'%;background:var(--gold);border-radius:3px;transition:width .5s"></div></div>'+
+    '</div>';
+  } else if(o.status==='cancelled'){
+    html+='<div style="background:rgba(224,82,82,0.1);border:1px solid var(--red);border-radius:10px;padding:10px 14px;margin-bottom:14px;color:var(--red);font-size:13px">✕ Commande annulée'+(o.cancelDate?' le '+o.cancelDate:'')+'</div>';
+  } else if(o.status==='returned'){
+    html+='<div style="background:rgba(232,131,74,0.1);border:1px solid var(--ora);border-radius:10px;padding:10px 14px;margin-bottom:14px;color:var(--ora);font-size:13px">↩ Commande retournée'+(o.returnDate?' le '+o.returnDate:'')+'</div>';
+  }
+  if(o.deliveryDate) html+='<div style="background:rgba(82,201,122,0.1);border:1px solid var(--grn);border-radius:10px;padding:10px 14px;margin-bottom:14px;color:var(--grn);font-size:13px;font-weight:600">✅ Livré le '+o.deliveryDate+'</div>';
+
+  // Produits
+  html+='<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">Articles</div>';
+  html+='<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px">';
+  (o.items||[]).forEach(function(it){
+    var p=PRODUCTS.find(function(x){return x.id===it.productId;})||{name:it.productId,image:''};
+    html+='<div style="display:flex;align-items:center;gap:10px;background:var(--dk4);border-radius:10px;padding:8px 10px">'+
+      (p.image?'<img src="'+p.image+'" style="width:40px;height:40px;border-radius:8px;object-fit:cover" onerror="this.style.display=\'none\'">':'')+
+      '<div style="flex:1"><div style="font-size:13px;font-weight:600">'+p.name+'</div>'+
+      '<div style="font-size:11px;color:var(--tx3)">'+fm(it.price)+' × '+it.quantity+'</div></div>'+
+      '<strong style="color:var(--gold);font-size:13px">'+fm(it.price*it.quantity)+'</strong></div>';
+  });
+  html+='</div>';
+
+  // Récap paiement
+  html+='<div style="background:var(--dk4);border-radius:10px;padding:12px 14px;margin-bottom:16px">'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--tx3)">Mode de paiement</span><span>'+(payMethIcon[o.payMethod]||'💳')+' '+(o.payMethod||'—')+'</span></div>'+
+    '<div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:6px"><span style="color:var(--tx3)">Statut paiement</span>'+payB(o.payStatus,o.payMethod,o)+'</div>'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;padding-top:8px;border-top:1px solid var(--bo2)"><strong style="font-size:14px">Total</strong><strong style="font-size:18px;color:var(--gold)">'+fm(o.total)+'</strong></div>'+
+  '</div>';
+
+  // Actions contextuelles
+  html+='<div style="display:flex;gap:8px;flex-wrap:wrap">';
+  if(o.status==='delivered'){
+    var canReturn=true;
+    if(o.deliveryDate){var diff=(Date.now()-new Date(o.deliveryDate).getTime())/(864e5);if(diff>7)canReturn=false;}
+    if(canReturn){
+      html+='<button class="btn btn-o" style="flex:1" onclick="closeAllMd();openClComplaint();setTimeout(function(){var s=document.getElementById(\'cmp-order\');if(s)s.value=\''+o.id+'\';},100)">⚠️ Signaler un problème</button>';
+    }
+  }
+  if(o.status==='pending'||o.status==='confirmed'){
+    html+='<button class="btn btn-o" style="flex:1" onclick="closeAllMd();openClComplaint();setTimeout(function(){var s=document.getElementById(\'cmp-order\');if(s)s.value=\''+o.id+'\';},100)">📞 Contacter le support</button>';
+  }
+  html+='</div>';
+
+  html+='</div>';
+  document.getElementById('md-cl-ord-content').innerHTML=html;
+  openMd('cl-ord');
+}
+
+
+// ═══════════ PROFIL CLIENT - FIDÉLITÉ & FAVORIS ═══════════
+function renderClProfile(){
+  if(!SESSION) return;
+  var cl=CLIENTS.find(function(x){return x.id===SESSION.id;});
+  if(!cl) return;
+
+  // Stats fidélité basées sur les achats
+  var myOrds=ORDERS.filter(function(o){return o.clientId===SESSION.id&&o.status==='delivered';});
+  var totalCA=myOrds.reduce(function(s,o){return s+o.total;},0);
+  var totalOrds=myOrds.length;
+  var avgOrder=totalOrds?Math.round(totalCA/totalOrds):0;
+
+  // Niveau fidélité
+  var level='',levelColor='';
+  if(totalCA>=50000){level='💎 Platine';levelColor='#b9f2ff';}
+  else if(totalCA>=20000){level='🥇 Or';levelColor='var(--gold)';}
+  else if(totalCA>=5000){level='🥈 Argent';levelColor='#C0C0C0';}
+  else if(totalCA>=1000){level='🥉 Bronze';levelColor='#CD7F32';}
+  else{level='🌱 Débutant';levelColor='var(--grn)';}
+
+  var fidLevelEl=document.getElementById('cl-fid-level');
+  if(fidLevelEl) fidLevelEl.innerHTML='<span style="font-weight:700;color:'+levelColor+'">'+level+'</span>';
+
+  var fidStats=document.getElementById('cl-fid-stats');
+  if(fidStats) fidStats.innerHTML=[
+    {l:'Total achats',v:fm(totalCA),c:'var(--gold)'},
+    {l:'Commandes',v:totalOrds,c:'var(--blu)'},
+    {l:'Panier moyen',v:fm(avgOrder),c:'var(--grn)'},
+    {l:'Statut',v:level,c:levelColor}
+  ].map(function(s){
+    return '<div style="background:var(--dk4);border-radius:10px;padding:10px;text-align:center">'+
+      '<div style="font-size:14px;font-weight:700;color:'+s.c+'">'+s.v+'</div>'+
+      '<div style="font-size:10px;color:var(--tx3);margin-top:2px">'+s.l+'</div>'+
+    '</div>';
+  }).join('');
+
+  // Coupons actifs du client
+  var cr=getClientCredit(SESSION.id);
+  var activeCoupons=(cr.coupons||[]).filter(function(cp){return !cp.used&&!cp.cancelled&&(cp.amount||0)>0;});
+  var cpnEl=document.getElementById('cl-coupons-list');
+  if(cpnEl){
+    if(activeCoupons.length>0){
+      cpnEl.innerHTML='<div style="font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">🎟️ Mes coupons actifs</div>'+
+        activeCoupons.map(function(cp){
+          return '<div style="display:flex;justify-content:space-between;align-items:center;background:rgba(82,201,122,0.08);border:1px solid rgba(82,201,122,0.2);border-radius:10px;padding:10px 12px;margin-bottom:6px">'+
+            '<div><div style="font-size:13px;font-weight:700;color:var(--grn)">'+fm(cp.amount||0)+'</div>'+
+            '<div style="font-size:10px;color:var(--tx3);font-family:monospace">'+cp.code+'</div></div>'+
+            '<div style="font-size:11px;color:var(--tx3);text-align:right">'+cp.date+'<br>'+
+            '<span style="color:var(--grn)">✅ Utilisable</span></div>'+
+          '</div>';
+        }).join('');
+    } else {
+      cpnEl.innerHTML='<div style="font-size:12px;color:var(--tx3);text-align:center;padding:10px 0">Aucun coupon actif pour le moment</div>';
+    }
+  }
+
+  // Badge favoris
+  var favBadge=document.getElementById('cl-fav-count-badge');
+  if(favBadge){
+    var favCount=window._favorites?window._favorites.size:0;
+    favBadge.textContent=favCount>0?favCount:'';
+    favBadge.style.display=favCount>0?'':'none';
+  }
+}
+window.renderClProfile=renderClProfile;
+
+window.clViewOrder=clViewOrder;
+
+window.loadFavorites=loadFavorites;
+window.saveFavorites=saveFavorites;
+window.isFavorite=isFavorite;
+window.toggleFavorite=toggleFavorite;
+
 window.deleteOrderAdmin=deleteOrderAdmin;
 window.bulkDeleteOrders=bulkDeleteOrders;
 window.deleteAllOrders=deleteAllOrders;
@@ -13359,6 +13642,13 @@ function printBarcodeLabels(){
 <div class="md" id="md-cpn-form" style="display:none;max-width:480px">
   <button class="md-x" onclick="closeAllMd()">✕</button>
   <div id="md-cpn-form-content"></div>
+</div>
+
+
+<!-- Modal Détail Commande Client -->
+<div class="md" id="md-cl-ord" style="display:none;max-width:480px">
+  <button class="md-x" onclick="closeAllMd()">✕</button>
+  <div id="md-cl-ord-content"></div>
 </div>
 
 </body>
