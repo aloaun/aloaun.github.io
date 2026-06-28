@@ -10185,7 +10185,7 @@ function clRenderProds(){
       '<input type="number" class="qv" min="1" max="'+p.stock+'" value="'+q+'" onchange="setCartQty(\''+p.id+'\',this.value)" onclick="event.stopPropagation()" style="width:40px;text-align:center;background:var(--dk4);border:1px solid var(--bo);border-radius:5px;color:var(--tx);font-size:13px;padding:2px 0">'+
       '<button class="qb" onclick="addCart(\''+p.id+'\')"'+(q>=p.stock?' disabled':'')+' aria-label="Augmenter">+</button>'+
     '</div>';
-    var favBtn='<button class="fav-btn" onclick="event.stopPropagation();toggleFavorite(\''+p.id+'\')" aria-label="Favori" style="position:absolute;top:8px;left:8px;z-index:10;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,0.4)">'+(isFavorite(p.id)?'<span style="color:var(--gold)">♥</span>':'<span style="color:#fff">♡</span>')+'</button>';
+    var favBtn='<button class="fav-btn" onclick="event.stopPropagation();toggleFavorite(\''+p.id+'\')" aria-label="Favori" style="position:absolute;top:8px;left:8px;z-index:10;width:32px;height:32px;border-radius:50%;background:rgba(0,0,0,0.6);backdrop-filter:blur(6px);border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:16px;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,0.4)">'+(isFavorite(p.id)?'<span style="color:#ff4444;text-shadow:0 0 8px rgba(255,68,68,0.5)">♥</span>':'<span style="color:rgba(255,255,255,0.7)">♡</span>')+'</button>';
     return'<div class="p-c" role="listitem">'+
       '<div style="position:relative;border-radius:14px 14px 0 0;overflow:hidden">'+
         bdg+newBdg+
@@ -10580,12 +10580,20 @@ clRenderProds = function(){
   var s = (document.getElementById('cl-srch').value || '').toLowerCase();
   var cats = ['Tous'];
   PRODUCTS.forEach(function(p){if(cats.indexOf(p.category) < 0) cats.push(p.category);});
-  document.getElementById('cl-cats').innerHTML = cats.map(function(c){
-    return '<div class="cat-btn'+(c === activeCat?' on':'')+'" onclick="setCat(\''+c+'\')">'+c+'</div>';
-  }).join('');
+  var favCount = window._favorites ? window._favorites.size : 0;
+  document.getElementById('cl-cats').innerHTML =
+    '<div class="cat-btn'+(activeCat==='__fav__'?' on':'')+'" onclick="setCat(\'__fav__\')" style="color:'+(activeCat==='__fav__'?'#ff4444':'inherit')+';white-space:nowrap">♥ Favoris'+(favCount>0?' ('+favCount+')':'')+' </div>'+
+    cats.map(function(c){
+      return '<div class="cat-btn'+(c === activeCat?' on':'')+'" onclick="setCat(\''+c+'\')">'+c+'</div>';
+    }).join('');
   var F = PRODUCTS;
-  if(activeCat !== 'Tous') F = F.filter(function(p){return p.category === activeCat;});
+  if(activeCat==='__fav__') F = F.filter(function(p){return isFavorite(p.id);});
+  else if(activeCat !== 'Tous') F = F.filter(function(p){return p.category === activeCat;});
   if(s) F = F.filter(function(p){return p.name.toLowerCase().includes(s);});
+  if(activeCat==='__fav__' && F.length===0 && !s){
+    document.getElementById('cl-prods').innerHTML='<div style="grid-column:1/-1;text-align:center;padding:60px 16px;color:var(--tx3)"><div style="font-size:56px;margin-bottom:14px">♡</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">Aucun favori pour le moment</div><div style="font-size:13px">Appuyez sur ♡ sur un produit pour l’ajouter</div></div>';
+    return;
+  }
   document.getElementById('cl-prods').innerHTML = F.map(function(p){
     var q = cart[p.id]||0, oos = p.stock === 0, low = !oos && p.stock <= (p.threshold||10);
     var bdg = oos ? '<div class="rup-badge">RUPTURE</div>' : low ? '<div class="low-badge">Limité:'+p.stock+'</div>' : '';
@@ -10603,7 +10611,7 @@ clRenderProds = function(){
         'style="position:absolute;top:8px;left:8px;z-index:10;width:32px;height:32px;border-radius:50%;'+
         'background:rgba(0,0,0,0.6);border:2px solid rgba(255,255,255,0.15);display:flex;align-items:center;'+
         'justify-content:center;cursor:pointer;font-size:16px;transition:all .2s;box-shadow:0 2px 8px rgba(0,0,0,0.4)">'+
-        (isFavorite(p.id)?'<span style="color:var(--gold)">♥</span>':'<span style="color:#fff">♡</span>')+
+        (isFavorite(p.id)?'<span style="color:#ff4444;text-shadow:0 0 8px rgba(255,68,68,0.5)">♥</span>':'<span style="color:rgba(255,255,255,0.7)">♡</span>')+
         '</button>';
       return '<div class="p-c" style="position:relative">'+
         '<div style="position:relative;border-radius:14px 14px 0 0;overflow:hidden">'+bdg+
