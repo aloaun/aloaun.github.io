@@ -1123,7 +1123,7 @@ tr:hover td{background:rgba(255,255,255,0.025);transition:background .1s}
 .cat-btn.on{background:rgba(201,168,76,0.15);border-color:var(--gold);color:var(--gold);font-weight:600}
 .prod-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:0 12px;box-sizing:border-box;width:100%}
 @media(min-width:560px){.prod-grid{grid-template-columns:repeat(3,1fr)}}
-.p-c{background:var(--dk3);border:1px solid var(--bo);border-radius:14px;overflow:hidden;box-shadow:0 2px 12px rgba(0,0,0,.25);position:relative;transition:.2s;-webkit-tap-highlight-color:transparent}.p-c:active{transform:scale(.98);border-color:rgba(201,168,76,0.4)}@media(hover:hover){.p-c:hover{border-color:rgba(201,168,76,0.35);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.3)}}
+.p-c{background:var(--dk3);border:1px solid var(--bo);border-radius:14px;overflow:visible;box-shadow:0 2px 12px rgba(0,0,0,.25);position:relative;transition:.2s;-webkit-tap-highlight-color:transparent}.p-c:active{transform:scale(.98);border-color:rgba(201,168,76,0.4)}@media(hover:hover){.p-c:hover{border-color:rgba(201,168,76,0.35);transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.3)}}
 .p-c img{width:100%;aspect-ratio:1/1;object-fit:cover;background:var(--dk4);display:block;transition:opacity .3s}
 .p-c img.loading{opacity:0}
 .p-c img.loaded{opacity:1}
@@ -2562,6 +2562,39 @@ window.addEventListener('unhandledrejection',function(ev){
        <div class="fg"><label>ICE / N° RC</label><input id="co-ice" placeholder="000000000000000"></div>
        <button class="btn btn-g" style="width:100%" onclick="saveCompany()">💾 Enregistrer les infos entreprise</button>
       </div>
+
+      <!-- PROGRAMME FIDÉLITÉ - CONFIG SUPER ADMIN -->
+      <div class="cc" style="margin-top:16px" id="loyalty-config-section">
+       <div class="tc-h"><h3>🌟 Programme Fidélité — Seuils CA</h3></div>
+       <p style="font-size:12px;color:var(--tx3);margin-bottom:14px">Définissez le chiffre d'affaires cumulé (MAD) requis pour chaque niveau. Visible uniquement pour le super admin.</p>
+       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+         <div>
+           <label style="font-size:11px;color:var(--tx3);display:block;margin-bottom:4px">🥉 Bronze (MAD)</label>
+           <input type="number" id="loyalty-bronze" min="0" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px;color:var(--tx);font-size:13px">
+         </div>
+         <div>
+           <label style="font-size:11px;color:var(--tx3);display:block;margin-bottom:4px">🥈 Argent (MAD)</label>
+           <input type="number" id="loyalty-silver" min="0" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px;color:var(--tx);font-size:13px">
+         </div>
+         <div>
+           <label style="font-size:11px;color:var(--tx3);display:block;margin-bottom:4px">🥇 Or (MAD)</label>
+           <input type="number" id="loyalty-gold" min="0" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px;color:var(--tx);font-size:13px">
+         </div>
+         <div>
+           <label style="font-size:11px;color:var(--tx3);display:block;margin-bottom:4px">💎 Platine (MAD)</label>
+           <input type="number" id="loyalty-platinum" min="0" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px;color:var(--tx);font-size:13px">
+         </div>
+       </div>
+       <div style="background:var(--dk4);border-radius:10px;padding:12px;margin-bottom:14px;font-size:12px;color:var(--tx3)">
+         <strong style="color:var(--tx2)">Niveaux actuels :</strong><br>
+         🌱 Débutant → 🥉 Bronze à <span id="loyalty-preview-bronze">1 000</span> MAD →
+         🥈 Argent à <span id="loyalty-preview-silver">5 000</span> MAD →
+         🥇 Or à <span id="loyalty-preview-gold">20 000</span> MAD →
+         💎 Platine à <span id="loyalty-preview-platinum">50 000</span> MAD
+       </div>
+       <button class="btn btn-gn" style="width:100%" onclick="saveLoyaltyThresholds()">💾 Enregistrer les seuils fidélité</button>
+      </div>
+
      </div>
     </div>
 
@@ -3451,7 +3484,7 @@ try{var t=localStorage.getItem('al_p');if(t){var v=JSON.parse(t);if(v&&v.length)
 try{var t=localStorage.getItem('al_o');if(t){var v=JSON.parse(t);if(v&&v.length)ORDERS=normalizeOrders(v);}}catch(e){}
 
 // ── NEW DATA STORES ──
-var COMPANY={name:'ALITOS',tagline:'Commerce & Distribution',address:'Maroc',phone:'+212 5 22 00 00 00',email:'contact@alitos.ma',ice:'000000000000000',logo:''};
+var COMPANY={name:'ALITOS',tagline:'Commerce & Distribution',address:'Maroc',phone:'+212 5 22 00 00 00',email:'contact@alitos.ma',ice:'000000000000000',logo:'',loyaltyThresholds:{bronze:1000,silver:5000,gold:20000,platinum:50000}};
 try{var _co=localStorage.getItem('al_company');if(_co)COMPANY=JSON.parse(_co);}catch(e){}
 
 var SUPPLIERS=[
@@ -5865,6 +5898,7 @@ function renderClients(){
         '<span style="font-size:10px;color:var(--tx3)">'+cOrds.length+' cmd</span>'+
         (cCA>0?'<span style="font-size:10px;color:var(--grn)">'+fm(cCA)+'</span>':'')+
         pendBadge+debtBadge+
+      getLoyaltyBadgeHtml(c.id)+
       '</div>':'')+
       '<div style="font-size:12px;color:var(--gold);margin-top:4px">📍 '+c.city+(c.sector?', '+c.sector:'')+', '+c.region+'</div>'+
       (c.address?'<div style="font-size:11px;color:var(--tx3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">'+c.address+'</div>':'')+
@@ -10153,7 +10187,7 @@ function clRenderProds(){
     '</div>';
     var favBtn='<button class="fav-btn" onclick="event.stopPropagation();toggleFavorite(\''+p.id+'\')" aria-label="Favori" style="position:absolute;top:6px;left:6px;z-index:3;width:30px;height:30px;border-radius:50%;background:rgba(8,8,8,0.55);backdrop-filter:blur(4px);border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:15px;transition:transform .15s">'+(isFavorite(p.id)?'<span style="color:var(--gold)">♥</span>':'<span style="color:#fff">♡</span>')+'</button>';
     return'<div class="p-c" role="listitem">'+bdg+newBdg+favBtn+
-      '<img src="'+prodImg(p)+'" onerror="this.src=\'https://placehold.co/200x200/1a1a1a/C9A84C?text='+encodeURIComponent((p.name||'').split(' ')[0])+'\'" loading="lazy" alt="'+p.name+'"'+(oos?' style="filter:grayscale(50%)opacity(.7)"':'')+'>'+
+      '<img src="'+prodImg(p)+'" onerror="this.src=\'https://placehold.co/200x200/1a1a1a/C9A84C?text='+encodeURIComponent((p.name||'').split(' ')[0])+'\'" loading="lazy" alt="'+p.name+'" style="border-radius:14px 14px 0 0;'+(oos?'filter:grayscale(50%)opacity(.7)':'')+'">'+ 
       '<div class="pb">'+
         '<div class="pcat" style="margin-bottom:3px">'+p.category+'</div>'+
         '<div class="pn" style="margin-bottom:4px">'+p.name+'</div>'+
@@ -12057,13 +12091,9 @@ function renderClProfile(){
   var totalOrds=myOrds.length;
   var avgOrder=totalOrds?Math.round(totalCA/totalOrds):0;
 
-  // Niveau fidélité
-  var level='',levelColor='';
-  if(totalCA>=50000){level='💎 Platine';levelColor='#b9f2ff';}
-  else if(totalCA>=20000){level='🥇 Or';levelColor='var(--gold)';}
-  else if(totalCA>=5000){level='🥈 Argent';levelColor='#C0C0C0';}
-  else if(totalCA>=1000){level='🥉 Bronze';levelColor='#CD7F32';}
-  else{level='🌱 Débutant';levelColor='var(--grn)';}
+  // Niveau fidélité (seuils configurables par super admin)
+  var lvl=getLoyaltyLevel(totalCA);
+  var level=lvl.label, levelColor=lvl.color;
 
   var fidLevelEl=document.getElementById('cl-fid-level');
   if(fidLevelEl) fidLevelEl.innerHTML='<span style="font-weight:700;color:'+levelColor+'">'+level+'</span>';
@@ -12121,6 +12151,73 @@ window.toggleFavorite=toggleFavorite;
 window.deleteOrderAdmin=deleteOrderAdmin;
 window.bulkDeleteOrders=bulkDeleteOrders;
 window.deleteAllOrders=deleteAllOrders;
+
+
+
+// ═══════════ PROGRAMME FIDÉLITÉ - SEUILS CONFIGURABLES ═══════════
+
+function getLoyaltyLevel(ca){
+  var t=COMPANY.loyaltyThresholds||{bronze:1000,silver:5000,gold:20000,platinum:50000};
+  if(ca>=t.platinum) return {label:'💎 Platine',color:'#b9f2ff',key:'platinum'};
+  if(ca>=t.gold)     return {label:'🥇 Or',    color:'#C9A84C',key:'gold'};
+  if(ca>=t.silver)   return {label:'🥈 Argent',color:'#C0C0C0',key:'silver'};
+  if(ca>=t.bronze)   return {label:'🥉 Bronze',color:'#CD7F32',key:'bronze'};
+  return {label:'🌱 Débutant',color:'var(--grn)',key:'starter'};
+}
+
+function getClientCA(clientId){
+  return ORDERS.filter(function(o){return o.clientId===clientId&&o.status==='delivered';})
+    .reduce(function(s,o){return s+o.total;},0);
+}
+
+function getLoyaltyBadgeHtml(clientId){
+  var ca=getClientCA(clientId);
+  var lvl=getLoyaltyLevel(ca);
+  return '<span style="font-size:11px;padding:2px 7px;border-radius:20px;font-weight:600;background:rgba(0,0,0,0.3);color:'+lvl.color+'">'+lvl.label+'</span>';
+}
+
+function saveLoyaltyThresholds(){
+  if(!isSuperAdmin()){toast('⛔ Réservé au super administrateur',true);return;}
+  var bronze=parseInt(document.getElementById('loyalty-bronze').value)||1000;
+  var silver=parseInt(document.getElementById('loyalty-silver').value)||5000;
+  var gold=parseInt(document.getElementById('loyalty-gold').value)||20000;
+  var platinum=parseInt(document.getElementById('loyalty-platinum').value)||50000;
+  if(bronze>=silver||silver>=gold||gold>=platinum){
+    toast('⚠️ Les seuils doivent être croissants: Bronze < Argent < Or < Platine',true);return;
+  }
+  if(!COMPANY.loyaltyThresholds) COMPANY.loyaltyThresholds={};
+  COMPANY.loyaltyThresholds.bronze=bronze;
+  COMPANY.loyaltyThresholds.silver=silver;
+  COMPANY.loyaltyThresholds.gold=gold;
+  COMPANY.loyaltyThresholds.platinum=platinum;
+  // Mettre à jour les previews
+  document.getElementById('loyalty-preview-bronze').textContent=bronze.toLocaleString();
+  document.getElementById('loyalty-preview-silver').textContent=silver.toLocaleString();
+  document.getElementById('loyalty-preview-gold').textContent=gold.toLocaleString();
+  document.getElementById('loyalty-preview-platinum').textContent=platinum.toLocaleString();
+  save();
+  if(window.saveToCloud) window.saveToCloud();
+  toast('✅ Seuils fidélité enregistrés');
+}
+
+function initLoyaltyConfig(){
+  var t=COMPANY.loyaltyThresholds||{bronze:1000,silver:5000,gold:20000,platinum:50000};
+  ['bronze','silver','gold','platinum'].forEach(function(k){
+    var el=document.getElementById('loyalty-'+k);
+    if(el) el.value=t[k]||0;
+    var prev=document.getElementById('loyalty-preview-'+k);
+    if(prev) prev.textContent=(t[k]||0).toLocaleString();
+  });
+  // Cacher si pas super admin
+  var sec=document.getElementById('loyalty-config-section');
+  if(sec) sec.style.display=isSuperAdmin()?'':'none';
+}
+
+window.getLoyaltyLevel=getLoyaltyLevel;
+window.getClientCA=getClientCA;
+window.getLoyaltyBadgeHtml=getLoyaltyBadgeHtml;
+window.saveLoyaltyThresholds=saveLoyaltyThresholds;
+window.initLoyaltyConfig=initLoyaltyConfig;
 
 window.openApproForm=openApproForm;
 window.openProdEdit=openProdEdit;
