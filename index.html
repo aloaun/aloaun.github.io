@@ -216,6 +216,132 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
 @keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
 .skeleton{background:linear-gradient(90deg,var(--dk4) 25%,var(--dk5) 50%,var(--dk4) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:6px}
 
+
+/* ── AMÉLIORATIONS DESIGN FINALES ── */
+
+/* Barre de filtres commandes client - scrollbar cachée */
+#cl-pg-orders div[style*="overflow-x:auto"]::-webkit-scrollbar{ display:none }
+
+/* of-btn amélioration */
+.of-btn{ 
+  background:var(--dk4)!important;
+  border:1px solid var(--bo)!important;
+  color:var(--tx2)!important;
+  border-radius:20px!important;
+  padding:6px 14px!important;
+  font-size:12px!important;
+  font-weight:500!important;
+  transition:all .15s!important;
+  cursor:pointer!important;
+}
+.of-btn.on{
+  background:var(--gold)!important;
+  border-color:var(--gold)!important;
+  color:#000!important;
+  font-weight:700!important;
+}
+.of-btn:active{ transform:scale(.96)!important }
+
+/* Carte commande client améliorée */
+.ord-c{
+  background:var(--dk3)!important;
+  border:1px solid var(--bo)!important;
+  border-radius:14px!important;
+  padding:14px 16px!important;
+  margin-bottom:10px!important;
+  transition:.2s!important;
+}
+.ord-c:active{ transform:scale(.99)!important }
+
+/* Barre nav bottom - style amélioré */
+.bt{ 
+  display:flex!important;
+  flex-direction:column!important;
+  align-items:center!important;
+  gap:3px!important;
+  padding:8px 0!important;
+  cursor:pointer!important;
+  transition:.15s!important;
+  color:var(--tx3)!important;
+  font-size:10px!important;
+}
+.bt.on{color:var(--gold)!important}
+.bt-ic{font-size:20px}
+.bt:active{transform:scale(.93)!important}
+
+/* Badge nombre de commandes */
+.cl-order-badge{
+  background:var(--gold);
+  color:#000;
+  border-radius:10px;
+  padding:1px 6px;
+  font-size:10px;
+  font-weight:700;
+  min-width:18px;
+  text-align:center;
+}
+
+/* Amélioration produit carte info */
+.pb{ padding:10px 12px!important }
+.pn{ font-size:13px!important; font-weight:700!important; margin-bottom:3px!important; line-height:1.3!important }
+.pcat{ font-size:10px!important; color:var(--tx3)!important; text-transform:uppercase!important; letter-spacing:.5px!important; margin-bottom:4px!important }
+.pp{ font-size:15px!important; font-weight:700!important; color:var(--gold)!important }
+
+/* Amélioration add-btn */
+.add-btn{
+  width:100%!important;
+  background:linear-gradient(135deg,var(--gold),var(--gl))!important;
+  color:#000!important;
+  border:none!important;
+  border-radius:8px!important;
+  padding:8px!important;
+  font-weight:700!important;
+  font-size:13px!important;
+  cursor:pointer!important;
+  transition:.15s!important;
+  margin-top:6px!important;
+}
+.add-btn:active{transform:scale(.97)!important;filter:brightness(.9)!important}
+.add-btn:disabled{background:var(--dk5)!important;color:var(--tx3)!important;cursor:not-allowed!important}
+
+/* Panier quantité amélioré */
+.qty-c{
+  display:flex!important;
+  align-items:center!important;
+  gap:0!important;
+  margin-top:6px!important;
+  border-radius:8px!important;
+  overflow:hidden!important;
+  border:1px solid var(--bo)!important;
+}
+.qb{
+  background:var(--dk5)!important;
+  color:var(--tx)!important;
+  border:none!important;
+  width:36px!important;
+  height:36px!important;
+  font-size:18px!important;
+  cursor:pointer!important;
+  transition:.1s!important;
+}
+.qb:active{background:var(--gold)!important;color:#000!important}
+.qi{
+  flex:1!important;
+  text-align:center!important;
+  background:var(--dk4)!important;
+  border:none!important;
+  color:var(--tx)!important;
+  font-size:14px!important;
+  font-weight:700!important;
+  padding:0!important;
+}
+
+/* Bouton panier flottant */
+#cl-cart-btn{
+  box-shadow:0 4px 20px rgba(201,168,76,0.4)!important;
+  font-weight:700!important;
+}
+
 </style>
 <script>/* @preserve * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com * (c) 2010-2023 Vladimir Agafonkin, (c) 2010-2011 CloudMade */ !function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"function"==typeof define&&define.amd?define(["exports"],e):e((t="undefined"!=typeof globalThis?globalThis:t||self).leaflet={})}(this,function(t){"use strict";function l(t){for(var e,i,n=1,o=arguments.length;n<o;n++)for(e in i=arguments[n])t[e]=i[e];return t}
 var R=Object.create||function(t){return N.prototype=t,new N};function N(){}
@@ -1969,7 +2095,8 @@ window.addEventListener('unhandledrejection',function(ev){
        <button class="btn btn-g btn-sm" onclick="renderStock()">🔄 Actualiser</button>
       </div>
      </div>
-     <div id="stk-alerts"></div>
+     <div class="kpis" id="stk-kpis" style="margin-bottom:14px"></div>
+<div id="stk-alerts"></div>
      <div class="tc" style="overflow-x:auto">
       <table style="min-width:1100px"><thead><tr>
        <th>Produit</th><th>Catégorie</th>
@@ -3363,14 +3490,12 @@ window.addEventListener('unhandledrejection',function(ev){
  <div id="cl-pg-orders" style="display:none;padding-bottom:90px">
   <div style="padding:16px 14px 8px"><h2 style="font-size:18px;font-weight:600">Mes commandes</h2></div>
   <div id="cl-ord-years"></div>
-  <div class="ord-filter">
-   <button class="of-btn on" onclick="setOF('',this)">Toutes</button>
-   <button class="of-btn" onclick="setOF('pending',this)">En attente</button>
-   <button class="of-btn" onclick="setOF('confirmed',this)">Confirmée</button>
-   <button class="of-btn" onclick="setOF('shipped',this)">Expédiée</button>
-   <button class="of-btn" onclick="setOF('delivered',this)">Livrée</button>
-   <button class="of-btn" onclick="setOF('paid',this)">Payées CMI</button>
-   <button class="of-btn" onclick="setOF('partial',this)">Partiel</button>
+  <div style="display:flex;gap:6px;overflow-x:auto;padding:0 14px 10px;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none">
+   <button class="of-btn on" onclick="setOF('',this)" style="white-space:nowrap;flex-shrink:0">🗂 Toutes <span id="cnt-all" style="background:rgba(255,255,255,0.2);border-radius:10px;padding:0 5px;font-size:10px;margin-left:2px"></span></button>
+   <button class="of-btn" onclick="setOF('pending',this)" style="white-space:nowrap;flex-shrink:0">⏳ En attente <span id="cnt-pending" style="background:rgba(255,255,255,0.2);border-radius:10px;padding:0 5px;font-size:10px;margin-left:2px"></span></button>
+   <button class="of-btn" onclick="setOF('confirmed',this)" style="white-space:nowrap;flex-shrink:0">✓ Confirmée <span id="cnt-confirmed" style="background:rgba(255,255,255,0.2);border-radius:10px;padding:0 5px;font-size:10px;margin-left:2px"></span></button>
+   <button class="of-btn" onclick="setOF('shipped',this)" style="white-space:nowrap;flex-shrink:0">📦 Expédiée <span id="cnt-shipped" style="background:rgba(255,255,255,0.2);border-radius:10px;padding:0 5px;font-size:10px;margin-left:2px"></span></button>
+   <button class="of-btn" onclick="setOF('delivered',this)" style="white-space:nowrap;flex-shrink:0">✅ Livrée <span id="cnt-delivered" style="background:rgba(255,255,255,0.2);border-radius:10px;padding:0 5px;font-size:10px;margin-left:2px"></span></button>
   </div>
   <div style="padding:0 14px" id="cl-ords"></div>
  </div>
@@ -5767,6 +5892,20 @@ function renderStock(){
 
   // Tableau produits
   var all=rupture.concat(alerts).concat(normal);
+  // KPI valeur stock
+  var totalStockVal=PRODUCTS.reduce(function(s,p){return s+(p.buyPrice||0)*(p.stock||0);},0);
+  var totalStockSell=PRODUCTS.reduce(function(s,p){return s+(p.sellPrice||p.price||0)*(p.stock||0);},0);
+  var totalUnits=PRODUCTS.reduce(function(s,p){return s+(p.stock||0);},0);
+  var kpiStk=document.getElementById('stk-kpis');
+  if(kpiStk) kpiStk.innerHTML=[
+    {l:'Valeur achat stock',v:fm(totalStockVal),c:'var(--blu)',i:'💰'},
+    {l:'Valeur vente stock',v:fm(totalStockSell),c:'var(--gold)',i:'💎'},
+    {l:'Unités en stock',v:totalUnits+' u.',c:'var(--grn)',i:'📦'},
+    {l:'Marge potentielle',v:fm(totalStockSell-totalStockVal),c:'var(--pur)',i:'📈'}
+  ].map(function(k){
+    return '<div class="kpi" style="--ac:'+k.c+'"><div style="font-size:18px;margin-bottom:4px">'+k.i+'</div>'+
+      '<div class="kl">'+k.l+'</div><div class="kv" style="color:'+k.c+'">'+k.v+'</div></div>';
+  }).join('');
   var stb=document.getElementById('stk-tb')||{innerHTML:''};
   stb.innerHTML=all.map(function(p){
     var seuil=p.threshold||p.alertSeuil||5;
@@ -5896,10 +6035,29 @@ function renderClients(){
       '<div style="font-size:11px;color:var(--tx3);margin-top:2px">@'+c.username+'</div>'+
       (cOrds.length?'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-top:4px">'+
         '<span style="font-size:10px;color:var(--tx3)">'+cOrds.length+' cmd</span>'+
-        (cCA>0?'<span style="font-size:10px;color:var(--grn)">'+fm(cCA)+'</span>':'')+
+        (cCA>0?'<span style="font-size:10px;color:var(--grn);font-weight:600">'+fm(cCA)+'</span>':'')+
         pendBadge+debtBadge+
       getLoyaltyBadgeHtml(c.id)+
       '</div>':'')+
+      (function(){
+        var lastOrd=cOrds.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}).find(function(o){return o.date;});
+        var t=COMPANY.loyaltyThresholds||{bronze:1000,silver:5000,gold:20000,platinum:50000};
+        var lvl=getLoyaltyLevel(cCA); var nextThresh=0; var nextLabel='';
+        if(lvl.key==='starter'&&cCA<t.bronze){nextThresh=t.bronze;nextLabel='Bronze';}
+        else if(lvl.key==='bronze'&&cCA<t.silver){nextThresh=t.silver;nextLabel='Argent';}
+        else if(lvl.key==='silver'&&cCA<t.gold){nextThresh=t.gold;nextLabel='Or';}
+        else if(lvl.key==='gold'&&cCA<t.platinum){nextThresh=t.platinum;nextLabel='Platine';}
+        var pctBar=nextThresh>0?Math.min(100,Math.round(cCA/nextThresh*100)):100;
+        var barHtml=nextThresh>0?'<div style="margin-top:5px">'+
+          '<div style="display:flex;justify-content:space-between;font-size:9px;color:var(--tx3);margin-bottom:2px">'+
+            '<span>'+lvl.label+'</span><span>'+nextLabel+' ('+pctBar+'%)</span>'+
+          '</div>'+
+          '<div style="height:3px;background:var(--dk5);border-radius:2px">'+
+            '<div style="height:100%;width:'+pctBar+'%;background:'+lvl.color+';border-radius:2px"></div>'+
+          '</div>'+
+        '</div>':'';
+        return (lastOrd?'<div style="font-size:10px;color:var(--tx3);margin-top:3px">Dernier achat: '+lastOrd.date+'</div>':'')+barHtml;
+      })()+
       '<div style="font-size:12px;color:var(--gold);margin-top:4px">📍 '+c.city+(c.sector?', '+c.sector:'')+', '+c.region+'</div>'+
       (c.address?'<div style="font-size:11px;color:var(--tx3);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:180px">'+c.address+'</div>':'')+
       '<div style="display:flex;gap:5px;margin-top:6px;align-items:center;flex-wrap:wrap">'+gpsLink+'</div>'+
@@ -7051,7 +7209,15 @@ function processCMI(){
 // ═══════════ CLIENT ORDERS ═══════════
 function setOF(st,el){activeOF=st;document.querySelectorAll('.of-btn').forEach(function(b){b.className='of-btn';});el.className='of-btn on';renderClOrds();}
 function renderClOrds(){
-  var my=ORDERS.filter(function(o){return o.clientId===SESSION.id;});
+  var all=ORDERS.filter(function(o){return o.clientId===SESSION.id;});
+  // Mettre à jour les compteurs par statut
+  var counts={all:all.length,pending:0,confirmed:0,shipped:0,delivered:0};
+  all.forEach(function(o){if(counts[o.status]!==undefined)counts[o.status]++;});
+  ['all','pending','confirmed','shipped','delivered'].forEach(function(k){
+    var el=document.getElementById('cnt-'+k);
+    if(el) el.textContent=counts[k]>0?counts[k]:'';
+  });
+  var my=all;
   if(activeOF==='paid')my=my.filter(function(o){return o.payStatus==='paid';});
   else if(activeOF)my=my.filter(function(o){return o.status===activeOF;});
   var statusProg={pending:1,confirmed:2,shipped:3,delivered:4,paid:4,returned:0,cancelled:0,partial:2};
