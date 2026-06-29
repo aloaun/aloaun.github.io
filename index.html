@@ -2,6 +2,11 @@
 <html lang="fr">
 <head>
 <meta charset="UTF-8">
+<link rel="manifest" href="data:application/json,%7B%22name%22%3A%22ALITOS%22%2C%22short_name%22%3A%22ALITOS%22%2C%22start_url%22%3A%22.%2F%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23080808%22%2C%22theme_color%22%3A%22%23C9A84C%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22data%3Aimage%2Fsvg%2Bxml%2C%3Csvg%20xmlns%3D%27http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%27%20viewBox%3D%270%200%20192%20192%27%3E%3Crect%20width%3D%27192%27%20height%3D%27192%27%20fill%3D%27%23080808%27%20rx%3D%2732%27%2F%3E%3Ctext%20x%3D%2796%27%20y%3D%27130%27%20text-anchor%3D%27middle%27%20font-size%3D%2790%27%20fill%3D%27%23C9A84C%27%3EA%3C%2Ftext%3E%3C%2Fsvg%3E%22%2C%22sizes%22%3A%22192x192%22%7D%5D%7D">
+<meta name="theme-color" content="#C9A84C">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ALITOS">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0A0A0A">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -341,6 +346,109 @@ input:focus,select:focus,textarea:focus{outline:none!important;border-color:var(
   box-shadow:0 4px 20px rgba(201,168,76,0.4)!important;
   font-weight:700!important;
 }
+
+
+/* ── RECHERCHE GLOBALE ADMIN ── */
+#admin-srch-inp:focus{
+  border-color:var(--gold)!important;
+  box-shadow:0 0 0 3px rgba(201,168,76,.12)!important;
+  width:200px!important;
+}
+#admin-srch-inp::placeholder{color:var(--tx3)}
+#admin-srch-results::-webkit-scrollbar{width:3px}
+#admin-srch-results::-webkit-scrollbar-thumb{background:var(--bo2);border-radius:3px}
+
+/* ── TOPBAR améliorée ── */
+.topbar{
+  position:sticky!important;
+  top:0!important;
+  z-index:40!important;
+  backdrop-filter:blur(12px)!important;
+  background:rgba(8,8,8,0.85)!important;
+  border-bottom:1px solid var(--bo)!important;
+}
+
+/* ── TABLE amélioration ── */
+table th{
+  position:sticky;
+  top:0;
+  background:var(--dk4);
+  z-index:2;
+}
+
+/* ── CARDS clients ── */
+.cl-c{
+  background:var(--dk3)!important;
+  border:1px solid var(--bo)!important;
+  border-radius:14px!important;
+  padding:14px!important;
+  transition:.2s!important;
+  cursor:pointer!important;
+}
+.cl-c:hover{border-color:rgba(201,168,76,.4)!important;transform:translateY(-2px)!important}
+
+/* ── Fournisseurs cards ── */
+.sup-card{
+  background:var(--dk3);
+  border:1px solid var(--bo);
+  border-radius:14px;
+  padding:16px;
+  transition:.2s;
+}
+.sup-card:hover{border-color:rgba(201,168,76,.35);transform:translateY(-1px)}
+
+/* ── Input recherche admin ── */
+.admin-srch-result-item:hover{ background:var(--dk5)!important }
+
+/* ── Stat card mini (pour dashboard rapide) ── */
+.stat-mini{
+  background:var(--dk4);
+  border:1px solid var(--bo);
+  border-radius:10px;
+  padding:10px 14px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+.stat-mini .sm-icon{ font-size:20px }
+.stat-mini .sm-val{ font-size:16px; font-weight:700; color:var(--tx) }
+.stat-mini .sm-lbl{ font-size:10px; color:var(--tx3); text-transform:uppercase; letter-spacing:.5px }
+
+/* ── Mobile: cacher la recherche admin ── */
+@media(max-width:500px){
+  #admin-search-wrap{ display:none }
+}
+
+/* ── Animation entrée section ── */
+.sec.on{ animation:sectionIn .25s ease both }
+@keyframes sectionIn{ from{opacity:.7;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── Pagination style ── */
+.pg-btn{
+  background:var(--dk4);
+  border:1px solid var(--bo);
+  border-radius:8px;
+  padding:6px 12px;
+  color:var(--tx2);
+  font-size:12px;
+  cursor:pointer;
+  transition:.15s;
+}
+.pg-btn.on{background:var(--gold);border-color:var(--gold);color:#000;font-weight:700}
+.pg-btn:hover:not(.on){border-color:var(--gold);color:var(--gold)}
+
+/* ── Toast amélioré (position haut centre) ── */
+#toast{
+  top:14px!important;
+  bottom:auto!important;
+  left:50%!important;
+  right:auto!important;
+  transform:translateX(-50%) translateY(-80px)!important;
+  transition:transform .3s cubic-bezier(.34,1.56,.64,1)!important;
+  max-width:90vw!important;
+  white-space:nowrap!important;
+}
+#toast.on{transform:translateX(-50%) translateY(0)!important}
 
 </style>
 <script>/* @preserve * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com * (c) 2010-2023 Vladimir Agafonkin, (c) 2010-2011 CloudMade */ !function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"function"==typeof define&&define.amd?define(["exports"],e):e((t="undefined"!=typeof globalThis?globalThis:t||self).leaflet={})}(this,function(t){"use strict";function l(t){for(var e,i,n=1,o=arguments.length;n<o;n++)for(e in i=arguments[n])t[e]=i[e];return t}
@@ -1958,6 +2066,14 @@ window.addEventListener('unhandledrejection',function(ev){
      <h2 id="pg-ttl">Tableau de bord</h2>
     </div>
     <div style="display:flex;align-items:center;gap:8px">
+     <div id="admin-search-wrap" style="position:relative">
+       <input id="admin-srch-inp" type="text" placeholder="🔍 Rechercher..." autocomplete="off"
+         oninput="adminSearchLive(this.value)"
+         onfocus="document.getElementById('admin-srch-results').style.display='block'"
+         onblur="setTimeout(function(){document.getElementById('admin-srch-results').style.display='none';},200)"
+         style="background:var(--dk4);border:1px solid var(--bo);border-radius:20px;padding:6px 14px;color:var(--tx);font-size:12px;width:160px;outline:none;transition:.2s">
+       <div id="admin-srch-results" style="display:none;position:absolute;top:calc(100% + 6px);right:0;width:280px;background:var(--dk3);border:1px solid var(--bo);border-radius:12px;box-shadow:var(--shadow);z-index:200;max-height:320px;overflow-y:auto;padding:6px"></div>
+     </div>
      <div class="datebadge" id="adate"></div>
      <button class="btn btn-o btn-sm" onclick="refreshCurrent()" title="Actualiser">🔄</button>
     </div>
@@ -2070,6 +2186,7 @@ window.addEventListener('unhandledrejection',function(ev){
        <button class="btn btn-o btn-sm" onclick="_selectedOrders.clear();document.querySelectorAll('.ord-chk').forEach(function(c){c.checked=false;});updateBulkBar()">✕ Désélectionner</button>
       </div>
       <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;width:100%;border-radius:0 0 14px 14px"><table><thead><tr><th><input type="checkbox" onclick="toggleAllOrders()" title="Tout sélectionner" style="cursor:pointer"></th><th>N°</th><th>Client</th><th>Ville</th><th>Région</th><th>Produits</th><th>Retour</th><th>Montant</th><th>Profit</th><th>Date</th><th>Statut</th><th>Paiement</th><th>Actions</th></tr></thead><tbody id="ords-tb"></tbody></table></div>
+     <div id="ords-pagination" style="display:flex;justify-content:center;gap:6px;padding:12px;flex-wrap:wrap"></div>
      </div>
     </div>
 
@@ -2093,6 +2210,7 @@ window.addEventListener('unhandledrejection',function(ev){
       <div style="display:flex;gap:7px;flex-wrap:wrap">
        <button class="btn btn-b btn-sm" onclick="goSec('appro',document.getElementById('ni-appro'))">📥 Approvisionnement →</button>
        <button class="btn btn-g btn-sm" onclick="renderStock()">🔄 Actualiser</button>
+       <button class="btn btn-g btn-sm" onclick="exportStockCSV()">📊 Export CSV</button>
       </div>
      </div>
      <div class="kpis" id="stk-kpis" style="margin-bottom:14px"></div>
@@ -4956,11 +5074,35 @@ function renderOrders(){
     return (b.date||'').localeCompare(a.date||'');
   });
 
-  // 3. Affichage
-  (document.getElementById('o-cnt')||{textContent:''}).textContent=sortedOrders.length+' résultat(s)';
-  (document.getElementById('ords-tb')||{innerHTML:''}).innerHTML=sortedOrders.length===0
+  // 3. Pagination + Affichage
+  var PAGE_SIZE=50;
+  if(!window._ordPage) window._ordPage=0;
+  if(window._ordPage*PAGE_SIZE>=sortedOrders.length) window._ordPage=0;
+  var totalPages=Math.ceil(sortedOrders.length/PAGE_SIZE);
+  var page=window._ordPage;
+  var paginated=sortedOrders.slice(page*PAGE_SIZE,(page+1)*PAGE_SIZE);
+  var cntTxt=sortedOrders.length+' résultat(s)';
+  if(totalPages>1) cntTxt+=' — Page '+(page+1)+'/'+totalPages;
+  (document.getElementById('o-cnt')||{textContent:''}).textContent=cntTxt;
+  // Pagination buttons
+  var pgDiv=document.getElementById('ords-pagination');
+  if(pgDiv){
+    pgDiv.style.display=totalPages>1?'flex':'none';
+    pgDiv.innerHTML=totalPages>1?
+      (page>0?'<button class="pg-btn" onclick="window._ordPage='+(page-1)+';renderOrders()">← Préc.</button>':'')+
+      Array.from({length:Math.min(totalPages,7)},function(_,i){
+        var idx2=totalPages<=7?i:Math.max(0,Math.min(page-3,totalPages-7))+i;
+        return '<button class="pg-btn'+(idx2===page?' on':'')+'" onclick="window._ordPage='+idx2+';renderOrders()">'+( idx2+1)+'</button>';
+      }).join('')+
+      (page<totalPages-1?'<button class="pg-btn" onclick="window._ordPage='+(page+1)+';renderOrders()">Suiv. →</button>':'')
+    :'';
+  }
+  var delAllBtn=document.getElementById('del-all-ord-btn');
+  if(delAllBtn) delAllBtn.style.display=isSuperAdmin()?'inline-flex':'none';
+  var O_display=paginated;
+  (document.getElementById('ords-tb')||{innerHTML:''}).innerHTML=O_display.length===0
     ?'<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--tx3)">Aucune commande trouvée</td></tr>'
-    :sortedOrders.map(function(o){
+    :O_display.map(function(o){
     var cl=getC(o.clientId);
     var pr=calcProfit(o);
     var isChecked=_selectedOrders.has(o.id);
@@ -5109,9 +5251,33 @@ function renderOrders(){
     return (b.date||'').localeCompare(a.date||'');
   });
 
-  // 3. Affichage
-  (document.getElementById('o-cnt')||{textContent:''}).textContent=sortedOrders.length+' résultat(s)';
-  (document.getElementById('ords-tb')||{innerHTML:''}).innerHTML=sortedOrders.length===0
+  // 3. Pagination + Affichage
+  var PAGE_SIZE=50;
+  if(!window._ordPage) window._ordPage=0;
+  if(window._ordPage*PAGE_SIZE>=sortedOrders.length) window._ordPage=0;
+  var totalPages=Math.ceil(sortedOrders.length/PAGE_SIZE);
+  var page=window._ordPage;
+  var paginated=sortedOrders.slice(page*PAGE_SIZE,(page+1)*PAGE_SIZE);
+  var cntTxt=sortedOrders.length+' résultat(s)';
+  if(totalPages>1) cntTxt+=' — Page '+(page+1)+'/'+totalPages;
+  (document.getElementById('o-cnt')||{textContent:''}).textContent=cntTxt;
+  // Pagination buttons
+  var pgDiv=document.getElementById('ords-pagination');
+  if(pgDiv){
+    pgDiv.style.display=totalPages>1?'flex':'none';
+    pgDiv.innerHTML=totalPages>1?
+      (page>0?'<button class="pg-btn" onclick="window._ordPage='+(page-1)+';renderOrders()">← Préc.</button>':'')+
+      Array.from({length:Math.min(totalPages,7)},function(_,i){
+        var idx2=totalPages<=7?i:Math.max(0,Math.min(page-3,totalPages-7))+i;
+        return '<button class="pg-btn'+(idx2===page?' on':'')+'" onclick="window._ordPage='+idx2+';renderOrders()">'+( idx2+1)+'</button>';
+      }).join('')+
+      (page<totalPages-1?'<button class="pg-btn" onclick="window._ordPage='+(page+1)+';renderOrders()">Suiv. →</button>':'')
+    :'';
+  }
+  var delAllBtn=document.getElementById('del-all-ord-btn');
+  if(delAllBtn) delAllBtn.style.display=isSuperAdmin()?'inline-flex':'none';
+  var O_display=paginated;
+  (document.getElementById('ords-tb')||{innerHTML:''}).innerHTML=O_display.length===0
     ?'<tr><td colspan="12" style="text-align:center;padding:32px;color:var(--tx3)">Aucune commande trouvée</td></tr>'
     :sortedOrders.map(function(o){
     var cl=getC(o.clientId);
@@ -12334,6 +12500,113 @@ window.loadFavorites=loadFavorites;
 window.saveFavorites=saveFavorites;
 window.isFavorite=isFavorite;
 window.toggleFavorite=toggleFavorite;
+
+
+// ═══════════ RECHERCHE GLOBALE ADMIN ═══════════
+function adminSearchLive(q){
+  var res=document.getElementById('admin-srch-results');
+  if(!res) return;
+  q=(q||'').toLowerCase().trim();
+  if(q.length<2){res.innerHTML='<div style="padding:10px;color:var(--tx3);font-size:12px;text-align:center">Tapez au moins 2 caractères</div>';return;}
+  var results=[];
+
+  // Commandes
+  ORDERS.forEach(function(o){
+    var cl=getC(o.clientId);
+    if(o.id.toLowerCase().includes(q)||cl.name.toLowerCase().includes(q)){
+      results.push({type:'Commande',icon:'📦',label:o.id+' — '+cl.name,sub:fm(o.total)+' · '+o.date+' · '+o.status,
+        action:'goSec(\'orders\',document.getElementById(\'ni-orders\'));setTimeout(function(){var el=document.getElementById(\'of-q\');if(el){el.value=\''+o.id+'\';renderOrders();}},150)'});
+    }
+  });
+
+  // Clients
+  CLIENTS.forEach(function(cl){
+    if(cl.name.toLowerCase().includes(q)||cl.phone.includes(q)||cl.city.toLowerCase().includes(q)){
+      results.push({type:'Client',icon:'👤',label:cl.name,sub:cl.phone+' · '+cl.city,
+        action:'goSec(\'clients\',document.getElementById(\'ni-clients\'));setTimeout(function(){var el=document.getElementById(\'cl-search\');if(el){el.value=\''+cl.name+'\';renderClients();}},150)'});
+    }
+  });
+
+  // Produits
+  PRODUCTS.forEach(function(p){
+    if(p.name.toLowerCase().includes(q)||p.category.toLowerCase().includes(q)||((p.barcode||'').includes(q))){
+      results.push({type:'Produit',icon:'🏪',label:p.name,sub:p.category+' · Stock: '+p.stock+' · '+fm(p.price),
+        action:'goSec(\'prods\',document.getElementById(\'ni-prods\'))'});
+    }
+  });
+
+  // Fournisseurs
+  (SUPPLIERS||[]).forEach(function(s){
+    if(s.name.toLowerCase().includes(q)||s.city.toLowerCase().includes(q)){
+      results.push({type:'Fournisseur',icon:'🏭',label:s.name,sub:s.city,
+        action:'goSec(\'suppliers\',document.getElementById(\'ni-suppliers\'))'});
+    }
+  });
+
+  if(!results.length){
+    res.innerHTML='<div style="padding:14px;color:var(--tx3);font-size:12px;text-align:center">Aucun résultat pour "'+q+'"</div>';
+    return;
+  }
+
+  var typeColors={Commande:'var(--blu)',Client:'var(--gold)',Produit:'var(--grn)',Fournisseur:'var(--ora)'};
+  res.innerHTML=results.slice(0,8).map(function(r){
+    return '<div onclick="'+r.action+';document.getElementById(\'admin-srch-inp\').value=\'\';document.getElementById(\'admin-srch-results\').style.display=\'none\'" '+
+      'style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;cursor:pointer;transition:.15s" '+
+      'onmouseover="this.style.background=\'var(--dk5)\'" onmouseout="this.style.background=\'\'">'+
+      '<span style="font-size:16px">'+r.icon+'</span>'+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:12px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+r.label+'</div>'+
+        '<div style="font-size:10px;color:var(--tx3)">'+r.sub+'</div>'+
+      '</div>'+
+      '<span style="font-size:9px;padding:2px 6px;border-radius:8px;background:rgba(0,0,0,.3);color:'+typeColors[r.type]+';white-space:nowrap">'+r.type+'</span>'+
+    '</div>';
+  }).join('')+(results.length>8?'<div style="padding:6px;font-size:11px;color:var(--tx3);text-align:center">+'+(results.length-8)+' autres résultats</div>':'');
+}
+
+function exportStockCSV(){
+  var rows=[['Produit','Catégorie','Stock','Prix vente','Prix achat','Marge %','Seuil alerte','Code-barre','Valeur stock (achat)','Valeur stock (vente)']];
+  PRODUCTS.forEach(function(p){
+    var mg=p.sellPrice&&p.buyPrice?Math.round((p.sellPrice-p.buyPrice)/p.sellPrice*100):
+            p.price&&p.buyPrice?Math.round((p.price-p.buyPrice)/p.price*100):0;
+    var vAchat=(p.buyPrice||0)*(p.stock||0);
+    var vVente=(p.sellPrice||p.price||0)*(p.stock||0);
+    rows.push([p.name,p.category,(p.stock||0),(p.sellPrice||p.price||0),(p.buyPrice||0),mg+'%',(p.threshold||p.alertSeuil||5),(p.barcode||''),vAchat,vVente]);
+  });
+  var csv=rows.map(function(r){return r.map(function(v){return'"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='stock_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+  toast('✅ Export stock CSV téléchargé');
+}
+function exportClientsCSV(){
+  var rows=[['Nom','Téléphone','Ville','Région','Secteur','Adresse','Email','Username','Latitude','Longitude','Nb commandes','CA total','Niveau fidélité']];
+  CLIENTS.forEach(function(cl){
+    var ords=ORDERS.filter(function(o){return o.clientId===cl.id&&o.status==='delivered';});
+    var ca=ords.reduce(function(s,o){return s+o.total;},0);
+    var lvl=getLoyaltyLevel(ca);
+    rows.push([cl.name,cl.phone||'',cl.city||'',cl.region||'',cl.sector||'',cl.address||'',cl.email||'',cl.username||'',(cl.lat||''),(cl.lng||''),ords.length,ca,lvl.label]);
+  });
+  var csv=rows.map(function(r){return r.map(function(v){return'"'+String(v||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
+  var a=document.createElement('a');
+  a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);
+  a.download='clients_'+new Date().toISOString().split('T')[0]+'.csv';
+  a.click();
+  toast('✅ Export clients CSV téléchargé');
+}
+window.exportStockCSV=exportStockCSV;
+window.exportClientsCSV=exportClientsCSV;
+
+window.adminSearchLive=adminSearchLive;
+
+// Raccourci clavier Ctrl+K pour focus recherche
+document.addEventListener('keydown',function(e){
+  if((e.ctrlKey||e.metaKey)&&e.key==='k'){
+    e.preventDefault();
+    var inp=document.getElementById('admin-srch-inp');
+    if(inp){inp.focus();inp.select();}
+  }
+});
 
 window.deleteOrderAdmin=deleteOrderAdmin;
 window.bulkDeleteOrders=bulkDeleteOrders;
