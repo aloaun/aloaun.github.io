@@ -450,6 +450,58 @@ table th{
 }
 #toast.on{transform:translateX(-50%) translateY(0)!important}
 
+
+/* ── WhatsApp Share Button ── */
+.wa-share-btn{
+  background:#25D366!important;
+  color:#fff!important;
+  border:none!important;
+  border-radius:8px!important;
+  padding:6px 12px!important;
+  font-size:12px!important;
+  font-weight:600!important;
+  cursor:pointer!important;
+  transition:.15s!important;
+  display:inline-flex!important;
+  align-items:center!important;
+  gap:5px!important;
+}
+.wa-share-btn:hover{filter:brightness(1.1)!important}
+.wa-share-btn:active{transform:scale(.96)!important}
+
+/* ── Ticket caisse print button ── */
+.print-btn{
+  background:var(--dk4)!important;
+  border:1px solid var(--bo)!important;
+  border-radius:8px!important;
+  padding:6px 10px!important;
+  cursor:pointer!important;
+  transition:.15s!important;
+}
+
+/* ── Scanner overlay animation ── */
+#np-scan-overlay video{
+  animation:scanPulse 2s infinite;
+}
+@keyframes scanPulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.4)}
+  50%{box-shadow:0 0 0 8px rgba(201,168,76,0)}
+}
+
+/* ── Topbar stock alert badge ── */
+#admin-stock-alert{
+  animation:alertBlink 2s infinite;
+}
+@keyframes alertBlink{
+  0%,100%{opacity:1}
+  50%{opacity:.7}
+}
+
+/* ── Responsive: masquer partage produit sur très petit écran ── */
+@media(max-width:360px){
+  .wa-share-prod{display:none!important}
+}
+
 </style>
 <script>/* @preserve * Leaflet 1.9.4, a JS library for interactive maps. https://leafletjs.com * (c) 2010-2023 Vladimir Agafonkin, (c) 2010-2011 CloudMade */ !function(t,e){"object"==typeof exports&&"undefined"!=typeof module?e(exports):"function"==typeof define&&define.amd?define(["exports"],e):e((t="undefined"!=typeof globalThis?globalThis:t||self).leaflet={})}(this,function(t){"use strict";function l(t){for(var e,i,n=1,o=arguments.length;n<o;n++)for(e in i=arguments[n])t[e]=i[e];return t}
 var R=Object.create||function(t){return N.prototype=t,new N};function N(){}
@@ -2074,6 +2126,7 @@ window.addEventListener('unhandledrejection',function(ev){
          style="background:var(--dk4);border:1px solid var(--bo);border-radius:20px;padding:6px 14px;color:var(--tx);font-size:12px;width:160px;outline:none;transition:.2s">
        <div id="admin-srch-results" style="display:none;position:absolute;top:calc(100% + 6px);right:0;width:280px;background:var(--dk3);border:1px solid var(--bo);border-radius:12px;box-shadow:var(--shadow);z-index:200;max-height:320px;overflow-y:auto;padding:6px"></div>
      </div>
+     <div id="admin-notif-badge" style="position:relative;cursor:pointer" onclick="goSec('stock',document.getElementById('ni-stock'))" title="Alertes stock"><span id="admin-stock-alert" style="display:none;background:var(--red);color:#fff;border-radius:20px;padding:3px 9px;font-size:11px;font-weight:700;white-space:nowrap">⚠️ <span id="admin-stock-count"></span></span></div>
      <div class="datebadge" id="adate"></div>
      <button class="btn btn-o btn-sm" onclick="refreshCurrent()" title="Actualiser">🔄</button>
     </div>
@@ -2536,7 +2589,7 @@ window.addEventListener('unhandledrejection',function(ev){
      <div class="kpis" id="an-kpis"></div>
      <div class="cg22">
       <div class="cc"><h3>CA &amp; Profit mensuel</h3><div style="position:relative;height:220px"><div id="ch-mo" style="width:100%;height:100%"></div></canvas></div></div>
-      <div class="cc"><h3>Ventes par secteur</h3><div style="position:relative;height:220px"><div id="ch-sec" style="width:100%;height:100%"></div></canvas></div></div>
+      <div class="cc"><h3>Ventes par secteur</h3><div style="position:relative;height:220px"><div id="ch-sec" style="width:100%;min-height:220px"></div></canvas></div></div>
      </div>
      <div class="tc">
       <div class="tc-h"><h3>Rentabilité par produit</h3></div>
@@ -3896,7 +3949,7 @@ function doLogin(){
           }
         },60000);
         // Notification super admin: show toast with who logged in (if notifications enabled)
-        updateAdminSidebar();initAdminFilters();renderOnlineAccounts();
+        updateAdminSidebar();initAdminFilters();renderOnlineAccounts();setTimeout(updateStockAlertBadge,500);
         // Render dès que pg-admin est visible, puis refresh après Firebase
         setTimeout(function(){
           if(typeof renderDashboard==='function') renderDashboard();
@@ -4700,6 +4753,7 @@ function renderDashboard(){
     _svgPie(document.getElementById('ch-stat'),['En attente','Confirmée','Expédiée','Livrée'],[cnt.pending,cnt.confirmed,cnt.shipped,cnt.delivered],['#C9A84C','#4A9EE8','#9B6BDB','#52C97A']);
   },100);
 
+  updateStockAlertBadge();
   // Commandes récentes (8 dernières, tous statuts)
   var recent=O.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}).slice(0,8);
   (document.getElementById('dash-ords')||{innerHTML:''}).innerHTML=recent.map(function(o){
@@ -5116,7 +5170,9 @@ function renderOrders(){
         :'<span style="color:var(--red);font-size:11px">Tout retourné</span>';
     }
     var oid=o.id;
-    var acts='<button class="btn btn-o btn-sm" onclick="viewOrd(this.dataset.id)" data-id="'+oid+'" title="Détails">👁</button>';
+    var acts='<button class="btn btn-o btn-sm" onclick="viewOrd(this.dataset.id)" data-id="'+oid+'" title="Détails">👁</button>'+
+    '<button class="btn btn-g btn-sm" onclick="printReceipt(this.dataset.id)" data-id="'+oid+'" title="Ticket">🖨️</button>'+
+    '<button class="btn btn-gn btn-sm" onclick="shareOrderWhatsApp(this.dataset.id)" data-id="'+oid+'" title="WhatsApp" style="background:#25D366;border-color:#25D366">📱</button>';
     if(o.status==='pending'){
       acts+='<button class="btn btn-gn btn-sm" onclick="updOrd(this.dataset.id,\'confirmed\');renderOrders()" data-id="'+oid+'" title="Confirmer">✓</button>';
       acts+='<button class="btn btn-r btn-sm" onclick="cancelOrd(this.dataset.id)" data-id="'+oid+'" title="Annuler">✕</button>';
@@ -5293,7 +5349,9 @@ function renderOrders(){
         :'<span style="color:var(--red);font-size:11px">Tout retourné</span>';
     }
     var oid=o.id;
-    var acts='<button class="btn btn-o btn-sm" onclick="viewOrd(this.dataset.id)" data-id="'+oid+'" title="Détails">👁</button>';
+    var acts='<button class="btn btn-o btn-sm" onclick="viewOrd(this.dataset.id)" data-id="'+oid+'" title="Détails">👁</button>'+
+    '<button class="btn btn-g btn-sm" onclick="printReceipt(this.dataset.id)" data-id="'+oid+'" title="Ticket">🖨️</button>'+
+    '<button class="btn btn-gn btn-sm" onclick="shareOrderWhatsApp(this.dataset.id)" data-id="'+oid+'" title="WhatsApp" style="background:#25D366;border-color:#25D366">📱</button>';
     if(o.status==='pending'){
       acts+='<button class="btn btn-gn btn-sm" onclick="updOrd(this.dataset.id,\'confirmed\');renderOrders()" data-id="'+oid+'" title="Confirmer">✓</button>';
       acts+='<button class="btn btn-r btn-sm" onclick="cancelOrd(this.dataset.id)" data-id="'+oid+'" title="Annuler">✕</button>';
@@ -6886,8 +6944,8 @@ function renderAnalytics(){
       sCA[sec]=(sCA[sec]||0)+o.total;
     });
     var sKeys=Object.keys(sCA).sort(function(a,b){return sCA[b]-sCA[a];}).slice(0,8);
-    _svgBar(document.getElementById('ch-sec'),sKeys,sKeys.map(function(k){return Math.round(sCA[k]);}),
-      ['#4A9EE8','#C9A84C','#52C97A','#9B6BDB','#E8834A','#E05252','#4A9EE8','#C9A84C'],{horizontal:true});
+    _svgHBar(document.getElementById('ch-sec'),sKeys,sKeys.map(function(k){return Math.round(sCA[k]);}),
+      ['#4A9EE8','#C9A84C','#52C97A','#9B6BDB','#E8834A','#E05252','#4A9EE8','#C9A84C']);
   },100);
 
   // Tableau rentabilité produits
@@ -10528,7 +10586,10 @@ function clRenderProds(){
         '<div class="pcat" style="margin-bottom:3px">'+p.category+'</div>'+
         '<div class="pn" style="margin-bottom:4px">'+p.name+'</div>'+
         stars+
-        '<div class="pp" style="margin-bottom:8px">'+fm(p.price)+'</div>'+
+        '<div class="pp" style="margin-bottom:6px">'+fm(p.price)+'</div>'+
+        '<button onclick="event.stopPropagation();shareProductWhatsApp(\'' + p.id + '\')" '+
+        'style="width:100%;background:#25D366;color:#fff;border:none;border-radius:7px;padding:5px 8px;font-size:11px;cursor:pointer;font-weight:600;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:5px">'+
+        '\uD83D\uDCF1 Partager</button>'+
         act+
       '</div>'+
     '</div>';
@@ -12607,6 +12668,219 @@ document.addEventListener('keydown',function(e){
     if(inp){inp.focus();inp.select();}
   }
 });
+
+
+
+// ═══════════ FIX: npScanBarcode (formulaire Nouveau Produit) ═══════════
+function npScanBarcode(){
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){
+    toast('Caméra non disponible',true); return;
+  }
+  // Créer un mini scanner overlay
+  var overlay=document.createElement('div');
+  overlay.id='np-scan-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.92);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px';
+  overlay.innerHTML=
+    '<div style="color:var(--gold);font-size:14px;font-weight:700">📷 Scanner le code-barres</div>'+
+    '<div style="position:relative;width:min(90vw,320px)">'+
+      '<video id="np-scan-video" autoplay playsinline style="width:100%;border-radius:12px;background:#000"></video>'+
+      '<canvas id="np-scan-canvas" style="display:none"></canvas>'+
+      '<div style="position:absolute;inset:20%;border:2px solid var(--gold);border-radius:8px;pointer-events:none;box-shadow:0 0 0 2000px rgba(0,0,0,0.4)"></div>'+
+    '</div>'+
+    '<div style="color:var(--tx3);font-size:12px">Pointez la caméra vers le code-barres</div>'+
+    '<button onclick="npStopScan()" style="background:var(--red);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:13px;cursor:pointer">✕ Annuler</button>';
+  document.body.appendChild(overlay);
+
+  var video=document.getElementById('np-scan-video');
+  var canvas=document.getElementById('np-scan-canvas');
+  var stream=null; var interval=null;
+
+  window._npStopScan=function(){
+    if(interval) clearInterval(interval);
+    if(stream) stream.getTracks().forEach(function(t){t.stop();});
+    var ov=document.getElementById('np-scan-overlay');
+    if(ov) ov.remove();
+  };
+  window.npStopScan=window._npStopScan;
+
+  navigator.mediaDevices.getUserMedia({video:{facingMode:'environment'}}).then(function(s){
+    stream=s; video.srcObject=s;
+    interval=setInterval(function(){
+      if(!video.videoWidth) return;
+      canvas.width=video.videoWidth; canvas.height=video.videoHeight;
+      var ctx=canvas.getContext('2d');
+      ctx.drawImage(video,0,0);
+      if(window.BarcodeDetector){
+        new BarcodeDetector().detect(canvas).then(function(codes){
+          if(codes.length){
+            var code=codes[0].rawValue;
+            window._npStopScan();
+            var inp=document.getElementById('np-barcode');
+            if(inp){ inp.value=code; inp.dispatchEvent(new Event('input')); }
+            toast('✅ Code scanné: '+code);
+          }
+        }).catch(function(){});
+      }
+    },300);
+  }).catch(function(e){ window._npStopScan(); toast('Erreur caméra: '+e.message,true); });
+}
+
+
+// ═══════════ BADGE STOCK CRITIQUE TOPBAR ═══════════
+function updateStockAlertBadge(){
+  var critCount=PRODUCTS.filter(function(p){return (p.stock||0)<=(p.threshold||p.alertSeuil||5);}).length;
+  var badge=document.getElementById('admin-stock-alert');
+  var count=document.getElementById('admin-stock-count');
+  if(badge && count){
+    if(critCount>0){
+      badge.style.display='inline-flex';
+      badge.style.alignItems='center';
+      badge.style.gap='4px';
+      count.textContent=critCount+' produit'+(critCount>1?'s':'')+' critique'+(critCount>1?'s':'');
+    } else {
+      badge.style.display='none';
+    }
+  }
+}
+window.updateStockAlertBadge=updateStockAlertBadge;
+
+window.npScanBarcode=npScanBarcode;
+
+
+// ═══════════ _svgHBar (barres horizontales manquantes) ═══════════
+function _svgHBar(el,labels,values,colors,opts){
+  if(!el) return;
+  opts=opts||{};
+  var W=el.offsetWidth||el.parentElement&&el.parentElement.offsetWidth||320;
+  if(W<50) W=320;
+  var barH=22, gap=8, padL=90, padR=50, padT=10, padB=10;
+  var H=padT+(barH+gap)*labels.length+padB;
+  var maxV=Math.max.apply(null,values)||1;
+  var cols=colors||['#C9A84C','#4A9EE8','#52C97A','#9B6BDB','#E8834A','#E05252'];
+  var svg='<svg width="100%" height="'+H+'" viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+  // Grilles verticales légères
+  [0.25,0.5,0.75,1].forEach(function(f){
+    var x=Math.round(padL+(W-padL-padR)*f);
+    svg+='<line x1="'+x+'" y1="'+padT+'" x2="'+x+'" y2="'+(H-padB)+'" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>';
+  });
+  labels.forEach(function(lbl,i){
+    var v=values[i]||0;
+    var y=padT+i*(barH+gap);
+    var bW=Math.max(0,Math.round((W-padL-padR)*v/maxV));
+    var col=cols[i%cols.length];
+    // Label gauche
+    var shortLbl=lbl.length>10?lbl.substring(0,10)+'…':lbl;
+    svg+='<text x="'+(padL-6)+'" y="'+(y+barH/2+4)+'" text-anchor="end" fill="rgba(255,255,255,0.6)" font-size="11" font-family="DM Sans,sans-serif">'+shortLbl+'</text>';
+    // Fond barre
+    svg+='<rect x="'+padL+'" y="'+y+'" width="'+(W-padL-padR)+'" height="'+barH+'" rx="4" fill="rgba(255,255,255,0.04)"/>';
+    // Barre valeur
+    if(bW>0) svg+='<rect x="'+padL+'" y="'+y+'" width="'+bW+'" height="'+barH+'" rx="4" fill="'+col+'" opacity="0.85"/>';
+    // Valeur droite
+    var fmt=v>=1000?Math.round(v/1000)+'k':v;
+    svg+='<text x="'+(padL+bW+6)+'" y="'+(y+barH/2+4)+'" fill="'+col+'" font-size="11" font-weight="600" font-family="DM Sans,sans-serif">'+fmt+'</text>';
+  });
+  svg+='</svg>';
+  el.innerHTML=svg;
+}
+window._svgHBar=_svgHBar;
+
+
+// ═══════════ WhatsApp - Partager commande ═══════════
+function shareOrderWhatsApp(orderId){
+  var o=ORDERS.find(function(x){return x.id===orderId;});
+  if(!o) return;
+  var cl=getC(o.clientId);
+  var items=(o.items||[]).map(function(it){
+    return '• '+getP(it.productId).name+' x'+it.quantity+' = '+fm(it.price*it.quantity);
+  }).join('\n');
+  var msg='🧾 *Commande ALITOS*\n'+
+    'N°: *'+o.id+'*\n'+
+    'Client: '+cl.name+'\n'+
+    'Date: '+o.date+'\n\n'+
+    items+'\n\n'+
+    '💰 *Total: '+fm(o.total)+'*\n'+
+    '📦 Statut: '+o.status+'\n'+
+    (cl.phone?'\n📞 '+cl.phone:'');
+  var phone=(cl.phone||'').replace(/\D/g,'');
+  if(phone.startsWith('0')) phone='212'+phone.substring(1);
+  var url='https://wa.me/'+phone+'?text='+encodeURIComponent(msg);
+  window.open(url,'_blank');
+}
+
+function shareProductWhatsApp(productId){
+  var p=PRODUCTS.find(function(x){return x.id===productId;});
+  if(!p) return;
+  var msg='🏪 *'+COMPANY.name+'*\n\n'+
+    '📦 *'+p.name+'*\n'+
+    'Catégorie: '+p.category+'\n'+
+    '💰 Prix: *'+fm(p.sellPrice||p.price)+'*\n'+
+    (p.stock>0?'✅ En stock ('+p.stock+' disponibles)':'❌ Rupture de stock')+'\n\n'+
+    (p.image?p.image+'\n\n':'')+
+    'Contactez-nous pour commander!';
+  var url='https://wa.me/?text='+encodeURIComponent(msg);
+  window.open(url,'_blank');
+}
+
+function shareOrderClientWhatsApp(){
+  if(!SESSION) return;
+  var myOrds=ORDERS.filter(function(o){return o.clientId===SESSION.id;});
+  var lastOrd=myOrds.slice().sort(function(a,b){return (b.date||'').localeCompare(a.date||'');}).find(function(o){return o.status!=='cancelled';});
+  if(!lastOrd){toast('Aucune commande à partager',true);return;}
+  var items=(lastOrd.items||[]).map(function(it){return '• '+getP(it.productId).name+' x'+it.quantity;}).join('\n');
+  var msg='📋 *Ma commande '+lastOrd.id+'*\n'+
+    'Date: '+lastOrd.date+'\n'+
+    items+'\n'+
+    '💰 Total: *'+fm(lastOrd.total)+'*\n'+
+    'Statut: '+lastOrd.status;
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+
+window.shareOrderWhatsApp=shareOrderWhatsApp;
+window.shareProductWhatsApp=shareProductWhatsApp;
+window.shareOrderClientWhatsApp=shareOrderClientWhatsApp;
+
+
+// ═══════════ Ticket de caisse imprimable ═══════════
+function printReceipt(orderId){
+  var o=ORDERS.find(function(x){return x.id===orderId;});
+  if(!o){ toast('Commande introuvable',true); return; }
+  var cl=getC(o.clientId);
+  var co=COMPANY;
+  var items=(o.items||[]).map(function(it){
+    var p=getP(it.productId);
+    return '<tr><td>'+p.name+'</td><td style="text-align:center">'+it.quantity+'</td><td style="text-align:right">'+fm(it.price)+'</td><td style="text-align:right">'+fm(it.price*it.quantity)+'</td></tr>';
+  }).join('');
+  var html='<!DOCTYPE html><html><head><meta charset="utf-8"><title>Ticket '+o.id+'</title>'+
+    '<style>*{margin:0;padding:0;box-sizing:border-box}body{font-family:monospace;font-size:12px;width:80mm;margin:0 auto;padding:8px}'+
+    '.c{text-align:center}.b{font-weight:bold}.sep{border-top:1px dashed #000;margin:6px 0}'+
+    'table{width:100%;border-collapse:collapse}td{padding:2px 4px}'+
+    '.total{font-size:14px;font-weight:bold;text-align:right;margin-top:8px}'+
+    '@media print{@page{margin:0;size:80mm auto}body{padding:4px}}</style></head><body>'+
+    '<div class="c b" style="font-size:14px">'+co.name+'</div>'+
+    '<div class="c">'+co.address+'</div>'+
+    '<div class="c">'+co.phone+'</div>'+
+    '<div class="sep"></div>'+
+    '<div class="b">Ticket: '+o.id+'</div>'+
+    '<div>Client: '+cl.name+'</div>'+
+    '<div>Date: '+o.date+'</div>'+
+    '<div class="sep"></div>'+
+    '<table><tr><td class="b">Article</td><td class="b" style="text-align:center">Qté</td><td class="b" style="text-align:right">PU</td><td class="b" style="text-align:right">Total</td></tr>'+
+    '<tr><td colspan="4"><div class="sep"></div></td></tr>'+
+    items+
+    '<tr><td colspan="4"><div class="sep"></div></td></tr>'+
+    '</table>'+
+    '<div class="total">TOTAL: '+fm(o.total)+'</div>'+
+    '<div style="margin-top:4px">Paiement: '+(o.payMethod||'—')+'</div>'+
+    '<div class="sep"></div>'+
+    '<div class="c" style="font-size:11px">Merci pour votre confiance!</div>'+
+    '<div class="c" style="font-size:10px;color:#666">'+co.email+'</div>'+
+    '</body></html>';
+  var win=window.open('','_blank','width=350,height=600');
+  win.document.write(html);
+  win.document.close();
+  setTimeout(function(){win.print();},500);
+}
+window.printReceipt=printReceipt;
 
 window.deleteOrderAdmin=deleteOrderAdmin;
 window.bulkDeleteOrders=bulkDeleteOrders;
