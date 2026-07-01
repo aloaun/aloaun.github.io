@@ -5130,7 +5130,7 @@ function renderOrders(){
 
   // 3. Pagination + Affichage
   var PAGE_SIZE=50;
-  if(!window._ordPage) window._ordPage=0;
+  if(window._ordPage===undefined||window._ordPage===null) window._ordPage=0;
   if(window._ordPage*PAGE_SIZE>=sortedOrders.length) window._ordPage=0;
   var totalPages=Math.ceil(sortedOrders.length/PAGE_SIZE);
   var page=window._ordPage;
@@ -5309,7 +5309,7 @@ function renderOrders(){
 
   // 3. Pagination + Affichage
   var PAGE_SIZE=50;
-  if(!window._ordPage) window._ordPage=0;
+  if(window._ordPage===undefined||window._ordPage===null) window._ordPage=0;
   if(window._ordPage*PAGE_SIZE>=sortedOrders.length) window._ordPage=0;
   var totalPages=Math.ceil(sortedOrders.length/PAGE_SIZE);
   var page=window._ordPage;
@@ -7490,6 +7490,15 @@ function renderClOrds(){
         '<strong style="color:var(--gold);font-size:15px">'+fm(o.total)+'</strong>'+
       '</div>'+
       retInfo+
+      '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;padding-top:8px;border-top:1px solid rgba(255,255,255,0.05)">'+
+        '<button onclick="event.stopPropagation();clViewOrder(\''+o.id+'\')" '+
+          'style="flex:1;background:var(--dk5);border:1px solid var(--bo);border-radius:8px;padding:7px;font-size:11px;color:var(--tx2);cursor:pointer;font-weight:500">'+
+          '👁 Détails</button>'+
+        (o.status==='delivered'||o.status==='cancelled'?
+          '<button onclick="event.stopPropagation();clReorder(\''+o.id+'\');" '+
+            'style="flex:1;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:8px;padding:7px;font-size:11px;color:var(--gold);cursor:pointer;font-weight:600">'+
+            '🔄 Re-commander</button>':'')+
+      '</div>'+
     '</div>';
   }).join(''):'<div style="text-align:center;padding:60px 16px;color:var(--tx3)"><div style="font-size:48px;margin-bottom:14px">📭</div><div style="font-size:14px;margin-bottom:8px">Aucune commande'+(activeOF?' dans ce statut':'')+'</div><div style="font-size:12px">Ajoutez des produits au panier pour commander</div></div>';
 }
@@ -11204,7 +11213,7 @@ function resetCmpFilters(){
 (function injectContactPage(){
   // Page
   var pg = document.getElementById('pg-client');
-  if(!pg || (document.getElementById('cl-pg-contact')||{})) return;
+  if(!pg || document.getElementById('cl-pg-contact')) return;
   var div = document.createElement('div');
   div.id = 'cl-pg-contact';
   div.style.cssText = 'display:none;padding-bottom:80px';
@@ -11241,7 +11250,7 @@ function resetCmpFilters(){
 
   // Bouton nav
   var nav2 = pg.querySelector('.bot-nav');
-  if(nav2 && !(document.getElementById('bt-contact')||{})){
+  if(nav2 && !document.getElementById('bt-contact')){
     var btn = document.createElement('div');
     btn.className = 'bt'; btn.id = 'bt-contact';
     btn.innerHTML = '<div class="bt-ic">📬</div>Contact';
@@ -11378,7 +11387,7 @@ function clientDelContactMsg(id){
 // Panneau messages contact côté admin — injecter dans sec-complaints
 (function injectContactAdmin(){
   var sec = document.getElementById('sec-complaints');
-  if(!sec || (document.getElementById('admin-contact-panel')||{})) return;
+  if(!sec || document.getElementById('admin-contact-panel')) return;
   var panel = document.createElement('div');
   panel.id = 'admin-contact-panel';
   panel.style.marginTop = '24px';
@@ -12688,7 +12697,7 @@ function npScanBarcode(){
       '<div style="position:absolute;inset:20%;border:2px solid var(--gold);border-radius:8px;pointer-events:none;box-shadow:0 0 0 2000px rgba(0,0,0,0.4)"></div>'+
     '</div>'+
     '<div style="color:var(--tx3);font-size:12px">Pointez la caméra vers le code-barres</div>'+
-    '<button onclick="npStopScan()" style="background:var(--red);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:13px;cursor:pointer">✕ Annuler</button>';
+    '<button onclick="if(window.npStopScan)window.npStopScan();" style="background:var(--red);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:13px;cursor:pointer">\u2715 Annuler</button>';
   document.body.appendChild(overlay);
 
   var video=document.getElementById('np-scan-video');
@@ -12880,6 +12889,46 @@ function printReceipt(orderId){
   win.document.close();
   setTimeout(function(){win.print();},500);
 }
+
+
+// ═══════════ REORDER CLIENT ═══════════
+function clReorder(orderId){
+  var o=ORDERS.find(function(x){return x.id===orderId;});
+  if(!o){toast('Commande introuvable',true);return;}
+  var added=0,blocked=[];
+  (o.items||[]).forEach(function(it){
+    var p=PRODUCTS.find(function(x){return x.id===it.productId;});
+    if(!p){blocked.push(it.productId);return;}
+    if(p.stock<=0){blocked.push(p.name+' (épuisé)');return;}
+    cart[it.productId]=(cart[it.productId]||0)+Math.min(it.quantity,p.stock);
+    added++;
+  });
+  updCartUI();
+  clRenderProds();
+  if(added>0){
+    toast('✅ '+added+' produit(s) ajouté(s) au panier'+(blocked.length?' ('+blocked.length+' épuisé(s))':''));
+    // Ouvrir le panier
+    var cartPanel=document.getElementById('cart-panel');
+    if(cartPanel) cartPanel.style.display='flex';
+    refreshCart();
+  } else {
+    toast('⚠️ Tous les produits de cette commande sont épuisés',true);
+  }
+}
+window.clReorder=clReorder;
+function shareClOrdWA(orderId){
+  var o=ORDERS.find(function(x){return x.id===orderId;});
+  if(!o) return;
+  var items=(o.items||[]).map(function(it){
+    var p=PRODUCTS.find(function(x){return x.id===it.productId;})||{name:'?'};
+    return '• '+p.name+' ×'+it.quantity;
+  }).join('\n');
+  var msg='📋 Commande '+o.id+'\nDate: '+o.date+'\n'+items+'\n💰 Total: '+fm(o.total);
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+}
+window.shareClOrdWA=shareClOrdWA;
+
+
 window.printReceipt=printReceipt;
 
 window.deleteOrderAdmin=deleteOrderAdmin;
