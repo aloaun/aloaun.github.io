@@ -2270,13 +2270,16 @@ window.addEventListener('unhandledrejection',function(ev){
 <div id="stk-alerts"></div>
      <div class="tc" style="overflow-x:auto">
       <table style="min-width:1100px"><thead><tr>
-       <th>Produit</th><th>Catégorie</th>
-       <th>Stock actuel</th><th>Seuil alerte</th>
-       <th>Prix d'achat</th><th>Prix de vente</th>
-       <th>Code-barres</th><th>Marge %</th><th>Marge unitaire</th><th>Marge TTC</th><th>État</th>
+       <th>Produit</th>
+       <th>Catégorie</th>
+       <th>Stock</th>
+       <th>Seuil</th>
+       <th>Prix vente</th>
+       <th>Prix achat</th>
+       <th>Marge %</th>
+       <th>État</th>
        <th>Fournisseurs</th>
-       <th>Historique achats</th>
-       <th>Action</th>
+       <th>Actions</th>
       </tr></thead><tbody id="stk-tb"></tbody></table>
      </div>
     </div>
@@ -6148,31 +6151,35 @@ function renderStock(){
     return '<tr style="border-bottom:1px solid rgba(255,255,255,.04)">'+
       '<td style="padding:10px 12px">'+
         '<div style="display:flex;align-items:center;gap:8px">'+
-          '<img src="'+(p.image||p.img||'')+'\" style="width:32px;height:32px;border-radius:6px;object-fit:cover;background:var(--dk4)" onerror="this.style.display=\'none\'">'+
-          '<div><div style="font-size:13px;font-weight:600">'+p.name+'</div>'+
-          '<div style="font-size:10px;color:var(--tx3)">'+p.category+'</div></div>'+
+          '<img src="'+(p.image||p.img||'')+'" style="width:32px;height:32px;border-radius:6px;object-fit:cover;background:var(--dk4)" onerror="this.style.display=\'none\'">'+
+          '<div style="font-size:13px;font-weight:600;white-space:nowrap">'+p.name+'</div>'+
         '</div>'+
       '</td>'+
+      '<td style="padding:10px 12px;color:var(--tx3);font-size:12px">'+p.category+'</td>'+
       '<td style="padding:10px 12px">'+
         '<div style="display:flex;align-items:center;gap:8px">'+
-          '<div style="flex:1;height:6px;background:var(--dk5);border-radius:3px;overflow:hidden;min-width:50px">'+
+          '<div style="width:60px;height:6px;background:var(--dk5);border-radius:3px;overflow:hidden">'+
             '<div style="width:'+pct+'%;height:100%;background:'+barColor+';border-radius:3px"></div>'+
           '</div>'+
-          '<span style="font-size:13px;font-weight:700;color:'+barColor+'">'+stk+'</span>'+
-          '<span style="font-size:10px;color:var(--tx3)">u.</span>'+
+          '<span style="font-size:14px;font-weight:700;color:'+barColor+'">'+stk+'</span>'+
         '</div>'+
-        '<div style="font-size:10px;color:var(--tx3);margin-top:2px">Seuil: '+seuil+'</div>'+
       '</td>'+
-      '<td style="padding:10px 12px;text-align:right"><strong>'+fm(p.sellPrice||p.price||0)+'</strong></td>'+
+      '<td style="padding:10px 12px;text-align:center;font-size:12px;color:var(--tx3)">'+seuil+'</td>'+
+      '<td style="padding:10px 12px;text-align:right"><strong style="color:var(--gold)">'+fm(p.sellPrice||p.price||0)+'</strong></td>'+
       '<td style="padding:10px 12px;text-align:right;color:var(--tx3)">'+fm(p.buyPrice||0)+'</td>'+
       '<td style="padding:10px 12px;text-align:center">'+
-        (marge>0?'<span style="color:'+(marge>40?'var(--grn)':marge>20?'var(--ora)':'var(--red)')+'">'+marge+'%</span>':'—')+
+        (marge>0?'<div style="display:flex;align-items:center;gap:5px;justify-content:center">'+
+          '<div style="width:40px;height:5px;background:var(--dk5);border-radius:3px;overflow:hidden">'+
+            '<div style="width:'+Math.min(100,marge)+'%;height:100%;background:'+(marge>40?'var(--grn)':marge>20?'var(--ora)':'var(--red)')+';border-radius:3px"></div>'+
+          '</div>'+
+          '<span style="font-size:12px;font-weight:700;color:'+(marge>40?'var(--grn)':marge>20?'var(--ora)':'var(--red)')+'">'+marge+'%</span>'+
+        '</div>':'<span style="color:var(--tx3)">—</span>')+
       '</td>'+
       '<td style="padding:10px 12px;text-align:center">'+statut+'</td>'+
-      '<td style="padding:10px 12px">'+fournHist+'</td>'+
+      '<td style="padding:10px 12px;font-size:11px">'+fournHist+'</td>'+
       '<td style="padding:10px 12px;white-space:nowrap">'+
-        '<button class="btn btn-o btn-sm" onclick="openApproForm(\''+p.id+'\')" title="Approvisionner" style="padding:5px 10px">📥</button>'+
-        '<button class="btn btn-g btn-sm" onclick="openProdEdit(\''+p.id+'\')" title="Modifier" style="padding:5px 10px;margin-left:4px">✏️</button>'+
+        '<button class="btn btn-o btn-sm" onclick="openApproForm(\''+p.id+'\')" title="Approvisionner" style="padding:5px 10px">📥</button> '+
+        '<button class="btn btn-g btn-sm" onclick="openProdEdit(\''+p.id+'\')" title="Modifier" style="padding:5px 10px">✏️</button>'+
       '</td>'+
     '</tr>';
   }).join('');
