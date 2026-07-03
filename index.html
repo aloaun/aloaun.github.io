@@ -4155,14 +4155,13 @@ function doLogin(){
         },60000);
         // Notification super admin: show toast with who logged in (if notifications enabled)
         updateAdminSidebar();initAdminFilters();renderOnlineAccounts();setTimeout(updateStockAlertBadge,500);
-        // Render dès que pg-admin est visible, puis refresh après Firebase
+        // Render immédiat avec données localStorage
+        renderDashboard();
+        // Second render après peinture complète
         setTimeout(function(){
           if(typeof renderDashboard==='function') renderDashboard();
-          // Second render après que le navigateur ait fini de peindre
-          setTimeout(function(){
-            if(typeof renderDashboard==='function') renderDashboard();
-          }, 800);
-        }, 50);
+          updateStockAlertBadge();
+        }, 300);
         // Notify super admin via Firebase about new login
         var loginRecord = {name:aFound.name||u, role:'admin', time:Date.now(), username:u};
         try{
@@ -4819,22 +4818,30 @@ function renderDashboard(){
   var thisMonth=today.substring(0,7);
   var lastMonth=new Date(new Date().setMonth(new Date().getMonth()-1)).toISOString().substring(0,7);
 
-  // Commandes du jour
-  var todayOrds=O.filter(function(o){return (o.date===today||o.deliveryDate===today)&&o.status==='delivered';});
+  // Commandes du jour (toutes sauf annulées/retournées)
+  var activeStatuses=['pending','confirmed','shipped','delivered'];
+  var todayOrds=O.filter(function(o){return o.date===today&&activeStatuses.indexOf(o.status)>=0;});
   var todCA=todayOrds.reduce(function(s,o){return s+o.total;},0);
   var todPr=todayOrds.reduce(function(s,o){return s+calcProfit(o);},0);
+  // Séparément: livré aujourd'hui
+  var todDelivered=O.filter(function(o){return (o.deliveryDate===today||o.date===today)&&o.status==='delivered';});
+  var todCADel=todDelivered.reduce(function(s,o){return s+o.total;},0);
 
-  // Ce mois
-  var monthOrds=O.filter(function(o){return (o.date||'').startsWith(thisMonth)&&o.status==='delivered';});
+  // Ce mois (toutes commandes actives)
+  var monthOrds=O.filter(function(o){return (o.date||'').startsWith(thisMonth)&&activeStatuses.indexOf(o.status)>=0;});
   var monthCA=monthOrds.reduce(function(s,o){return s+o.total;},0);
-  var monthPr=monthOrds.reduce(function(s,o){return s+calcProfit(o);},0);
+  var monthPr=monthOrds.filter(function(o){return o.status==='delivered';}).reduce(function(s,o){return s+calcProfit(o);},0);
+  // CA livré ce mois (pour tendance)
+  var monthCADel=monthOrds.filter(function(o){return o.status==='delivered';}).reduce(function(s,o){return s+o.total;},0);
 
-  // Mois précédent (pour tendance)
-  var lastOrds=O.filter(function(o){return (o.date||'').startsWith(lastMonth)&&o.status==='delivered';});
+  // Mois précédent
+  var lastOrds=O.filter(function(o){return (o.date||'').startsWith(lastMonth)&&activeStatuses.indexOf(o.status)>=0;});
   var lastCA=lastOrds.reduce(function(s,o){return s+o.total;},0);
-  var trend=lastCA>0?Math.round((monthCA-lastCA)/lastCA*100):0;
+  var trend=lastCA>0?Math.round((monthCA-lastCA)/lastCA*100):(monthCA>0?100:0);
   var trendIcon=trend>0?'↑'+trend+'%':trend<0?'↓'+Math.abs(trend)+'%':'→ stable';
   var trendColor=trend>0?'var(--grn)':trend<0?'var(--red)':'var(--tx3)';
+  // Si aucune donnée: pas de tendance
+  if(monthCA===0&&lastCA===0){trendIcon='— données insuffisantes';trendColor='var(--tx3)';}
 
   // Commandes en attente + urgentes (>48h)
   var pendOrds=O.filter(function(o){return o.status==='pending';});
@@ -4845,17 +4852,20 @@ function renderDashboard(){
   });
 
   // Stock critique
-  var critStock=PRODUCTS.filter(function(p){return (p.stock||0)<=(p.alertSeuil||p.seuilAlerte||5);});
+  var critStock=PRODUCTS.filter(function(p){return (p.stock||0)<=(p.threshold||p.alertSeuil||5);});
 
   // Crédits clients en retard
   var creditsDue=Object.keys(CREDITS||{}).filter(function(cid){
     return (CREDITS[cid].balance||0)>0;
   }).length;
 
+  // Indicateur mode si données locales seulement
+  var isOffline=!window._fbConnected;
+  
   // KPIs Dashboard
   (document.getElementById('a-kpis')||{innerHTML:''}).innerHTML=[
-    {l:"CA aujourd'hui",v:fm(todCA),s:todayOrds.length+' livr.',ac:'#C9A84C',i:'💰'},
-    {l:'Profit aujourd\'hui',v:fm(todPr),s:todCA>0?Math.round(todPr/todCA*100)+'% marge':'',ac:'#52C97A',i:'📈'},
+    {l:"CA aujourd'hui",v:fm(todCA),s:todayOrds.length+' cmd · '+fm(todCADel)+' livré',ac:'#C9A84C',i:'💰'},
+    {l:'Profit livré',v:fm(todPr),s:todCA>0?Math.round(todPr/todCA*100)+'% marge':'En cours',ac:'#52C97A',i:'📈'},
     {l:'CA ce mois',v:fm(monthCA),s:'<span style="color:'+trendColor+'">'+trendIcon+' vs mois préc.</span>',ac:'#4A9EE8',i:'📅'},
     {l:'En attente',v:pendOrds.length,s:(urgentOrds.length>0?'<span style="color:var(--red)">⚠️ '+urgentOrds.length+' urgentes</span>':'Aucune urgente'),ac:urgentOrds.length>0?'#E05252':'#C9A84C',i:'⏳'},
     {l:'Stock critique',v:critStock.length,s:critStock.length>0?'<span style="color:var(--ora)">produit(s) à réapprov.</span>':'Tout OK',ac:critStock.length>0?'#E8834A':'#52C97A',i:'📦'},
@@ -4903,12 +4913,12 @@ function renderDashboard(){
   var weekStart=new Date();weekStart.setDate(weekStart.getDate()-weekStart.getDay());
   var weekStartStr=weekStart.toISOString().split('T')[0];
   var weekOrds=O.filter(function(o){return (o.date||'')>=weekStartStr;});
-  var weekCA=weekOrds.filter(function(o){return o.status==='delivered';}).reduce(function(s,o){return s+o.total;},0);
+  var weekCA=weekOrds.filter(function(o){return activeStatuses.indexOf(o.status)>=0;}).reduce(function(s,o){return s+o.total;},0);
   var weekNew=weekOrds.filter(function(o){return o.status==='pending';}).length;
   var weekDel=weekOrds.filter(function(o){return o.status==='delivered';}).length;
   var weekEl=document.getElementById('dash-week-summary');
   if(weekEl) weekEl.innerHTML=
-    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:8px">'+
+    '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">'+
     [
       {i:'📅',l:'Commandes semaine',v:weekOrds.length,c:'var(--blu)'},
       {i:'💰',l:'CA semaine',v:fm(weekCA),c:'var(--gold)'},
@@ -13085,8 +13095,18 @@ async function loadFromCloud(){
       window.clRenderProds();
     }
   }catch(e){
-    fbShow('error','⚠️ Hors-ligne');
-    console.warn('FB load:',e.message);
+    fbShow('error','📵 Hors-ligne');
+    console.warn('FB load (hors-ligne, données localStorage utilisées):',e.message);
+    // Rendre quand même avec les données locales
+    if(window.SESSION && window.SESSION.role==='admin'){
+      if(typeof renderDashboard==='function') setTimeout(renderDashboard,100);
+      var sec=window._currentSec||'dash';
+      if(sec==='orders'&&typeof renderOrders==='function') setTimeout(function(){initOrderFilters();renderOrders();},150);
+      else if(sec==='analytics'&&typeof renderAnalytics==='function') setTimeout(renderAnalytics,150);
+      setTimeout(updateStockAlertBadge,200);
+    } else if(window.SESSION && window.clRenderProds){
+      window.clRenderProds();
+    }
   }
 }
 
