@@ -2519,8 +2519,8 @@ window.addEventListener('unhandledrejection',function(ev){
       </div>
       <div id="login-hint" style="text-align:center;font-size:11px;color:var(--tx3);margin-bottom:14px;padding:8px 10px;background:rgba(201,168,76,0.05);border-radius:8px;border:1px solid var(--bo)">
         Connectez-vous avec votre compte <strong id="login-hint-role" style="color:var(--gold)">client</strong>
-        <div id="demo-hint-client" style="margin-top:5px;font-size:10px;color:var(--tx3)">Ex : <span style="color:var(--tx2)">client1</span> / <span style="color:var(--tx2)">pass123</span></div>
-        <div id="demo-hint-admin" style="display:none;margin-top:5px;font-size:10px;color:var(--tx3)">Ex : <span style="color:var(--tx2)">admin</span> / <span style="color:var(--tx2)">alitos2024</span></div>
+        
+        
       </div>
 
       <div class="fg"><label>Identifiant ou Email</label><input type="text" id="lu" placeholder="Identifiant ou email" autocomplete="username"></div>
@@ -2754,6 +2754,7 @@ window.addEventListener('unhandledrejection',function(ev){
         <option value="stock-d">📦 Stock ↓</option>
       </select>
       <button class="btn btn-g btn-sm" onclick="goSec('appro',document.getElementById('ni-appro'));switchApproTab('new')" title="Ajouter dans Approvisionnement">📦 Nouveau produit →</button>
+      <button class="btn btn-gn btn-sm" onclick="shareCatalogueWhatsApp()" style="background:#25D366;border-color:#25D366">📱 Catalogue WA</button>
      </div>
      <div id="prod-grid"></div>
     </div>
@@ -3082,6 +3083,15 @@ window.addEventListener('unhandledrejection',function(ev){
       <select id="clf-city" onchange="renderClients()"><option value="">Toutes villes</option></select>
       <select id="clf-gps" onchange="renderClients()"><option value="">GPS : tous</option><option value="yes">Avec GPS</option><option value="no">Sans GPS</option></select>
       <select id="clf-sector" onchange="renderClients()" style="min-width:120px"><option value="">Tous secteurs</option></select>
+      <select id="clf-loyalty" onchange="renderClients()" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px">
+        <option value="">Tous niveaux</option>
+        <option value="starter">🌱 Débutant</option>
+        <option value="bronze">🥉 Bronze</option>
+        <option value="silver">🥈 Argent</option>
+        <option value="gold">🥇 Or</option>
+        <option value="platinum">💎 Platine</option>
+      </select>
+      <input type="number" id="clf-ca-min" placeholder="CA min" oninput="renderClients()" style="width:80px;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px">
       <button class="btn btn-o btn-sm" onclick="exportClientsCSV()" title="Exporter liste clients en CSV">📥 CSV</button>
       <button class="btn btn-g" onclick="openMd('add-cl')">+ Nouveau client</button>
      </div>
@@ -3710,6 +3720,17 @@ window.addEventListener('unhandledrejection',function(ev){
    </div>
   </div>
 
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+   <div class="fg">
+    <label>Promotion % <span style="color:var(--ora);font-size:10px">(optionnel)</span></label>
+    <input type="number" id="np-promo" placeholder="ex: 15" min="0" max="99" inputmode="numeric">
+   </div>
+   <div class="fg">
+    <label>Description <span style="color:var(--tx3);font-size:10px">(optionnel)</span></label>
+    <input type="text" id="np-desc" placeholder="Description courte...">
+   </div>
+  </div>
+
   <div class="fg">
    <label>Fournisseur initial <span style="color:var(--red)">★</span></label>
    <select id="np-sup">
@@ -3790,6 +3811,10 @@ window.addEventListener('unhandledrejection',function(ev){
   <div class="fr2">
    <div class="fg"><label>Stock <span style="color:var(--red)">★</span></label><input type="number" id="ep-stock" min="0"></div>
    <div class="fg"><label>Seuil alerte</label><input type="number" id="ep-thr" min="0"></div>
+  </div>
+  <div class="fr2" style="margin-top:8px">
+   <div class="fg"><label>Promotion % <span style="color:var(--ora);font-size:10px">(optionnel)</span></label><input type="number" id="ep-promo" placeholder="ex: 15" min="0" max="99" inputmode="numeric"></div>
+   <div class="fg"><label>Description <span style="color:var(--tx3);font-size:10px">(optionnel)</span></label><input type="text" id="ep-desc" placeholder="Description courte..."></div>
   </div>
   <div class="fg">
    <label>Fournisseur principal <span style="color:var(--red)">★</span></label>
@@ -4320,6 +4345,9 @@ try{var _s=localStorage.getItem('al_sup');if(_s){var v=JSON.parse(_s);if(v&&v.le
 var PURCHASES=[]; // Historique achats fournisseurs
 try{var _pur=localStorage.getItem('al_pur');if(_pur){var v=JSON.parse(_pur);if(v&&v.length)PURCHASES=v;}}catch(e){}
 
+var PURCHASES=[];
+try{var _pur=localStorage.getItem('al_pur');if(_pur){var _pv=JSON.parse(_pur);if(_pv&&_pv.length)PURCHASES=_pv;}}catch(e){}
+
 var CREDITS={}; // clientId -> {limit, balance, transactions:[]}
 try{var _cr=localStorage.getItem('al_credits');if(_cr)CREDITS=JSON.parse(_cr);}catch(e){}
 
@@ -4418,9 +4446,10 @@ function swTab(t){
   if(tabA)tabA.className='tab'+(t==='a'?' on':'');
   document.getElementById('lu').value='';document.getElementById('lp').value='';
   document.getElementById('lerr').style.display='none';
-  var hint=document.getElementById('login-hint-role');
-  if(hint)hint.textContent=(t==='a'?'administrateur':'client');
-  var lu=document.getElementById('lu');if(lu)lu.placeholder=(t==='a'?'Identifiant admin':'Votre identifiant');
+  var hintRole=document.getElementById('login-hint-role');
+  if(hintRole) hintRole.textContent=(t==='a'?'admin':'client');
+  var lu=document.getElementById('lu');
+  if(lu) lu.placeholder=(t==='a'?'Identifiant administrateur':'Votre identifiant ou email');
 }
 
 function doLogin(){
@@ -5968,17 +5997,26 @@ function renderProds(){
     var fcTxt=fc?(fc.days===0?'Épuisé':fc.days===999?'Lent':fc.days+'j'):'';
     var imgSrc=p.image||p.img||'';
 
+    var promo=p.promo||p.discount||0;
+    var promoPrice=promo>0?Math.round(sp*(1-promo/100)):0;
     var html='<div style="background:var(--dk3);border:1px solid var(--bo);border-radius:14px;overflow:hidden;transition:.2s">';
     html+='<div style="position:relative;aspect-ratio:1;overflow:hidden;background:var(--dk4)">';
     if(imgSrc) html+='<img src="'+imgSrc+'" onerror="this.style.display=\'none\'" style="width:100%;height:100%;object-fit:cover;display:block">';
     if(qty===0) html+='<div style="position:absolute;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center"><span style="color:var(--red);font-weight:700;font-size:11px;letter-spacing:.5px">ÉPUISÉ</span></div>';
+    if(promo>0) html+='<div style="position:absolute;top:8px;left:8px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">-'+promo+'%</div>';
     if(p.barcode) html+='<div style="position:absolute;bottom:4px;right:4px;background:rgba(0,0,0,0.7);color:#aaa;font-size:9px;padding:2px 5px;border-radius:4px;font-family:monospace">'+p.barcode+'</div>';
+    if(promo>0) html+='<div style="position:absolute;top:8px;left:8px;background:var(--red);color:#fff;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px">-'+promo+'%</div>';
     html+='</div>';
     html+='<div style="padding:10px 12px">';
     html+='<div style="font-size:12px;font-weight:700;margin-bottom:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+p.name+'</div>';
-    html+='<div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">'+p.category+'</div>';
+    html+='<div style="font-size:10px;color:var(--tx3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:2px">'+p.category+'</div>';
+    if(p.description) html+='<div style="font-size:10px;color:var(--tx3);margin-bottom:4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3">'+p.description+'</div>';
+    var promo=p.promo||p.discount||0;
+    var promoPrice=promo>0?Math.round(sp*(1-promo/100)):0;
     html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
-    html+='<div><div style="font-size:14px;font-weight:700;color:var(--gold)">'+fm(sp)+'</div>';
+    html+='<div>';
+    if(promo>0){html+='<div style="font-size:14px;font-weight:700;color:var(--red)">'+fm(promoPrice)+'</div><div style="font-size:10px;color:var(--tx3);text-decoration:line-through">'+fm(sp)+'</div>';}
+    else{html+='<div style="font-size:14px;font-weight:700;color:var(--gold)">'+fm(sp)+'</div>';}
     if(bp) html+='<div style="font-size:10px;color:var(--tx3)">Achat: '+fm(bp)+'</div>';
     html+='</div>';
     if(marge>0) html+='<div style="background:rgba(0,0,0,0.3);border-radius:20px;padding:2px 7px;font-size:11px;font-weight:700;color:'+margeColor+'">'+marge+'%</div>';
@@ -6024,7 +6062,13 @@ function openEditProd(id){
         return '<option value="'+s.id+'"'+(s.id===currentSupId?' selected':'')+'>'+s.name+'</option>';
       }).join('');
   }
-  calcMargin('ep');openMd('edit-prod');
+  calcMargin('ep');
+  // Charger promo et description
+  var epPromo=document.getElementById('ep-promo');
+  if(epPromo) epPromo.value=p.promo||p.discount||0;
+  var epDesc=document.getElementById('ep-desc');
+  if(epDesc) epDesc.value=p.description||'';
+  openMd('edit-prod');
 }
 function updateProduct(){
   var id=document.getElementById('ep-id').value;
@@ -6050,10 +6094,13 @@ function updateProduct(){
   PRODUCTS[i].category=finalCat;
   PRODUCTS[i].unit=document.getElementById('ep-unit').value;
   PRODUCTS[i].buyPrice=buy;
+  PRODUCTS[i].sellPrice=sell;
   PRODUCTS[i].price=sell;
   PRODUCTS[i].stock=stock;
   PRODUCTS[i].threshold=+(document.getElementById('ep-thr').value)||10;
   PRODUCTS[i].image=document.getElementById('ep-img').value;
+  PRODUCTS[i].promo=+(document.getElementById('ep-promo')?document.getElementById('ep-promo').value:0)||0;
+  PRODUCTS[i].description=(document.getElementById('ep-desc')?document.getElementById('ep-desc').value.trim():'');
   // Mettre à jour fournisseur principal si changement
   if(supId && PRODUCTS[i].purchases && PRODUCTS[i].purchases.length>0){
     if(PRODUCTS[i].purchases[0].supplierId !== supId){
@@ -6476,6 +6523,8 @@ function exportClientsCSV(){
 function renderClients(){
   var q=(document.getElementById('clf-q').value||'').toLowerCase();
   var reg=document.getElementById('clf-region').value;
+  var caMin=parseFloat((document.getElementById('clf-ca-min')||{value:''}).value)||0;
+  var loyaltyFilter=(document.getElementById('clf-loyalty')||{value:''}).value||'';
   var city=document.getElementById('clf-city').value;
   var gps=document.getElementById('clf-gps').value;
   var sectorF=document.getElementById('clf-sector')?document.getElementById('clf-sector').value:'';
@@ -6485,6 +6534,7 @@ function renderClients(){
   if(city)F=F.filter(function(c){return c.city===city;});
   if(gps==='yes')F=F.filter(function(c){return c.lat&&c.lng;});
   else if(gps==='no')F=F.filter(function(c){return !c.lat||!c.lng;});
+  if(caMin>0||loyaltyFilter){F=F.filter(function(cl){var _ca=ORDERS.filter(function(o){return o.clientId===cl.id&&o.status==='delivered';}).reduce(function(s,o){return s+o.total;},0);if(caMin>0&&_ca<caMin) return false;if(loyaltyFilter&&typeof getLoyaltyLevel==='function'&&getLoyaltyLevel(_ca).key!==loyaltyFilter) return false;return true;});}
   if(typeof sectorF!=='undefined'&&sectorF)F=F.filter(function(c){return c.sector===sectorF;});
   // Afficher stats
   var statsEl=document.getElementById('clf-stats');
@@ -6539,6 +6589,8 @@ function renderClients(){
       '<div class="cl-acts">'+
         '<button class="btn btn-b btn-sm" onclick="openEditCl(\''+c.id+'\')">✏️</button>'+
         '<button class="btn btn-p btn-sm" onclick="openMd(\'set-credit\');document.getElementById(\'sc-cid\').value=\''+c.id+'\';renderCreditInfo(\''+c.id+'\')" title="Crédit client">💳</button>'+
+        '<button class="btn btn-gn btn-sm" onclick="openAddCouponForm(\''+c.id+'\');" title="Coupon" style="padding:5px 8px">🎟️</button>'+
+        '<button class="btn btn-p btn-sm" onclick="openDevisModal(\''+c.id+'\');" title="Devis" style="padding:5px 8px">📋</button>'+
         (c.phone?'<a href="https://wa.me/'+(c.phone.replace(/[^0-9]/g,'').replace(/^0/,'212'))+'" target="_blank" class="btn btn-gn btn-sm" style="text-decoration:none" title="WhatsApp">💬</a>':'')+
         '<button class="btn btn-r btn-sm" onclick="confirmDel(\'cl\',\''+c.id+'\',\''+c.name.replace(/'/g,"\\'").replace(/"/g,'&quot;')+'\')">🗑️</button>'+
       '</div></div></div>';
@@ -10851,7 +10903,11 @@ function clRenderProds(){
     var bdg=oos?'<div class="rup-badge">Rupture</div>':low?'<div class="low-badge">'+p.stock+' restants</div>':'';
     var newBdg=isNew?'<div style="position:absolute;top:6px;right:6px;background:var(--blu);color:#fff;padding:2px 8px;border-radius:10px;font-size:9px;font-weight:700;z-index:2;letter-spacing:.5px">NOUVEAU</div>':'';
     // Stars (static aesthetic)
-    var stars='<div style="display:flex;align-items:center;gap:3px;margin-bottom:5px"><span style="color:#F5A623;font-size:10px">★★★★</span><span style="color:rgba(245,166,35,.4);font-size:10px">★</span></div>';
+    var rat2=typeof getProductRating==='function'?getProductRating(p.id):{avg:0,count:0};
+    var myR2=typeof getMyRating==='function'?getMyRating(p.id):0;
+    var starsH='';
+    for(var _si=1;_si<=5;_si++){starsH+='<span data-pid="'+p.id+'" data-stars="'+_si+'" class="cl-star-btn" style="cursor:pointer;font-size:13px;color:'+(_si<=myR2?'#FFD700':'rgba(255,255,255,0.2)')+'">&#9733;</span>';}
+    var stars='<div style="display:flex;align-items:center;gap:1px;margin-bottom:4px">'+starsH+(rat2.count?'<span style="font-size:9px;color:var(--tx3);margin-left:3px">'+rat2.avg+'('+rat2.count+')</span>':'')+'</div>';
     // Add to cart button
     var act;
     if(oos) act='<button class="add-btn" disabled style="cursor:not-allowed;opacity:.6">Épuisé</button>';
@@ -10872,7 +10928,7 @@ function clRenderProds(){
         '<div class="pcat" style="margin-bottom:3px">'+p.category+'</div>'+
         '<div class="pn" style="margin-bottom:4px">'+p.name+'</div>'+
         stars+
-        '<div class="pp" style="margin-bottom:6px">'+fm(p.price)+'</div>'+
+        (function(){var _d=p.promo||p.discount||0;var _dp=_d>0?Math.round((p.sellPrice||p.price)*(1-_d/100)):(p.sellPrice||p.price);if(_d>0)return '<div class="pp" style="margin-bottom:6px"><span style="color:var(--red);font-weight:700">'+fm(_dp)+'</span> <span style="font-size:9px;color:var(--tx3);text-decoration:line-through">'+fm(p.sellPrice||p.price)+'</span> <span style="background:var(--red);color:#fff;font-size:8px;padding:1px 4px;border-radius:8px">-'+_d+'%</span></div>';return '<div class="pp" style="margin-bottom:6px">'+fm(_dp)+'</div>';})()+
         '<button onclick="event.stopPropagation();shareProductWhatsApp(\'' + p.id + '\')" '+
         'style="width:100%;background:#25D366;color:#fff;border:none;border-radius:7px;padding:5px 8px;font-size:11px;cursor:pointer;font-weight:600;margin-bottom:6px;display:flex;align-items:center;justify-content:center;gap:5px">'+
         '\uD83D\uDCF1 Partager</button>'+
@@ -11299,7 +11355,24 @@ clRenderProds = function(){
           '>'+
         '</div>'+
         favBtnHtml+
-      '<div class="pb"><div class="pn">'+p.name+'</div><div class="pcat">'+p.category+'</div><div class="pp">'+fm(p.price)+'</div>'+act+'</div></div>';
+      (function(){
+    var _d2=p.promo||p.discount||0;
+    var _dp2=_d2>0?Math.round((p.sellPrice||p.price)*(1-_d2/100)):(p.sellPrice||p.price);
+    var _rat2=typeof getProductRating==='function'?getProductRating(p.id):{avg:0,count:0};
+    var _myR2=typeof getMyRating==='function'?getMyRating(p.id):0;
+    var _starsH='';
+    for(var _si2=1;_si2<=5;_si2++){_starsH+='<span data-pid="'+p.id+'" data-stars="'+_si2+'" class="cl-star-btn" style="cursor:pointer;font-size:13px;color:'+(_si2<=_myR2?'#FFD700':'rgba(255,255,255,0.2)')+'">&#9733;</span>';}
+    var _starsDiv='<div style="display:flex;align-items:center;gap:1px;margin-bottom:3px">'+_starsH+(_rat2.count?'<span style="font-size:9px;color:var(--tx3);margin-left:3px">'+_rat2.avg+'('+_rat2.count+')</span>':'')+'</div>';
+    var _priceH=_d2>0?'<span style="color:var(--red);font-weight:700">'+fm(_dp2)+'</span> <span style="font-size:9px;color:var(--tx3);text-decoration:line-through">'+fm(p.sellPrice||p.price)+'</span> <span style="background:var(--red);color:#fff;font-size:8px;padding:1px 4px;border-radius:8px">-'+_d2+'%</span>':fm(_dp2);
+    return '<div class="pb">'+
+    '<div class="pn">'+p.name+'</div>'+
+    '<div class="pcat">'+p.category+'</div>'+
+    (p.description?'<div style="font-size:10px;color:var(--tx3);margin:2px 0 4px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3">'+p.description+'</div>':'')+
+    _starsDiv+
+    '<div class="pp">'+_priceH+'</div>'+
+    act+
+  '</div></div>';
+  })();
   }).join('');
 };
 
@@ -15074,5 +15147,317 @@ function printBarcodeLabels(){
     if(!document.hidden){_t=0;setTimeout(_check,200);}
   });
 })();
+
+
+// ═══════════ DEVIS / PROFORMA ═══════════
+function generateDevis(clientId,items,validDays){
+  validDays=validDays||30;
+  var cl=getC(clientId);
+  var co=COMPANY;
+  var num='DEV-'+Date.now().toString().slice(-6);
+  var dateStr=new Date().toISOString().split('T')[0];
+  var validUntil=new Date(Date.now()+validDays*864e5).toISOString().split('T')[0];
+  var total=items.reduce(function(s,it){return s+(it.price*it.qty);},0);
+
+  // Construire le contenu du devis en HTML natif (sans iframe)
+  var rows=items.map(function(it,i){
+    return '<tr style="background:'+(i%2===0?'#f9f9f9':'#fff')+';border-bottom:1px solid #eee">'+
+      '<td style="padding:10px 12px"><strong>'+it.name+'</strong>'+(it.description?'<br><span style="font-size:11px;color:#666">'+it.description+'</span>':'')+'</td>'+
+      '<td style="padding:10px 12px;text-align:center">'+it.qty+'</td>'+
+      '<td style="padding:10px 12px;text-align:right">'+fm(it.price)+' MAD</td>'+
+      '<td style="padding:10px 12px;text-align:right"><strong>'+fm(it.price*it.qty)+' MAD</strong></td>'+
+    '</tr>';
+  }).join('');
+
+  // Supprimer ancien devis si existe
+  var old=document.getElementById('md-devis-preview');
+  if(old) document.body.removeChild(old);
+
+  // Créer le modal plein écran
+  var overlay=document.createElement('div');
+  overlay.id='md-devis-preview';
+  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:#f0f0f0;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:Arial,sans-serif';
+
+  // Barre d'actions (sticky)
+  var topBar=document.createElement('div');
+  topBar.style.cssText='position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#C9A84C;color:#000;box-shadow:0 2px 8px rgba(0,0,0,0.2)';
+  topBar.innerHTML=
+    '<div>'+
+      '<div style="font-size:15px;font-weight:700">📋 '+num+'</div>'+
+      '<div style="font-size:10px;opacity:.7">Faites une capture d\'écran pour partager</div>'+
+    '</div>'+
+    '<div style="display:flex;gap:8px">'+
+      '<button id="_devis_share" style="background:#25D366;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-weight:600">📱 WA</button>'+
+      '<button id="_devis_close" style="background:rgba(0,0,0,0.25);border:none;border-radius:8px;padding:8px 12px;font-size:16px;cursor:pointer;color:#000">✕</button>'+
+    '</div>';
+  overlay.appendChild(topBar);
+
+  // Contenu du devis
+  var content=document.createElement('div');
+  content.id='devis-print-area';
+  content.style.cssText='max-width:700px;margin:16px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.1)';
+  content.innerHTML=
+    // En-tête
+    '<div style="padding:24px;background:linear-gradient(135deg,#C9A84C,#e8c670);color:#000">'+
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
+        '<div>'+
+          '<div style="font-size:22px;font-weight:700;letter-spacing:2px">'+co.name+'</div>'+
+          '<div style="font-size:11px;margin-top:4px;opacity:.8;line-height:1.6">'+
+            (co.address?co.address+'<br>':'')+
+            (co.phone?'📞 '+co.phone+'<br>':'')+
+            (co.email?co.email+'<br>':'')+
+            (co.ice?'ICE: '+co.ice:'')+'</div>'+
+        '</div>'+
+        '<div style="text-align:right">'+
+          '<div style="font-size:28px;font-weight:700">'+num+'</div>'+
+          '<div style="font-size:11px;opacity:.8">Date: '+dateStr+'</div>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    // Titre
+    '<div style="text-align:center;padding:16px;font-size:18px;font-weight:700;letter-spacing:3px;color:#C9A84C;border-bottom:2px solid #C9A84C;text-transform:uppercase">DEVIS / PROFORMA</div>'+
+    // Info client + validité
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #eee">'+
+      '<div style="padding:16px;border-right:1px solid #eee">'+
+        '<div style="font-size:10px;text-transform:uppercase;color:#999;letter-spacing:1px;margin-bottom:6px">CLIENT</div>'+
+        '<div style="font-size:14px;font-weight:700">'+cl.name+'</div>'+
+        (cl.phone?'<div style="font-size:12px;color:#666;margin-top:2px">📞 '+cl.phone+'</div>':'')+
+        (cl.city?'<div style="font-size:12px;color:#666">📍 '+cl.city+(cl.region?', '+cl.region:'')+'</div>':'')+
+      '</div>'+
+      '<div style="padding:16px">'+
+        '<div style="font-size:10px;text-transform:uppercase;color:#999;letter-spacing:1px;margin-bottom:6px">VALIDITÉ</div>'+
+        '<div style="font-size:12px;color:#666">Valable jusqu\'au</div>'+
+        '<div style="font-size:14px;font-weight:700;color:#C9A84C">'+validUntil+'</div>'+
+        '<div style="font-size:11px;color:#999">('+validDays+' jours)</div>'+
+      '</div>'+
+    '</div>'+
+    // Tableau
+    '<div style="overflow-x:auto">'+
+    '<table style="width:100%;border-collapse:collapse">'+
+      '<thead><tr style="background:#C9A84C">'+
+        '<th style="padding:10px 12px;text-align:left;color:#000;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Article</th>'+
+        '<th style="padding:10px 12px;text-align:center;color:#000;font-size:11px;text-transform:uppercase">Qté</th>'+
+        '<th style="padding:10px 12px;text-align:right;color:#000;font-size:11px;text-transform:uppercase">Prix</th>'+
+        '<th style="padding:10px 12px;text-align:right;color:#000;font-size:11px;text-transform:uppercase">Total</th>'+
+      '</tr></thead>'+
+      '<tbody>'+rows+'</tbody>'+
+    '</table></div>'+
+    // Total
+    '<div style="padding:16px;text-align:right;background:#f9f9f9;border-top:2px solid #C9A84C">'+
+      '<span style="font-size:20px;font-weight:700;color:#C9A84C">Total TTC: '+fm(total)+' MAD</span>'+
+    '</div>'+
+    // Footer
+    '<div style="padding:14px;text-align:center;font-size:10px;color:#999;border-top:1px solid #eee">'+
+      co.name+' · '+(co.address||'')+' · '+(co.phone||'')+'<br>Ce document est un devis, non une facture.'+
+    '</div>';
+  overlay.appendChild(content);
+  document.body.appendChild(overlay);
+
+  // Événements boutons
+  document.getElementById('_devis_close').onclick=function(){
+    var el=document.getElementById('md-devis-preview');
+    if(el) document.body.removeChild(el);
+  };
+  document.getElementById('_devis_share').onclick=function(){
+    var msg='📋 *Devis '+num+'*\n';
+    msg+='Client: *'+cl.name+'*\n';
+    msg+='Date: '+dateStr+' | Valide jusqu\'au: '+validUntil+'\n\n';
+    items.forEach(function(it){
+      msg+='▪️ '+it.name+' × '+it.qty+' = *'+fm(it.price*it.qty)+' MAD*\n';
+    });
+    msg+='\n💰 *Total: '+fm(total)+' MAD*\n';
+    msg+='━━━━━━━━━━━━━━━━━━\n📞 '+co.phone;
+    window.open('https://wa.me/'+cl.phone.replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');
+  };
+
+  toast('✅ Devis '+num+' généré');
+}
+
+function openDevisModal(clientId){
+  var cl=getC(clientId);
+  window._dvCid=clientId;
+  var el=document.getElementById('md-cpn-form-content');
+  if(!el) return;
+  el.innerHTML=
+    '<h3 style="font-size:16px;font-weight:700;margin-bottom:8px">☕ Devis — '+cl.name+'</h3>'+
+    '<div id="dv-ls" style="margin-bottom:8px"></div>'+
+    '<button type="button" onclick="dvLigne()" style="width:100%;padding:9px;background:var(--dk4);border:1px dashed rgba(201,168,76,0.4);border-radius:10px;color:var(--tx3);font-size:13px;cursor:pointer;margin-bottom:10px">+ Article</button>'+
+    '<div style="display:flex;gap:8px;margin-bottom:12px">'+
+      '<div style="flex:1"><div style="font-size:11px;color:var(--tx3);margin-bottom:3px">Validite (jours)</div>'+
+      '<input id="dv-j" type="number" value="30" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px;color:var(--tx);font-size:13px;box-sizing:border-box"></div>'+
+      '<div style="flex:1"><div style="font-size:11px;color:var(--tx3);margin-bottom:3px">Remise %</div>'+
+      '<input id="dv-r" type="number" value="0" min="0" max="99" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px;color:var(--tx);font-size:13px;box-sizing:border-box"></div>'+
+    '</div>'+
+    '<button type="button" onclick="dvGen()" style="width:100%;padding:13px;background:linear-gradient(135deg,var(--gold),#e8c670);color:#000;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Generer le devis</button>';
+  openMd('cpn-form');
+  dvLigne();
+}
+function dvLigne(){
+  var c2=document.getElementById('dv-ls');
+  if(!c2) return;
+  var opts='<option value="">Selectionner produit...</option>'+PRODUCTS.map(function(p){return '<option value="'+p.id+'">'+p.name+'</option>';}).join('');
+  var d=document.createElement('div');
+  d.style.cssText='display:grid;grid-template-columns:2fr 50px 70px 30px;gap:4px;margin-bottom:6px';
+  d.innerHTML=
+    '<select onchange="dvP(this)" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px">'+opts+'</select>'+
+    '<input type="number" value="1" min="1" class="dq" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px;text-align:center">'+
+    '<input type="number" value="0" class="dp" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px">'+
+    '<button type="button" onclick="this.parentNode.remove()" style="background:rgba(224,82,82,0.15);border:1px solid var(--red);border-radius:8px;color:var(--red);cursor:pointer;font-size:13px">X</button>';
+  c2.appendChild(d);
+}
+function dvP(sel){
+  var p=PRODUCTS.find(function(x){return x.id===sel.value;});
+  if(p){var r=sel.parentNode;var px=r.querySelector('.dp');if(px)px.value=p.sellPrice||p.price||0;}
+}
+function dvGen(){
+  var items=[];
+  document.querySelectorAll('#dv-ls>div').forEach(function(r){
+    var s=r.querySelector('select');
+    var q=r.querySelector('.dq');
+    var p=r.querySelector('.dp');
+    if(s&&s.value&&q&&p&&parseFloat(p.value)>0){
+      var prod=PRODUCTS.find(function(x){return x.id===s.value;});
+      items.push({name:prod?prod.name:s.value,qty:parseInt(q.value)||1,price:parseFloat(p.value)||0,description:prod?prod.description||'':''});
+    }
+  });
+  if(!items.length){toast('Ajoutez au moins un article',true);return;}
+  var j=parseInt((document.getElementById('dv-j')||{value:30}).value)||30;
+  var rem=parseFloat((document.getElementById('dv-r')||{value:0}).value)||0;
+  if(rem>0) items=items.map(function(it){
+    return {name:it.name,qty:it.qty,price:Math.round(it.price*(1-rem/100)),description:it.description};
+  });
+  closeAllMd();
+  generateDevis(window._dvCid,items,j);
+}
+window.dvLigne=dvLigne;
+window.dvP=dvP;
+window.dvGen=dvGen;
+
+function addDevisItem(){
+  if(!window._devisItems) window._devisItems=[];
+  var idx=window._devisItems.length;
+  window._devisItems.push({});
+  var container=document.getElementById('devis-items');
+  if(!container) return;
+  var div=document.createElement('div');
+  div.id='drow-'+idx;
+  div.style.cssText='display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:5px;margin-bottom:6px;align-items:center';
+  div.innerHTML='<select onchange="fillDProd('+idx+',this.value)" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:11px">'+
+    '<option value="">Choisir produit...</option>'+
+    PRODUCTS.map(function(p){return'<option value="'+p.id+'">'+p.name+'</option>';}).join('')+'</select>'+
+    '<input id="dqi-'+idx+'" type="number" value="1" min="1" placeholder="Qté" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:11px;width:100%">'+
+    '<input id="dpi-'+idx+'" type="number" value="0" placeholder="Prix" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:11px;width:100%">'+
+    '<button onclick="document.getElementById(\'drow-'+idx+'\').remove()" style="background:rgba(224,82,82,0.2);border:1px solid var(--red);border-radius:8px;padding:8px;color:var(--red);cursor:pointer;white-space:nowrap">✕</button>';
+  container.appendChild(div);
+}
+
+function fillDProd(idx,productId){
+  var p=PRODUCTS.find(function(x){return x.id===productId;});
+  if(!p) return;
+  var el=document.getElementById('dpi-'+idx);
+  if(el) el.value=p.sellPrice||p.price||0;
+  // Stocker la description pour le devis
+  var row=document.getElementById('drow-'+idx);
+  if(row) row.setAttribute('data-desc',p.description||'');
+}
+
+function submitDevis(clientId){
+  var items=[];
+  document.querySelectorAll('[id^="drow-"]').forEach(function(row){
+    var sel=row.querySelector('select');
+    var qty=row.querySelector('[id^="dqi-"]');
+    var price=row.querySelector('[id^="dpi-"]');
+    if(sel&&sel.value&&qty&&price&&parseFloat(price.value)>0){
+      var p=PRODUCTS.find(function(x){return x.id===sel.value;});
+      items.push({
+        name:p?p.name:sel.value,
+        qty:parseInt(qty.value)||1,
+        price:parseFloat(price.value)||0,
+        description:p?p.description||'':''
+      });
+    }
+  });
+  if(!items.length){toast('Ajoutez au moins un article avec un prix',true);return;}
+  var days=parseInt((document.getElementById('devis-days')||{value:30}).value)||30;
+  closeAllMd();
+  generateDevis(clientId,items,days);
+}
+window.generateDevis=generateDevis;
+window.openDevisModal=openDevisModal;
+window.addDevisItem=addDevisItem;
+window.fillDProd=fillDProd;
+window.submitDevis=submitDevis;
+
+// ═══════════ CATALOGUE WHATSAPP ═══════════
+function shareCatalogueWhatsApp(cat){
+  var prods=PRODUCTS.filter(function(p){return (!cat||p.category===cat)&&(p.stock||0)>0;});
+  if(!prods.length){toast('Aucun produit disponible',true);return;}
+  var co=COMPANY;
+  var msg='🏪 *'+co.name+'*\n';
+  msg+='━━━━━━━━━━━━━━━━━━━━\n';
+  if(cat) msg+='📦 *'+cat+'*\n\n';
+  else msg+='\n';
+  prods.slice(0,10).forEach(function(p){
+    var disc=p.promo||p.discount||0;
+    var price=disc>0?Math.round((p.sellPrice||p.price)*(1-disc/100)):p.sellPrice||p.price;
+    msg+='▪️ *'+p.name+'*\n';
+    if(disc>0) msg+='  💥 PROMO -'+disc+'%: *'+price.toLocaleString()+' MAD*\n';
+    else msg+='  💰 '+price.toLocaleString()+' MAD\n';
+    msg+='  📦 Stock: '+p.stock+' u.\n\n';
+  });
+  msg+='━━━━━━━━━━━━━━━━━━━━\n';
+  msg+='📞 '+co.phone+'\n';
+  msg+='✅ Livraison disponible';
+  window.open('https://wa.me/?text='+encodeURIComponent(msg),'_blank');
+  toast('✅ Catalogue envoyé sur WhatsApp');
+}
+window.shareCatalogueWhatsApp=shareCatalogueWhatsApp;
+
+// ═══════════ NOTATION PRODUITS ★ ═══════════
+var _ratingsCache={};
+function _loadRatings(){try{return JSON.parse(localStorage.getItem('al_ratings')||'{}');}catch(e){return {};}}
+function _saveRatings(obj){try{localStorage.setItem('al_ratings',JSON.stringify(obj));}catch(e){}}
+function rateProduct(productId,stars){
+  try{
+    if(!SESSION||SESSION.role!=='client') return;
+    var ratings=_loadRatings();
+    if(!ratings[productId]) ratings[productId]=[];
+    ratings[productId]=ratings[productId].filter(function(r){return r.clientId!==SESSION.id;});
+    ratings[productId].push({clientId:SESSION.id,stars:stars,date:new Date().toISOString().split('T')[0]});
+    _saveRatings(ratings);
+    toast('⭐ Merci pour votre avis !');
+    clRenderProds();
+  }catch(e){}
+}
+function getProductRating(productId){
+  try{
+    var ratings=_loadRatings();
+    var r=ratings[productId]||[];
+    if(!r.length) return {avg:0,count:0};
+    return {avg:Math.round(r.reduce(function(s,x){return s+x.stars;},0)/r.length*10)/10,count:r.length};
+  }catch(e){return {avg:0,count:0};}
+}
+function getMyRating(productId){
+  try{
+    if(!SESSION) return 0;
+    var ratings=_loadRatings();
+    var r=(ratings[productId]||[]).find(function(x){return x.clientId===SESSION.id;});
+    return r?r.stars:0;
+  }catch(e){return 0;}
+}
+window.rateProduct=rateProduct;
+window.getProductRating=getProductRating;
+window.getMyRating=getMyRating;
+
+// Délégation événement étoiles (évite DOMException inline onclick)
+document.addEventListener('click',function(e){
+  var span=e.target.closest?e.target.closest('.cl-star-btn'):null;
+  if(!span) return;
+  e.stopPropagation();
+  var pid=span.getAttribute('data-pid');
+  var stars=parseInt(span.getAttribute('data-stars'));
+  if(pid&&stars&&typeof rateProduct==='function') rateProduct(pid,stars);
+});
+
 </script>
 </html>
