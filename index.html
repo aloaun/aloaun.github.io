@@ -15176,7 +15176,7 @@ function generateDevis(clientId,items,validDays){
   // Créer le modal plein écran
   var overlay=document.createElement('div');
   overlay.id='md-devis-preview';
-  overlay.style.cssText='position:fixed;inset:0;z-index:99999;background:#f0f0f0;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:Arial,sans-serif';
+  overlay.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#f0f0f0;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:Arial,sans-serif';
 
   // Barre d'actions (sticky)
   var topBar=document.createElement('div');
@@ -15251,12 +15251,18 @@ function generateDevis(clientId,items,validDays){
       co.name+' · '+(co.address||'')+' · '+(co.phone||'')+'<br>Ce document est un devis, non une facture.'+
     '</div>';
   overlay.appendChild(content);
+  // Cacher mo-bg pour qu'il ne couvre pas l'overlay
+  var _moBg=document.getElementById('mo-bg');
+  if(_moBg){_moBg.className='mo';_moBg.style.display='none';}
   document.body.appendChild(overlay);
 
+  // Réafficher mo-bg quand l'overlay se ferme
   // Événements boutons
   document.getElementById('_devis_close').onclick=function(){
     var el=document.getElementById('md-devis-preview');
     if(el) document.body.removeChild(el);
+    var _mb=document.getElementById('mo-bg');
+    if(_mb) _mb.style.display='';
   };
   document.getElementById('_devis_share').onclick=function(){
     var msg='📋 *Devis '+num+'*\n';
@@ -15279,7 +15285,7 @@ function openDevisModal(clientId){
   var el=document.getElementById('md-cpn-form-content');
   if(!el) return;
   el.innerHTML=
-    '<h3 style="font-size:16px;font-weight:700;margin-bottom:8px">☕ Devis — '+cl.name+'</h3>'+
+    '<h3 style="font-size:16px;font-weight:700;margin-bottom:8px">Devis - '+cl.name+'</h3>'+
     '<div id="dv-ls" style="margin-bottom:8px"></div>'+
     '<button type="button" onclick="dvLigne()" style="width:100%;padding:9px;background:var(--dk4);border:1px dashed rgba(201,168,76,0.4);border-radius:10px;color:var(--tx3);font-size:13px;cursor:pointer;margin-bottom:10px">+ Article</button>'+
     '<div style="display:flex;gap:8px;margin-bottom:12px">'+
@@ -15312,9 +15318,7 @@ function dvP(sel){
 function dvGen(){
   var items=[];
   document.querySelectorAll('#dv-ls>div').forEach(function(r){
-    var s=r.querySelector('select');
-    var q=r.querySelector('.dq');
-    var p=r.querySelector('.dp');
+    var s=r.querySelector('select');var q=r.querySelector('.dq');var p=r.querySelector('.dp');
     if(s&&s.value&&q&&p&&parseFloat(p.value)>0){
       var prod=PRODUCTS.find(function(x){return x.id===s.value;});
       items.push({name:prod?prod.name:s.value,qty:parseInt(q.value)||1,price:parseFloat(p.value)||0,description:prod?prod.description||'':''});
@@ -15329,9 +15333,7 @@ function dvGen(){
   closeAllMd();
   generateDevis(window._dvCid,items,j);
 }
-window.dvLigne=dvLigne;
-window.dvP=dvP;
-window.dvGen=dvGen;
+window.dvLigne=dvLigne;window.dvP=dvP;window.dvGen=dvGen;
 
 function addDevisItem(){
   if(!window._devisItems) window._devisItems=[];
