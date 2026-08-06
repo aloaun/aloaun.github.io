@@ -15159,125 +15159,87 @@ function generateDevis(clientId,items,validDays){
   var validUntil=new Date(Date.now()+validDays*864e5).toISOString().split('T')[0];
   var total=items.reduce(function(s,it){return s+(it.price*it.qty);},0);
 
-  // Construire le contenu du devis en HTML natif (sans iframe)
-  var rows=items.map(function(it,i){
-    return '<tr style="background:'+(i%2===0?'#f9f9f9':'#fff')+';border-bottom:1px solid #eee">'+
-      '<td style="padding:10px 12px"><strong>'+it.name+'</strong>'+(it.description?'<br><span style="font-size:11px;color:#666">'+it.description+'</span>':'')+'</td>'+
-      '<td style="padding:10px 12px;text-align:center">'+it.qty+'</td>'+
-      '<td style="padding:10px 12px;text-align:right">'+fm(it.price)+' MAD</td>'+
-      '<td style="padding:10px 12px;text-align:right"><strong>'+fm(it.price*it.qty)+' MAD</strong></td>'+
+  // Supprimer ancien
+  ['dv-panel','dv-bg'].forEach(function(id){var el=document.getElementById(id);if(el)el.remove();});
+
+  // Fond cliquable
+  var bg=document.createElement('div');
+  bg.id='dv-bg';
+  bg.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9998';
+  bg.onclick=closeDvPanel;
+  document.body.appendChild(bg);
+
+  // Panneau blanc fixe en bas
+  var panel=document.createElement('div');
+  panel.id='dv-panel';
+  panel.style.cssText='position:fixed;left:0;right:0;bottom:0;width:100%;z-index:9999;background:#ffffff;border-radius:16px 16px 0 0;max-height:80vh;overflow-y:auto;-webkit-overflow-scrolling:touch;color:#222222;font-family:Arial,sans-serif;font-size:13px';
+
+  var rows='';
+  items.forEach(function(it,i){
+    rows+='<tr style="border-bottom:1px solid #eeeeee;background:'+(i%2?'#fafafa':'#ffffff')+'">'+
+      '<td style="padding:8px 10px;color:#222222"><b style="color:#000000">'+it.name+'</b></td>'+
+      '<td style="padding:8px 6px;text-align:center;color:#222222">'+it.qty+'</td>'+
+      '<td style="padding:8px 6px;text-align:right;color:#222222">'+fm(it.price)+'</td>'+
+      '<td style="padding:8px 10px;text-align:right"><b style="color:#000000">'+fm(it.price*it.qty)+'</b></td>'+
     '</tr>';
-  }).join('');
+  });
 
-  // Supprimer ancien devis si existe
-  var old=document.getElementById('md-devis-preview');
-  if(old) document.body.removeChild(old);
-
-  // Créer le modal plein écran
-  var overlay=document.createElement('div');
-  overlay.id='md-devis-preview';
-  overlay.style.cssText='position:fixed;inset:0;z-index:2147483647;background:#f0f0f0;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:Arial,sans-serif';
-
-  // Barre d'actions (sticky)
-  var topBar=document.createElement('div');
-  topBar.style.cssText='position:sticky;top:0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:12px 16px;background:#C9A84C;color:#000;box-shadow:0 2px 8px rgba(0,0,0,0.2)';
-  topBar.innerHTML=
-    '<div>'+
-      '<div style="font-size:15px;font-weight:700">📋 '+num+'</div>'+
-      '<div style="font-size:10px;opacity:.7">Faites une capture d\'écran pour partager</div>'+
+  panel.innerHTML=
+    '<div style="text-align:center;padding:8px 0"><div style="width:36px;height:4px;background:#cccccc;border-radius:2px;display:inline-block"></div></div>'+
+    '<div style="background:#C9A84C;padding:12px 14px;display:flex;justify-content:space-between;align-items:center">'+
+      '<div><div style="font-size:15px;font-weight:bold;color:#000000">'+num+'</div>'+
+      '<div style="font-size:11px;color:#000000;opacity:0.7">'+cl.name+' · '+dateStr+'</div></div>'+
+      '<div style="display:flex;gap:8px">'+
+        '<button id="dv-wa-b" style="background:#25D366;color:#ffffff;border:none;border-radius:8px;padding:8px 12px;font-weight:bold;cursor:pointer;font-size:13px">WA</button>'+
+        '<button onclick="closeDvPanel()" style="background:#888888;color:#ffffff;border:none;border-radius:8px;padding:8px 12px;font-weight:bold;cursor:pointer;font-size:13px">X</button>'+
+      '</div>'+
     '</div>'+
-    '<div style="display:flex;gap:8px">'+
-      '<button id="_devis_share" style="background:#25D366;color:#fff;border:none;border-radius:8px;padding:8px 12px;font-size:12px;cursor:pointer;font-weight:600">📱 WA</button>'+
-      '<button id="_devis_close" style="background:rgba(0,0,0,0.25);border:none;border-radius:8px;padding:8px 12px;font-size:16px;cursor:pointer;color:#000">✕</button>'+
-    '</div>';
-  overlay.appendChild(topBar);
-
-  // Contenu du devis
-  var content=document.createElement('div');
-  content.id='devis-print-area';
-  content.style.cssText='max-width:700px;margin:16px auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.1)';
-  content.innerHTML=
-    // En-tête
-    '<div style="padding:24px;background:linear-gradient(135deg,#C9A84C,#e8c670);color:#000">'+
-      '<div style="display:flex;justify-content:space-between;align-items:flex-start">'+
-        '<div>'+
-          '<div style="font-size:22px;font-weight:700;letter-spacing:2px">'+co.name+'</div>'+
-          '<div style="font-size:11px;margin-top:4px;opacity:.8;line-height:1.6">'+
-            (co.address?co.address+'<br>':'')+
-            (co.phone?'📞 '+co.phone+'<br>':'')+
-            (co.email?co.email+'<br>':'')+
-            (co.ice?'ICE: '+co.ice:'')+'</div>'+
+    '<div style="padding:12px">'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
+        '<div style="background:#f5f5f5;border-radius:8px;padding:10px">'+
+          '<div style="font-size:10px;color:#888888;margin-bottom:3px">CLIENT</div>'+
+          '<div style="font-weight:bold;color:#000000">'+cl.name+'</div>'+
+          '<div style="font-size:11px;color:#555555">'+(cl.phone||'')+'</div>'+
         '</div>'+
-        '<div style="text-align:right">'+
-          '<div style="font-size:28px;font-weight:700">'+num+'</div>'+
-          '<div style="font-size:11px;opacity:.8">Date: '+dateStr+'</div>'+
+        '<div style="background:#f5f5f5;border-radius:8px;padding:10px">'+
+          '<div style="font-size:10px;color:#888888;margin-bottom:3px">VALIDE</div>'+
+          '<div style="font-weight:bold;color:#C9A84C">'+validUntil+'</div>'+
+          '<div style="font-size:11px;color:#555555">'+validDays+' jours</div>'+
         '</div>'+
       '</div>'+
-    '</div>'+
-    // Titre
-    '<div style="text-align:center;padding:16px;font-size:18px;font-weight:700;letter-spacing:3px;color:#C9A84C;border-bottom:2px solid #C9A84C;text-transform:uppercase">DEVIS / PROFORMA</div>'+
-    // Info client + validité
-    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:0;border-bottom:1px solid #eee">'+
-      '<div style="padding:16px;border-right:1px solid #eee">'+
-        '<div style="font-size:10px;text-transform:uppercase;color:#999;letter-spacing:1px;margin-bottom:6px">CLIENT</div>'+
-        '<div style="font-size:14px;font-weight:700">'+cl.name+'</div>'+
-        (cl.phone?'<div style="font-size:12px;color:#666;margin-top:2px">📞 '+cl.phone+'</div>':'')+
-        (cl.city?'<div style="font-size:12px;color:#666">📍 '+cl.city+(cl.region?', '+cl.region:'')+'</div>':'')+
+      '<div style="background:#ffffff;border:1px solid #eeeeee;border-radius:8px;overflow:hidden;margin-bottom:10px">'+
+        '<table style="width:100%;border-collapse:collapse">'+
+          '<tr style="background:#C9A84C">'+
+            '<th style="padding:8px 10px;text-align:left;color:#000000;font-size:10px">ARTICLE</th>'+
+            '<th style="padding:8px 4px;text-align:center;color:#000000;font-size:10px">QTE</th>'+
+            '<th style="padding:8px 4px;text-align:right;color:#000000;font-size:10px">PRIX</th>'+
+            '<th style="padding:8px 10px;text-align:right;color:#000000;font-size:10px">TOTAL</th>'+
+          '</tr>'+rows+
+        '</table>'+
+        '<div style="padding:12px;display:flex;justify-content:space-between;border-top:2px solid #C9A84C;background:#fffdf0">'+
+          '<span style="font-weight:bold;color:#000000">Total TTC</span>'+
+          '<span style="font-size:20px;font-weight:bold;color:#C9A84C">'+fm(total)+' MAD</span>'+
+        '</div>'+
       '</div>'+
-      '<div style="padding:16px">'+
-        '<div style="font-size:10px;text-transform:uppercase;color:#999;letter-spacing:1px;margin-bottom:6px">VALIDITÉ</div>'+
-        '<div style="font-size:12px;color:#666">Valable jusqu\'au</div>'+
-        '<div style="font-size:14px;font-weight:700;color:#C9A84C">'+validUntil+'</div>'+
-        '<div style="font-size:11px;color:#999">('+validDays+' jours)</div>'+
-      '</div>'+
-    '</div>'+
-    // Tableau
-    '<div style="overflow-x:auto">'+
-    '<table style="width:100%;border-collapse:collapse">'+
-      '<thead><tr style="background:#C9A84C">'+
-        '<th style="padding:10px 12px;text-align:left;color:#000;font-size:11px;text-transform:uppercase;letter-spacing:.5px">Article</th>'+
-        '<th style="padding:10px 12px;text-align:center;color:#000;font-size:11px;text-transform:uppercase">Qté</th>'+
-        '<th style="padding:10px 12px;text-align:right;color:#000;font-size:11px;text-transform:uppercase">Prix</th>'+
-        '<th style="padding:10px 12px;text-align:right;color:#000;font-size:11px;text-transform:uppercase">Total</th>'+
-      '</tr></thead>'+
-      '<tbody>'+rows+'</tbody>'+
-    '</table></div>'+
-    // Total
-    '<div style="padding:16px;text-align:right;background:#f9f9f9;border-top:2px solid #C9A84C">'+
-      '<span style="font-size:20px;font-weight:700;color:#C9A84C">Total TTC: '+fm(total)+' MAD</span>'+
-    '</div>'+
-    // Footer
-    '<div style="padding:14px;text-align:center;font-size:10px;color:#999;border-top:1px solid #eee">'+
-      co.name+' · '+(co.address||'')+' · '+(co.phone||'')+'<br>Ce document est un devis, non une facture.'+
+      '<div style="text-align:center;font-size:10px;color:#888888;padding-bottom:10px">'+
+        co.name+' - '+(co.phone||'')+'</div>'+
     '</div>';
-  overlay.appendChild(content);
-  // Cacher mo-bg pour qu'il ne couvre pas l'overlay
-  var _moBg=document.getElementById('mo-bg');
-  if(_moBg){_moBg.className='mo';_moBg.style.display='none';}
-  document.body.appendChild(overlay);
 
-  // Réafficher mo-bg quand l'overlay se ferme
-  // Événements boutons
-  document.getElementById('_devis_close').onclick=function(){
-    var el=document.getElementById('md-devis-preview');
-    if(el) document.body.removeChild(el);
-    var _mb=document.getElementById('mo-bg');
-    if(_mb) _mb.style.display='';
-  };
-  document.getElementById('_devis_share').onclick=function(){
-    var msg='📋 *Devis '+num+'*\n';
-    msg+='Client: *'+cl.name+'*\n';
-    msg+='Date: '+dateStr+' | Valide jusqu\'au: '+validUntil+'\n\n';
-    items.forEach(function(it){
-      msg+='▪️ '+it.name+' × '+it.qty+' = *'+fm(it.price*it.qty)+' MAD*\n';
-    });
-    msg+='\n💰 *Total: '+fm(total)+' MAD*\n';
-    msg+='━━━━━━━━━━━━━━━━━━\n📞 '+co.phone;
-    window.open('https://wa.me/'+cl.phone.replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');
+  document.body.appendChild(panel);
+
+  document.getElementById('dv-wa-b').onclick=function(){
+    var msg='Devis '+num+'\nClient: '+cl.name+'\nValide: '+validUntil+'\n\n';
+    items.forEach(function(it){msg+='- '+it.name+' x'+it.qty+' = '+fm(it.price*it.qty)+' MAD\n';});
+    msg+='\nTotal: '+fm(total)+' MAD\n'+(co.phone||'');
+    window.open('https://wa.me/'+(cl.phone||'').replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');
   };
 
-  toast('✅ Devis '+num+' généré');
+  toast('Devis '+num+' pret');
 }
+function closeDvPanel(){
+  ['dv-panel','dv-bg'].forEach(function(id){var el=document.getElementById(id);if(el)el.remove();});
+}
+window.closeDvPanel=closeDvPanel;
 
 function openDevisModal(clientId){
   var cl=getC(clientId);
@@ -15285,51 +15247,42 @@ function openDevisModal(clientId){
   var el=document.getElementById('md-cpn-form-content');
   if(!el) return;
   el.innerHTML=
-    '<h3 style="font-size:16px;font-weight:700;margin-bottom:8px">Devis - '+cl.name+'</h3>'+
+    '<h3 style="font-size:15px;font-weight:700;margin-bottom:8px">Devis - '+cl.name+'</h3>'+
     '<div id="dv-ls" style="margin-bottom:8px"></div>'+
     '<button type="button" onclick="dvLigne()" style="width:100%;padding:9px;background:var(--dk4);border:1px dashed rgba(201,168,76,0.4);border-radius:10px;color:var(--tx3);font-size:13px;cursor:pointer;margin-bottom:10px">+ Article</button>'+
-    '<div style="display:flex;gap:8px;margin-bottom:12px">'+
-      '<div style="flex:1"><div style="font-size:11px;color:var(--tx3);margin-bottom:3px">Validite (jours)</div>'+
-      '<input id="dv-j" type="number" value="30" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px;color:var(--tx);font-size:13px;box-sizing:border-box"></div>'+
-      '<div style="flex:1"><div style="font-size:11px;color:var(--tx3);margin-bottom:3px">Remise %</div>'+
-      '<input id="dv-r" type="number" value="0" min="0" max="99" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px;color:var(--tx);font-size:13px;box-sizing:border-box"></div>'+
-    '</div>'+
-    '<button type="button" onclick="dvGen()" style="width:100%;padding:13px;background:linear-gradient(135deg,var(--gold),#e8c670);color:#000;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Generer le devis</button>';
+    '<div style="margin-bottom:12px"><div style="font-size:11px;color:var(--tx3);margin-bottom:3px">Validite (jours)</div>'+
+    '<input id="dv-j" type="number" value="30" style="width:100%;background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:9px;color:var(--tx);font-size:13px;box-sizing:border-box"></div>'+
+    '<button type="button" onclick="dvGen()" style="width:100%;padding:13px;background:linear-gradient(135deg,#C9A84C,#e8c670);color:#000;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Generer le devis</button>';
   openMd('cpn-form');
   dvLigne();
 }
 function dvLigne(){
   var c2=document.getElementById('dv-ls');
   if(!c2) return;
-  var opts='<option value="">Selectionner produit...</option>'+PRODUCTS.map(function(p){return '<option value="'+p.id+'">'+p.name+'</option>';}).join('');
+  var opts='<option value="">Selectionner...</option>'+PRODUCTS.map(function(p){return '<option value="'+p.id+'">'+p.name+'</option>';}).join('');
   var d=document.createElement('div');
   d.style.cssText='display:grid;grid-template-columns:2fr 50px 70px 30px;gap:4px;margin-bottom:6px';
-  d.innerHTML=
-    '<select onchange="dvP(this)" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px">'+opts+'</select>'+
+  d.innerHTML='<select onchange="dvP(this)" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px">'+opts+'</select>'+
     '<input type="number" value="1" min="1" class="dq" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px;text-align:center">'+
     '<input type="number" value="0" class="dp" style="background:var(--dk4);border:1px solid var(--bo);border-radius:8px;padding:8px;color:var(--tx);font-size:12px">'+
-    '<button type="button" onclick="this.parentNode.remove()" style="background:rgba(224,82,82,0.15);border:1px solid var(--red);border-radius:8px;color:var(--red);cursor:pointer;font-size:13px">X</button>';
+    '<button type="button" onclick="this.parentNode.remove()" style="background:rgba(224,82,82,0.15);border:1px solid #E05252;border-radius:8px;color:#E05252;cursor:pointer">X</button>';
   c2.appendChild(d);
 }
 function dvP(sel){
   var p=PRODUCTS.find(function(x){return x.id===sel.value;});
-  if(p){var r=sel.parentNode;var px=r.querySelector('.dp');if(px)px.value=p.sellPrice||p.price||0;}
+  if(p){var px=sel.parentNode.querySelector('.dp');if(px)px.value=p.sellPrice||p.price||0;}
 }
 function dvGen(){
   var items=[];
   document.querySelectorAll('#dv-ls>div').forEach(function(r){
     var s=r.querySelector('select');var q=r.querySelector('.dq');var p=r.querySelector('.dp');
     if(s&&s.value&&q&&p&&parseFloat(p.value)>0){
-      var prod=PRODUCTS.find(function(x){return x.id===s.value;});
-      items.push({name:prod?prod.name:s.value,qty:parseInt(q.value)||1,price:parseFloat(p.value)||0,description:prod?prod.description||'':''});
+      var pr=PRODUCTS.find(function(x){return x.id===s.value;});
+      items.push({name:pr?pr.name:s.value,qty:parseInt(q.value)||1,price:parseFloat(p.value)||0,description:pr?pr.description||'':''});
     }
   });
   if(!items.length){toast('Ajoutez au moins un article',true);return;}
   var j=parseInt((document.getElementById('dv-j')||{value:30}).value)||30;
-  var rem=parseFloat((document.getElementById('dv-r')||{value:0}).value)||0;
-  if(rem>0) items=items.map(function(it){
-    return {name:it.name,qty:it.qty,price:Math.round(it.price*(1-rem/100)),description:it.description};
-  });
   closeAllMd();
   generateDevis(window._dvCid,items,j);
 }
