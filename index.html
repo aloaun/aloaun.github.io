@@ -15159,81 +15159,76 @@ function generateDevis(clientId,items,validDays){
   var validUntil=new Date(Date.now()+validDays*864e5).toISOString().split('T')[0];
   var total=items.reduce(function(s,it){return s+(it.price*it.qty);},0);
 
-  // Supprimer ancien
   ['dv-panel','dv-bg'].forEach(function(id){var el=document.getElementById(id);if(el)el.remove();});
-
-  // Fond cliquable
-  var bg=document.createElement('div');
-  bg.id='dv-bg';
-  bg.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9998';
-  bg.onclick=closeDvPanel;
-  document.body.appendChild(bg);
-
-  // Panneau blanc fixe en bas
-  var panel=document.createElement('div');
-  panel.id='dv-panel';
-  panel.style.cssText='position:fixed;left:0;right:0;bottom:0;width:100%;z-index:9999;background:#ffffff;border-radius:16px 16px 0 0;max-height:80vh;overflow-y:auto;-webkit-overflow-scrolling:touch;color:#222222;font-family:Arial,sans-serif;font-size:13px';
 
   var rows='';
   items.forEach(function(it,i){
-    rows+='<tr style="border-bottom:1px solid #eeeeee;background:'+(i%2?'#fafafa':'#ffffff')+'">'+
-      '<td style="padding:8px 10px;color:#222222"><b style="color:#000000">'+it.name+'</b></td>'+
-      '<td style="padding:8px 6px;text-align:center;color:#222222">'+it.qty+'</td>'+
-      '<td style="padding:8px 6px;text-align:right;color:#222222">'+fm(it.price)+'</td>'+
-      '<td style="padding:8px 10px;text-align:right"><b style="color:#000000">'+fm(it.price*it.qty)+'</b></td>'+
-    '</tr>';
+    rows+='<tr style="all:unset;display:table-row;background-color:'+(i%2?'#f9f9f9':'#ffffff')+';">'
+    +'<td style="all:unset;display:table-cell;padding:9px 10px;border-bottom:1px solid #eeeeee;color:#000000;font-family:Arial;font-size:13px;"><b>'+it.name+'</b></td>'
+    +'<td style="all:unset;display:table-cell;padding:9px 5px;text-align:center;border-bottom:1px solid #eeeeee;color:#222222;font-family:Arial;font-size:13px;">'+it.qty+'</td>'
+    +'<td style="all:unset;display:table-cell;padding:9px 5px;text-align:right;border-bottom:1px solid #eeeeee;color:#222222;font-family:Arial;font-size:13px;">'+fm(it.price)+'</td>'
+    +'<td style="all:unset;display:table-cell;padding:9px 10px;text-align:right;border-bottom:1px solid #eeeeee;color:#000000;font-family:Arial;font-size:13px;"><b>'+fm(it.price*it.qty)+'</b></td>'
+    +'</tr>';
   });
 
+  var waMsg='Devis '+num+'\nClient: '+cl.name+'\nValide: '+validUntil+'\n\n';
+  items.forEach(function(it){waMsg+='- '+it.name+' x'+it.qty+' = '+fm(it.price*it.qty)+' MAD\n';});
+  waMsg+='\nTotal: '+fm(total)+' MAD\n'+(co.phone||'');
+  var waUrl='https://wa.me/'+(cl.phone||'').replace(/\D/g,'')+'?text='+encodeURIComponent(waMsg);
+
+  var bg=document.createElement('div');
+  bg.id='dv-bg';
+  bg.setAttribute('style','all:initial;display:block;position:fixed;top:0;left:0;width:100%;height:100%;background-color:rgba(0,0,0,0.5);z-index:9998;');
+  bg.onclick=closeDvPanel;
+  document.body.appendChild(bg);
+
+  var panel=document.createElement('div');
+  panel.id='dv-panel';
+  panel.setAttribute('style','all:initial;display:block;position:fixed;left:0;right:0;bottom:0;width:100%;z-index:9999;background-color:#f0f0f0;border-radius:16px 16px 0 0;max-height:82vh;overflow-y:auto;-webkit-overflow-scrolling:touch;font-family:Arial,sans-serif;font-size:13px;color:#222222;box-shadow:0 -4px 20px rgba(0,0,0,0.4);');
+
   panel.innerHTML=
-    '<div style="text-align:center;padding:8px 0"><div style="width:36px;height:4px;background:#cccccc;border-radius:2px;display:inline-block"></div></div>'+
-    '<div style="background:#C9A84C;padding:12px 14px;display:flex;justify-content:space-between;align-items:center">'+
-      '<div><div style="font-size:15px;font-weight:bold;color:#000000">'+num+'</div>'+
-      '<div style="font-size:11px;color:#000000;opacity:0.7">'+cl.name+' · '+dateStr+'</div></div>'+
-      '<div style="display:flex;gap:8px">'+
-        '<button id="dv-wa-b" style="background:#25D366;color:#ffffff;border:none;border-radius:8px;padding:8px 12px;font-weight:bold;cursor:pointer;font-size:13px">WA</button>'+
-        '<button onclick="closeDvPanel()" style="background:#888888;color:#ffffff;border:none;border-radius:8px;padding:8px 12px;font-weight:bold;cursor:pointer;font-size:13px">X</button>'+
-      '</div>'+
-    '</div>'+
-    '<div style="padding:12px">'+
-      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px">'+
-        '<div style="background:#f5f5f5;border-radius:8px;padding:10px">'+
-          '<div style="font-size:10px;color:#888888;margin-bottom:3px">CLIENT</div>'+
-          '<div style="font-weight:bold;color:#000000">'+cl.name+'</div>'+
-          '<div style="font-size:11px;color:#555555">'+(cl.phone||'')+'</div>'+
-        '</div>'+
-        '<div style="background:#f5f5f5;border-radius:8px;padding:10px">'+
-          '<div style="font-size:10px;color:#888888;margin-bottom:3px">VALIDE</div>'+
-          '<div style="font-weight:bold;color:#C9A84C">'+validUntil+'</div>'+
-          '<div style="font-size:11px;color:#555555">'+validDays+' jours</div>'+
-        '</div>'+
-      '</div>'+
-      '<div style="background:#ffffff;border:1px solid #eeeeee;border-radius:8px;overflow:hidden;margin-bottom:10px">'+
-        '<table style="width:100%;border-collapse:collapse">'+
-          '<tr style="background:#C9A84C">'+
-            '<th style="padding:8px 10px;text-align:left;color:#000000;font-size:10px">ARTICLE</th>'+
-            '<th style="padding:8px 4px;text-align:center;color:#000000;font-size:10px">QTE</th>'+
-            '<th style="padding:8px 4px;text-align:right;color:#000000;font-size:10px">PRIX</th>'+
-            '<th style="padding:8px 10px;text-align:right;color:#000000;font-size:10px">TOTAL</th>'+
-          '</tr>'+rows+
-        '</table>'+
-        '<div style="padding:12px;display:flex;justify-content:space-between;border-top:2px solid #C9A84C;background:#fffdf0">'+
-          '<span style="font-weight:bold;color:#000000">Total TTC</span>'+
-          '<span style="font-size:20px;font-weight:bold;color:#C9A84C">'+fm(total)+' MAD</span>'+
-        '</div>'+
-      '</div>'+
-      '<div style="text-align:center;font-size:10px;color:#888888;padding-bottom:10px">'+
-        co.name+' - '+(co.phone||'')+'</div>'+
-    '</div>';
+    '<div style="all:initial;display:block;background-color:#C9A84C;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;border-radius:16px 16px 0 0;">'
+    +'<div style="all:initial;display:block;">'
+    +'<div style="all:initial;display:block;font-size:15px;font-weight:bold;color:#000000;font-family:Arial;">Devis '+num+'</div>'
+    +'<div style="all:initial;display:block;font-size:11px;color:#000000;opacity:0.7;font-family:Arial;">'+cl.name+' · '+dateStr+'</div>'
+    +'</div>'
+    +'<div style="all:initial;display:flex;gap:8px;">'
+    +'<a href="'+waUrl+'" target="_blank" style="all:initial;display:inline-block;background-color:#25D366;color:#ffffff;border-radius:8px;padding:8px 12px;font-weight:bold;font-size:13px;font-family:Arial;text-decoration:none;">WA</a>'
+    +'<button onclick="closeDvPanel()" style="all:initial;display:inline-block;background-color:#888888;color:#ffffff;border-radius:8px;padding:8px 12px;font-weight:bold;cursor:pointer;font-size:13px;font-family:Arial;">Fermer</button>'
+    +'</div>'
+    +'</div>'
+    +'<div style="all:initial;display:block;padding:12px;background-color:#f0f0f0;">'
+    +'<div style="all:initial;display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">'
+    +'<div style="all:initial;display:block;background-color:#ffffff;border-radius:8px;padding:10px;">'
+    +'<div style="all:initial;display:block;font-size:10px;color:#888888;text-transform:uppercase;margin-bottom:3px;font-family:Arial;">Client</div>'
+    +'<div style="all:initial;display:block;font-weight:bold;color:#000000;font-family:Arial;font-size:13px;">'+cl.name+'</div>'
+    +'<div style="all:initial;display:block;font-size:11px;color:#555555;font-family:Arial;">'+(cl.phone||'')+'</div>'
+    +'</div>'
+    +'<div style="all:initial;display:block;background-color:#ffffff;border-radius:8px;padding:10px;">'
+    +'<div style="all:initial;display:block;font-size:10px;color:#888888;text-transform:uppercase;margin-bottom:3px;font-family:Arial;">Valide</div>'
+    +'<div style="all:initial;display:block;font-weight:bold;color:#C9A84C;font-family:Arial;font-size:13px;">'+validUntil+'</div>'
+    +'<div style="all:initial;display:block;font-size:11px;color:#555555;font-family:Arial;">'+validDays+' jours</div>'
+    +'</div>'
+    +'</div>'
+    +'<div style="all:initial;display:block;background-color:#ffffff;border-radius:8px;overflow:hidden;margin-bottom:10px;">'
+    +'<table style="all:initial;display:table;width:100%;border-collapse:collapse;font-family:Arial;font-size:13px;">'
+    +'<tr style="all:initial;display:table-row;background-color:#C9A84C;">'
+    +'<th style="all:initial;display:table-cell;padding:8px 10px;text-align:left;color:#000000;font-size:10px;text-transform:uppercase;font-family:Arial;">Article</th>'
+    +'<th style="all:initial;display:table-cell;padding:8px 5px;text-align:center;color:#000000;font-size:10px;font-family:Arial;">Qte</th>'
+    +'<th style="all:initial;display:table-cell;padding:8px 5px;text-align:right;color:#000000;font-size:10px;font-family:Arial;">Prix</th>'
+    +'<th style="all:initial;display:table-cell;padding:8px 10px;text-align:right;color:#000000;font-size:10px;font-family:Arial;">Total</th>'
+    +'</tr>'
+    +rows
+    +'</table>'
+    +'<div style="all:initial;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;border-top:2px solid #C9A84C;background-color:#fffdf0;">'
+    +'<b style="all:initial;font-weight:bold;color:#000000;font-family:Arial;font-size:13px;">Total TTC</b>'
+    +'<b style="all:initial;font-size:20px;font-weight:bold;color:#C9A84C;font-family:Arial;">'+fm(total)+' MAD</b>'
+    +'</div>'
+    +'</div>'
+    +'<div style="all:initial;display:block;text-align:center;font-size:10px;color:#888888;padding:10px;font-family:Arial;">'+co.name+' - '+(co.phone||'')+'</div>'
+    +'</div>';
 
   document.body.appendChild(panel);
-
-  document.getElementById('dv-wa-b').onclick=function(){
-    var msg='Devis '+num+'\nClient: '+cl.name+'\nValide: '+validUntil+'\n\n';
-    items.forEach(function(it){msg+='- '+it.name+' x'+it.qty+' = '+fm(it.price*it.qty)+' MAD\n';});
-    msg+='\nTotal: '+fm(total)+' MAD\n'+(co.phone||'');
-    window.open('https://wa.me/'+(cl.phone||'').replace(/\D/g,'')+'?text='+encodeURIComponent(msg),'_blank');
-  };
-
   toast('Devis '+num+' pret');
 }
 function closeDvPanel(){
