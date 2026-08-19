@@ -2479,17 +2479,20 @@ input:focus,select:focus,textarea:focus{border-color:rgba(201,168,76,.6)!importa
 /* CHATBOT */
 #chatbot-btn{position:fixed;bottom:90px;right:16px;width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#C9A84C,#e8c670);border:none;font-size:24px;cursor:pointer;z-index:9995;box-shadow:0 4px 20px rgba(201,168,76,0.5);display:none;align-items:center;justify-content:center;color:#000;-webkit-tap-highlight-color:transparent}
 #chatbot-btn.visible{display:flex}
-#chatbot-panel{position:fixed;bottom:158px;right:10px;width:min(310px,calc(100vw - 20px));max-height:60vh;background:var(--dk2);border:1px solid var(--bo);border-radius:18px;z-index:9996;display:none;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.7);overflow:hidden}
-#chatbot-panel.open{display:flex}
+#chatbot-panel{position:fixed;bottom:158px;right:10px;width:min(310px,calc(100vw - 20px));max-height:55vh;background:var(--dk2);border:1px solid var(--bo);border-radius:18px;z-index:9996;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,0.7);overflow:hidden;display:none !important}
+#chatbot-panel.open{display:flex !important}
 #chatbot-msgs{flex:1;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:8px;-webkit-overflow-scrolling:touch}
 .cb-bot{background:var(--dk3);border:1px solid var(--bo);border-radius:14px 14px 14px 2px;padding:10px 12px;font-size:13px;max-width:92%;align-self:flex-start;line-height:1.6;color:var(--tx)}
 .cb-user{background:rgba(201,168,76,0.2);border:1px solid rgba(201,168,76,0.3);border-radius:14px 14px 2px 14px;padding:10px 12px;font-size:13px;max-width:85%;align-self:flex-end;color:var(--gold)}
-.cb-chip{display:inline-block;background:var(--dk4);border:1px solid var(--bo);border-radius:20px;padding:6px 12px;font-size:11px;cursor:pointer;margin:2px 2px 2px 0;color:var(--tx2);-webkit-tap-highlight-color:transparent;user-select:none}
-.cb-typing{display:flex;gap:4px;padding:10px 14px;align-self:flex-start}
-.cb-typing span{width:8px;height:8px;border-radius:50%;background:var(--tx3);animation:cbDot 1.2s infinite}
+.cb-chip{display:inline-block;background:rgba(201,168,76,0.1);border:1px solid rgba(201,168,76,0.3);border-radius:20px;padding:7px 13px;font-size:12px;cursor:pointer;margin:2px 2px 2px 0;color:var(--gold);-webkit-tap-highlight-color:transparent;user-select:none;transition:.15s;font-weight:500}
+.cb-chip:active{background:rgba(201,168,76,0.25);transform:scale(0.97)}
+.cb-typing{display:flex;gap:5px;padding:8px 12px;align-self:flex-start;background:var(--dk3);border-radius:14px 14px 14px 2px}
+.cb-typing span{width:7px;height:7px;border-radius:50%;background:var(--tx3);animation:cbDot 1.4s infinite ease-in-out}
 .cb-typing span:nth-child(2){animation-delay:.2s}
 .cb-typing span:nth-child(3){animation-delay:.4s}
-@keyframes cbDot{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-8px)}}
+@keyframes cbDot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-8px);opacity:1}}
+.cb-bot b{color:var(--gold)}
+.cb-bot a{color:var(--gold);text-decoration:underline}
 </style>
 </head>
 <body>
@@ -15198,7 +15201,11 @@ function printBarcodeLabels(){
 
 
 <!-- Modal Détail Commande Client -->
-<div class="md" id="md-cl-ord" st
+<div class="md" id="md-cl-ord" style="display:none;max-width:480px">
+  <button class="md-x" onclick="closeAllMd()">✕</button>
+  <div id="md-cl-ord-content"></div>
+</div>
+
 <button id="chatbot-btn" onclick="toggleChatbot()" title="Assistant ALITOS">💬</button>
 <div id="chatbot-panel" onclick="event.stopPropagation()">
   <div style="background:linear-gradient(135deg,var(--gold),#e8c670);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0">
@@ -15207,12 +15214,15 @@ function printBarcodeLabels(){
       <div><div style="font-size:13px;font-weight:700;color:#000">Assistant ALITOS</div>
       <div style="font-size:10px;color:rgba(0,0,0,0.65)">En ligne</div></div>
     </div>
-    <button onclick="closeChatbot()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#000;padding:4px;line-height:1">✕</button>
+    <button onclick="closeChatbot();event.stopPropagation();" style="background:rgba(0,0,0,0.15);border:none;border-radius:8px;width:32px;height:32px;font-size:18px;cursor:pointer;color:#000;display:flex;align-items:center;justify-content:center;flex-shrink:0">✕</button>
   </div>
   <div id="chatbot-msgs"></div>
-  <div style="padding:10px;border-top:1px solid var(--bo);flex-shrink:0;display:flex;gap:6px">
-    <input id="cb-input" type="text" placeholder="Votre message..." onkeydown="if(event.key==='Enter')cbSend()" style="flex:1;background:var(--dk4);border:1px solid var(--bo);border-radius:10px;padding:9px 12px;color:var(--tx);font-size:13px;outline:none">
-    <button onclick="cbSend()" style="background:var(--gold);border:none;border-radius:10px;padding:9px 14px;color:#000;font-weight:700;cursor:pointer;font-size:16px">→</button>
+  <div style="padding:10px 10px 12px;border-top:1px solid var(--bo);flex-shrink:0;background:var(--dk2)">
+    <div style="display:flex;gap:6px;align-items:center">
+      <input id="cb-input" type="text" placeholder="Posez votre question..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();cbSend();}" autocomplete="off" style="flex:1;background:var(--dk4);border:1px solid var(--bo);border-radius:12px;padding:10px 14px;color:var(--tx);font-size:13px;outline:none;-webkit-appearance:none">
+      <button onclick="cbSend()" style="background:linear-gradient(135deg,var(--gold),#e8c670);border:none;border-radius:12px;padding:10px 14px;color:#000;font-weight:700;cursor:pointer;font-size:18px;flex-shrink:0;line-height:1">↑</button>
+    </div>
+    <div style="font-size:10px;color:var(--tx3);text-align:center;margin-top:6px">Propulsé par IA • ALITOS Assistant</div>
   </div>
 </div>
 </body>splay:none;max-width:480px">
@@ -15566,98 +15576,257 @@ function fallbackCopy(text){
 }
 window.copyClientInfo=copyClientInfo;
 
+
+// ═══════════════════════════════════════════════════════════════
+// CHATBOT ALITOS — IA ANTHROPIC + CONTEXTE BUSINESS
+// ═══════════════════════════════════════════════════════════════
 var _cbOpen=false;
+var _cbHistory=[];
+var _cbLoading=false;
+
 function openChatbot(){
   _cbOpen=true;
-  var p=document.getElementById('chatbot-panel');var b=document.getElementById('chatbot-btn');
-  if(p){p.style.display='flex';p.className='open';}
-  if(b){b.textContent='✕';}
-  if(document.getElementById('chatbot-msgs').children.length===0){
-    cbBot('Bonjour ! Je suis votre assistant ALITOS. Comment puis-je vous aider ?',
-      ['Voir les produits','Mes commandes','Promotions','Nous contacter','Livraison','Paiement']);
+  var p=document.getElementById('chatbot-panel');
+  var b=document.getElementById('chatbot-btn');
+  if(p){
+    p.style.cssText='position:fixed !important;bottom:158px !important;right:10px !important;'
+      +'width:min(320px,calc(100vw - 20px));max-height:58vh;'
+      +'background:var(--dk2);border:1px solid var(--bo);border-radius:18px;'
+      +'z-index:9996 !important;flex-direction:column;display:flex !important;'
+      +'box-shadow:0 8px 40px rgba(0,0,0,0.7);overflow:hidden;';
+    p.className='open';
   }
-  setTimeout(function(){var inp=document.getElementById('cb-input');if(inp)inp.focus();},200);
+  if(b) b.textContent='✕';
+  var msgs=document.getElementById('chatbot-msgs');
+  if(msgs&&!msgs.children.length){
+    cbWelcome();
+  }
+  setTimeout(function(){
+    var inp=document.getElementById('cb-input');
+    if(inp) inp.focus();
+  },300);
 }
+
 function closeChatbot(){
   _cbOpen=false;
-  var p=document.getElementById('chatbot-panel');var b=document.getElementById('chatbot-btn');
-  if(p){p.style.display='none';p.className='';}
-  if(b){b.textContent='💬';}
+  var p=document.getElementById('chatbot-panel');
+  var b=document.getElementById('chatbot-btn');
+  if(p){
+    p.className='';
+    p.setAttribute('style','position:fixed !important;display:none !important;bottom:158px;right:10px;z-index:9996');
+  }
+  if(b) b.textContent='💬';
 }
+
 function toggleChatbot(){
   if(_cbOpen) closeChatbot(); else openChatbot();
 }
-window.openChatbot=openChatbot;window.closeChatbot=closeChatbot;
-function cbBot(text,chips){
-  var msgs=document.getElementById('chatbot-msgs');if(!msgs)return;
-  var d=document.createElement('div');d.className='cb-bot';
-  d.innerHTML=text+(chips?'<div style="margin-top:8px">'+chips.map(function(ch){
-    return '<span class="cb-chip" onclick="cbChip(this,\''+ch+'\')" >'+ch+'</span>';
-  }).join('')+'</div>':'');
-  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
+
+function cbWelcome(){
+  var name=SESSION&&SESSION.name?SESSION.name.split(' ')[0]:'';
+  var h=new Date().getHours();
+  var g=h<12?'Bonjour':'Bon après-midi';
+  var orders=SESSION?ORDERS.filter(function(o){return o.clientId===SESSION.id&&(o.status==='pending'||o.status==='confirmed'||o.status==='shipped');}):[];
+  var promos=PRODUCTS.filter(function(p){return(p.promo||p.discount||0)>0&&(p.stock||0)>0;});
+  var msg=g+(name?' <b>'+name+'</b>':'')+' ! 👋<br>Je suis votre assistant personnel ALITOS.<br><br>';
+  if(orders.length) msg+='📦 Vous avez <b>'+orders.length+'</b> commande(s) en cours.<br>';
+  if(promos.length) msg+='🔥 <b>'+promos.length+'</b> produit(s) en promotion !<br>';
+  msg+='<br>Comment puis-je vous aider ?';
+  cbAddMsg('bot',msg);
+  cbShowSuggestions(['🛍️ Produits & Prix','📦 Mes commandes','🔥 Promotions','📞 Contact','💳 Paiement & Livraison']);
 }
-function cbUser(text){
-  var msgs=document.getElementById('chatbot-msgs');if(!msgs)return;
-  var d=document.createElement('div');d.className='cb-user';d.textContent=text;
-  msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;
-}
-function cbChip(el,text){
-  el.style.opacity='0.5';el.style.pointerEvents='none';
-  cbUser(text);
+
+function cbAddMsg(type, html){
   var msgs=document.getElementById('chatbot-msgs');
-  var typing=document.createElement('div');typing.className='cb-typing';typing.id='cb-typing';
-  typing.innerHTML='<span></span><span></span><span></span>';
-  msgs.appendChild(typing);msgs.scrollTop=msgs.scrollHeight;
-  setTimeout(function(){var t=document.getElementById('cb-typing');if(t)t.remove();cbReply(text);},700);
-}
-function cbSend(){
-  var inp=document.getElementById('cb-input');if(!inp)return;
-  var t=inp.value.trim();if(!t)return;
-  inp.value='';cbUser(t);
-  // Afficher animation typing
-  var msgs=document.getElementById('chatbot-msgs');
-  var typing=document.createElement('div');typing.className='cb-typing';typing.id='cb-typing';
-  typing.innerHTML='<span></span><span></span><span></span>';
-  msgs.appendChild(typing);msgs.scrollTop=msgs.scrollHeight;
-  // Répondre après délai
-  setTimeout(function(){
-    var t2=document.getElementById('cb-typing');if(t2)t2.remove();
-    cbReply(t);
-  },800);
-}
-function cbReply(text){
-  var t=text.toLowerCase();var co=COMPANY||{};
-  if(t.includes('produit')||t.includes('voir les produits')||t.includes('catalogue')){
-    var n=PRODUCTS.filter(function(p){return(p.stock||0)>0;}).length;
-    var pr=PRODUCTS.filter(function(p){return(p.promo||p.discount||0)>0&&(p.stock||0)>0;}).length;
-    cbBot(n+' produits disponibles'+(pr?' dont '+pr+' en promotion !':'.'),[' Voir promos','Par categorie']);
-  } else if(t.includes('promo')||t.includes('reduction')){
-    var pp=PRODUCTS.filter(function(p){return(p.promo||p.discount||0)>0&&(p.stock||0)>0;});
-    cbBot(pp.length?'Promotions: '+pp.slice(0,3).map(function(p){return p.name+' -'+(p.promo||p.discount)+'%';}).join(', '):'Aucune promo en ce moment.', pp.length?['Voir les produits']:null);
-  } else if(t.includes('commande')||t.includes('mes commandes')||t.includes('livraison')){
-    if(!SESSION){cbBot('Connectez-vous pour voir vos commandes.');return;}
-    var my=ORDERS.filter(function(o){return o.clientId===SESSION.id;});
-    var pend=my.filter(function(o){return o.status!=='delivered'&&o.status!=='cancelled';}).length;
-    cbBot(pend>0?pend+' commande(s) en cours.':'Toutes vos commandes sont livrees !',['Voir les produits']);
-  } else if(t.includes('contact')||t.includes('nous contacter')||t.includes('telephone')){
-    cbBot('Contactez-nous:\n📞 '+(co.phone||'—')+'\n🏪 '+(co.name||'ALITOS'),['WhatsApp']);
-  } else if(t.includes('whatsapp')){
-    var n=(co.phone||'').replace(/\D/g,'');if(n)window.open('https://wa.me/'+n,'_blank');
-    cbBot('Redirection vers WhatsApp !');
-  } else if(t.includes('coupon')||t.includes('fidelite')){
-    cbBot('Vos coupons de fidelite sont disponibles dans votre profil !',['Voir les produits']);
-  } else if(t.includes('bonjour')||t.includes('salut')||t.includes('salam')){
-    cbBot('Bonjour '+(SESSION?SESSION.name.split(' ')[0]:'')+'! Comment puis-je vous aider ?',['Voir les produits','Mes commandes','Promotions']);
+  if(!msgs) return;
+  var div=document.createElement('div');
+  div.className=type==='bot'?'cb-bot':'cb-user';
+  if(type==='bot'){
+    div.innerHTML=html;
   } else {
-    cbBot('Je peux vous aider avec:',['Voir les produits','Mes commandes','Promotions','Nous contacter']);
+    div.textContent=html;
   }
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+  if(type==='user') _cbHistory.push({role:'user',content:html});
+  else _cbHistory.push({role:'assistant',content:html.replace(/<[^>]*>/g,'')});
 }
+
+function cbShowSuggestions(chips){
+  var msgs=document.getElementById('chatbot-msgs');
+  if(!msgs) return;
+  var div=document.createElement('div');
+  div.className='cb-chips';
+  div.style.cssText='display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 8px;align-self:flex-start;max-width:95%';
+  div.innerHTML=chips.map(function(ch){
+    return '<span class="cb-chip" onclick="cbChip(this,\''+ch.replace(/'/g,'\\\'')+'\')">'
+      +ch+'</span>';
+  }).join('');
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function cbShowTyping(){
+  var msgs=document.getElementById('chatbot-msgs');
+  if(!msgs) return;
+  var div=document.createElement('div');
+  div.id='cb-typing-indicator';
+  div.className='cb-bot';
+  div.style.cssText='padding:12px 16px;width:60px';
+  div.innerHTML='<div class="cb-typing"><span></span><span></span><span></span></div>';
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+function cbRemoveTyping(){
+  var el=document.getElementById('cb-typing-indicator');
+  if(el) el.remove();
+}
+
+function cbChip(el,text){
+  // Désactiver tous les chips du même groupe
+  var parent=el.parentNode;
+  if(parent){
+    var chips=parent.querySelectorAll('.cb-chip');
+    chips.forEach(function(ch){ch.style.opacity='0.4';ch.style.pointerEvents='none';});
+  }
+  cbAddMsg('user',text);
+  cbProcess(text);
+}
+
+function cbSend(){
+  var inp=document.getElementById('cb-input');
+  if(!inp||_cbLoading) return;
+  var text=inp.value.trim();
+  if(!text) return;
+  inp.value='';
+  cbAddMsg('user',text);
+  cbProcess(text);
+}
+
+function cbProcess(text){
+  _cbLoading=true;
+  var inp=document.getElementById('cb-input');
+  var btn=document.querySelector('#chatbot-panel button[onclick="cbSend()"]');
+  if(inp) inp.disabled=true;
+  if(btn) btn.disabled=true;
+
+  cbShowTyping();
+
+  // Construire le contexte business pour l'IA
+  var co=COMPANY||{name:'ALITOS',phone:''};
+  var prodList=PRODUCTS.filter(function(p){return(p.stock||0)>0;}).slice(0,15).map(function(p){
+    var d=p.promo||p.discount||0;
+    var price=d>0?Math.round((p.sellPrice||p.price)*(1-d/100)):p.sellPrice||p.price;
+    return p.name+' ('+price+' MAD'+(d>0?', -'+d+'%':'')+', stock:'+p.stock+')';
+  }).join(', ');
+
+  var clientInfo='';
+  if(SESSION&&SESSION.role==='client'){
+    var myOrds=ORDERS.filter(function(o){return o.clientId===SESSION.id;});
+    var pending=myOrds.filter(function(o){return o.status==='pending'||o.status==='confirmed'||o.status==='shipped';});
+    clientInfo='Client: '+SESSION.name+'. Commandes en cours: '+pending.length+'. Total commandes: '+myOrds.length+'.';
+  }
+
+  var systemPrompt='Tu es un assistant commercial intelligent et chaleureux pour '+co.name
+    +', une boutique marocaine en ligne.\n'
+    +'Tu réponds en français, de façon naturelle, concise et utile.\n'
+    +'Tu peux utiliser des emojis avec modération.\n'
+    +'Informations sur la boutique:\n'
+    +'- Téléphone: '+(co.phone||'non précisé')+'\n'
+    +'- Adresse: '+(co.address||'non précisée')+'\n'
+    +'- Produits disponibles: '+prodList+'\n'
+    +(clientInfo?'- '+clientInfo+'\n':'')
+    +'- Modes de paiement: espèces, virement, chèque, crédit\n'
+    +'Tu aides les clients à trouver des produits, suivre leurs commandes, et répondre à leurs questions.\n'
+    +'Si on te demande des infos que tu n\'as pas, suggère de contacter la boutique.\n'
+    +'Réponds toujours en 2-4 phrases maximum sauf si plus de détails sont nécessaires.';
+
+  // Construire l'historique (max 6 derniers messages)
+  var history=_cbHistory.slice(-6).map(function(m){
+    return {role:m.role==='bot'?'assistant':m.role, content:m.content};
+  });
+
+  // Appel API Anthropic
+  fetch('https://api.anthropic.com/v1/messages',{
+    method:'POST',
+    headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({
+      model:'claude-sonnet-4-6',
+      max_tokens:400,
+      system:systemPrompt,
+      messages:history.concat([{role:'user',content:text}])
+    })
+  })
+  .then(function(res){return res.json();})
+  .then(function(data){
+    cbRemoveTyping();
+    var reply=data.content&&data.content[0]?data.content[0].text:'Désolé, je n\'ai pas pu répondre.';
+    cbAddMsg('bot',reply.replace(/\n/g,'<br>'));
+    // Suggérer des actions selon le contexte
+    var t=text.toLowerCase();
+    if(t.includes('produit')||t.includes('prix')||t.includes('catalogue')){
+      cbShowSuggestions(['Voir les promotions','Rechercher un produit','Mes commandes']);
+    } else if(t.includes('commande')||t.includes('livraison')){
+      cbShowSuggestions(['Voir les produits','Promotions en cours','Contact']);
+    } else if(t.includes('contact')||t.includes('aide')){
+      cbShowSuggestions(['📱 WhatsApp','🛍️ Produits','📦 Commandes']);
+    }
+  })
+  .catch(function(err){
+    cbRemoveTyping();
+    // Fallback local si API indisponible
+    cbReplyLocal(text);
+  })
+  .finally(function(){
+    _cbLoading=false;
+    var inp2=document.getElementById('cb-input');
+    var btn2=document.querySelector('#chatbot-panel button');
+    if(inp2) inp2.disabled=false;
+    if(btn2) btn2.disabled=false;
+    setTimeout(function(){var i=document.getElementById('cb-input');if(i)i.focus();},100);
+  });
+}
+
+function cbReplyLocal(text){
+  var t=text.toLowerCase();
+  var co=COMPANY||{};
+  var reply='';
+  var chips=[];
+  if(t.includes('promo')||t.includes('offre')||t.includes('reduction')){
+    var pp=PRODUCTS.filter(function(p){return(p.promo||p.discount||0)>0&&(p.stock||0)>0;});
+    reply=pp.length?'🔥 '+pp.length+' produit(s) en promotion : '+pp.slice(0,3).map(function(p){return p.name+' -'+(p.promo||p.discount)+'%';}).join(', '):'Aucune promotion en ce moment.';
+    chips=['Voir les produits','Nous contacter'];
+  } else if(t.includes('commande')||t.includes('livraison')){
+    if(SESSION){
+      var my=ORDERS.filter(function(o){return o.clientId===SESSION.id;});
+      var pend=my.filter(function(o){return o.status!=='delivered'&&o.status!=='cancelled';});
+      reply=pend.length?'📦 Vous avez '+pend.length+' commande(s) en cours ('+pend[0].id+' - '+(SL[pend[0].status]||pend[0].status)+')':'Toutes vos commandes ont été livrées ! 🎉';
+    } else reply='Connectez-vous pour voir vos commandes.';
+    chips=['Voir les produits'];
+  } else if(t.includes('contact')||t.includes('telephone')){
+    reply='📞 '+(co.phone||'—')+' | 🏪 '+(co.name||'ALITOS')+(co.address?'\n📍 '+co.address:'');
+    chips=['📱 WhatsApp'];
+  } else if(t.includes('whatsapp')||t.includes('wa')){
+    var wn=(co.phone||'').replace(/\D/g,'');
+    if(wn) window.open('https://wa.me/'+wn,'_blank');
+    reply='Redirection vers WhatsApp ! 📱';
+  } else {
+    reply='Je suis là pour vous aider ! Posez-moi votre question.';
+    chips=['🛍️ Produits','📦 Commandes','🔥 Promotions','📞 Contact'];
+  }
+  cbAddMsg('bot',reply.replace(/\n/g,'<br>'));
+  if(chips.length) cbShowSuggestions(chips);
+}
+
 function updateChatbotVisibility(){
   var b=document.getElementById('chatbot-btn');if(!b)return;
-  if(SESSION&&SESSION.role==='client')b.classList.add('visible');
-  else b.classList.remove('visible');
+  if(SESSION&&SESSION.role==='client') b.classList.add('visible');
+  else{b.classList.remove('visible');if(_cbOpen)closeChatbot();}
 }
-window.toggleChatbot=toggleChatbot;window.cbSend=cbSend;window.cbChip=cbChip;window.updateChatbotVisibility=updateChatbotVisibility;
+window.openChatbot=openChatbot;window.closeChatbot=closeChatbot;window.toggleChatbot=toggleChatbot;
+window.cbSend=cbSend;window.cbChip=cbChip;window.updateChatbotVisibility=updateChatbotVisibility;
+
 
 function renderLoyaltyBar(){
   var el=document.getElementById('cl-loyalty-bar');if(!el||!SESSION)return;
@@ -15686,18 +15855,31 @@ function renderWelcomeBanner(){
   var h=new Date().getHours();
   var g=h<12?'Bonjour':h<18?'Bon apres-midi':'Bonsoir';
   var pend=ORDERS.filter(function(o){return o.clientId===SESSION.id&&o.status!=='delivered'&&o.status!=='cancelled';}).length;
-  el.style.display='block';
-  el.innerHTML='<div style="background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(201,168,76,0.05));border:1px solid rgba(201,168,76,0.2);border-radius:14px;padding:14px 16px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center">'
-    +'<div><div style="font-size:15px;font-weight:700">'+g+', '+SESSION.name.split(' ')[0]+' !</div>'
-    +(pend>0?'<div style="font-size:12px;color:var(--gold);margin-top:2px">'+pend+' commande(s) en cours</div>':'<div style="font-size:12px;color:var(--tx3);margin-top:2px">Decouvrez nos nouveautes</div>')+'</div>'
-    +'<button onclick="openChatbot()" style="background:var(--gold);border:none;border-radius:10px;padding:8px 12px;color:#000;font-weight:700;cursor:pointer;font-size:13px">💬 Aide</button>'
-  +'</div>';
-  // Auto-disparition après 6 secondes
+  el.style.cssText='display:block;padding:0 4px;opacity:1;transition:opacity 1s ease';
+  el.innerHTML=
+    '<div style="background:linear-gradient(135deg,rgba(201,168,76,0.15),rgba(201,168,76,0.05));'
+    +'border:1px solid rgba(201,168,76,0.2);border-radius:14px;padding:14px 16px;margin-bottom:12px;'
+    +'display:flex;justify-content:space-between;align-items:center">'
+      +'<div>'
+        +'<div style="font-size:15px;font-weight:700">'+g+', <span style="color:var(--gold)">'+SESSION.name.split(' ')[0]+'</span> 👋</div>'
+        +(pend>0
+          ?'<div style="font-size:12px;color:var(--gold);margin-top:3px">📦 '+pend+' commande'+(pend>1?'s':'')+' en cours</div>'
+          :'<div style="font-size:12px;color:var(--tx3);margin-top:3px">Découvrez nos nouveautés 🛍️</div>')
+      +'</div>'
+      +'<button onclick="openChatbot()" style="background:var(--gold);border:none;border-radius:10px;'
+      +'padding:8px 12px;color:#000;font-weight:700;cursor:pointer;font-size:12px;white-space:nowrap">'
+      +'💬 Aide</button>'
+    +'</div>';
+  // Disparaît après 6 secondes avec fondu
   setTimeout(function(){
-    var el=document.getElementById('cl-welcome');
-    if(el) el.style.transition='opacity 1s ease';
-    setTimeout(function(){if(el)el.style.opacity='0';setTimeout(function(){if(el)el.style.display='none';},1000);},5000);
-  },100);
+    var welEl=document.getElementById('cl-welcome');
+    if(welEl){
+      welEl.style.opacity='0';
+      setTimeout(function(){
+        if(welEl) welEl.style.display='none';
+      },1000);
+    }
+  },6000);
 }
 window.renderLoyaltyBar=renderLoyaltyBar;window.renderWelcomeBanner=renderWelcomeBanner;
 </script>
